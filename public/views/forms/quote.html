@@ -15,32 +15,17 @@
             .tax-col { visibility: hidden; width: 0 !important; }
             .grid-header { grid-template-columns: 4ch 12ch 1fr 10ch 10ch 0ch !important; }
             .item-row { grid-template-columns: 4ch 12ch 1fr 10ch 10ch 0ch !important; }
-            /* Remove background colors on print */
             input, textarea { background: transparent !important; border: none !important; border-bottom: 1px solid #ccc !important; }
         }
         .page { background: white; width: var(--page-width); height: var(--page-height); padding: 0.5in; box-shadow: 0 0 15px rgba(0,0,0,0.3); font-family: 'IBM Plex Mono', monospace; font-size: 12px; display: flex; flex-direction: column; box-sizing: border-box; position: relative; }
         
-        /* --- UPDATED VISUAL INPUT STYLES --- */
-        input, textarea { 
-            font-family: 'IBM Plex Mono', monospace; 
-            font-size: 12px; 
-            border: 1px solid #ddd; 
-            border-bottom: 2px solid #ccc; 
-            outline: none; 
-            text-transform: uppercase; 
-            color: #000; 
-            width: 100%; 
-            transition: all 0.2s; 
-            background: #ffffcc; /* IDLE: YELLOW */ 
-            padding: 4px; 
-        }
+        input, textarea { font-family: 'IBM Plex Mono', monospace; font-size: 12px; border: 1px solid #ddd; border-bottom: 2px solid #ccc; outline: none; text-transform: uppercase; color: #000; width: 100%; transition: all 0.2s; background: #ffffcc; padding: 4px; }
         input:hover, textarea:hover { background: #e6fffa; border-color: #1e8e3e; cursor: text; }
         input:focus, textarea:focus { border-bottom: 2px solid #d500f9; background: #ffccff; font-weight: 600; }
         .input-changed { background-color: #e3f2fd !important; border-color: #2196F3 !important; border-bottom: 2px solid #2196F3 !important; }
         
         textarea { resize: none; overflow: hidden; display: block; line-height: 1.3; }
         
-        /* LAYOUT & UTILS */
         .header-row { display: flex; justify-content: space-between; align-items: flex-start; }
         .double-divider { border-top: 3px double #000; border-bottom: 1px solid #000; height: 1px; margin: 10px 0; }
         .divider { border-top: 1px solid #000; margin: 10px 0; }
@@ -49,45 +34,23 @@
         .item-row { margin-bottom: 8px; }
         .mt-auto { margin-top: auto; }
 
-        /* BUTTONS */
         .btn { padding: 8px 16px; border-radius: 4px; border: none; cursor: pointer; font-weight: 600; font-size: 11px; text-transform: uppercase; transition: all 0.2s; }
         .btn:hover { transform: translateY(-1px); filter: brightness(1.1); }
         .btn-blue { background: #1a73e8; color: white; }
         .btn-green { background: #1e8e3e; color: white; }
         .btn-gray { background: #5f6368; color: white; }
         .btn-red { background: #d93025; color: white; }
-        .btn-save { background: #f9ab00; color: #000; } /* Yellow Save Button */
+        .btn-save { background: #f9ab00; color: #000; } 
         .add-row-btn { background: transparent; border: 1px dashed #ccc; color: #666; width: 100%; padding: 5px; margin-bottom: 20px; cursor: pointer; }
         .add-row-btn:hover { background: #f9f9f9; border-color: #999; }
         
-        /* FOOTER ELEMENTS */
         .footer-terms { font-size: 10px; margin-top: 15px; border: 1px solid #ddd; padding: 10px; line-height: 1.4; }
         .signature-box { margin-top: 15px; border: 1px solid #000; padding: 15px; }
         .tax-chk { width: auto; transform: scale(0.8); cursor: pointer; }
 
-        /* --- AUTOCOMPLETE SUGGESTIONS STYLING --- */
         .input-group { position: relative; display:flex; width: 100%; }
-        .suggestions-box {
-            position: absolute;
-            top: 100%;
-            left: 0;
-            width: 100%;
-            background: white;
-            border: 1px solid #ccc;
-            border-top: none;
-            z-index: 1000;
-            max-height: 150px;
-            overflow-y: auto;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-            display: none; 
-        }
-        .suggestion-item {
-            padding: 8px;
-            border-bottom: 1px solid #eee;
-            cursor: pointer;
-            font-size: 11px;
-            color: #333;
-        }
+        .suggestions-box { position: absolute; top: 100%; left: 0; width: 100%; background: white; border: 1px solid #ccc; border-top: none; z-index: 1000; max-height: 150px; overflow-y: auto; box-shadow: 0 4px 6px rgba(0,0,0,0.1); display: none; }
+        .suggestion-item { padding: 8px; border-bottom: 1px solid #eee; cursor: pointer; font-size: 11px; color: #333; }
         .suggestion-item:hover { background-color: #f0f8ff; color: #1a73e8; }
         .suggestion-item strong { color: #000; }
     </style>
@@ -137,7 +100,6 @@
                     <div id="suggestions" class="suggestions-box"></div>
                 </div>
             </div>
-            
             <button class="btn btn-save" style="font-size: 9px; padding: 4px; margin-top:5px;" onclick="updateRolodex()">UPDATE ROLODEX</button>
         </div>
         
@@ -163,8 +125,7 @@
         <span class="tax-col" style="font-size: 9px; text-align:center;">TAX?</span>
     </div>
 
-    <div id="items-list">
-        </div>
+    <div id="items-list"></div>
 
     <button class="add-row-btn" onclick="addRow()">+ ADD LINE ITEM</button>
 
@@ -216,7 +177,6 @@
 <script type="module">
     import { DB } from '../../js/db.js';
 
-    // AUTO-HIGHLIGHT CHANGED FIELDS
     document.addEventListener('input', function(e) {
         if(e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') {
              e.target.classList.add('input-changed');
@@ -227,7 +187,6 @@
     const DOC_ID = urlParams.get('id');
 
     window.onload = async () => {
-        // Set Date
         const d = new Date();
         document.getElementById('quote-date').value = (d.getMonth()+1)+'/'+d.getDate()+'/'+d.getFullYear();
         document.querySelectorAll("textarea").forEach(autoGrow); 
@@ -238,6 +197,9 @@
             if (data) loadForm(data);
         } else {
             clearForm(); 
+            // Start at 300,000 for Quotes
+            const newId = await DB.getNewId('quote', 300000);
+            document.getElementById('quote-no').value = newId;
             addRow(); 
         }
     };
@@ -261,15 +223,12 @@
         setVal('quote-date', data.date);
         setVal('quote-po', data.poNumber);
         setVal('quote-rep', data.rep);
-
         setVal('bill-name', data.customerName);
         setVal('bill-addr1', data.address1);
         setVal('bill-addr2', data.address2);
         setVal('bill-phone', data.phone);
-        
         setVal('site-addr1', data.siteAddress);
         setVal('acct-id', data.accountId);
-        
         setVal('prop-text', data.proposalText);
 
         const list = document.getElementById('items-list');
@@ -280,47 +239,20 @@
             addRow();
         }
         calcAll();
-        // Remove change highlights after initial load
         setTimeout(() => document.querySelectorAll('.input-changed').forEach(el => el.classList.remove('input-changed')), 100);
     }
 
-    window.saveTicket = async function() {
-        const items = scrapeItems();
-        const payload = {
-            ticketNumber: document.getElementById('quote-no').value,
-            date: document.getElementById('quote-date').value,
-            poNumber: document.getElementById('quote-po').value,
-            rep: document.getElementById('quote-rep').value,
-            
-            customerName: document.getElementById('bill-name').value,
-            address1: document.getElementById('bill-addr1').value,
-            address2: document.getElementById('bill-addr2').value,
-            phone: document.getElementById('bill-phone').value,
-            
-            siteAddress: document.getElementById('site-addr1').value,
-            accountId: document.getElementById('acct-id').value,
-            
-            proposalText: document.getElementById('prop-text').value,
-            items: items,
-            grandTotal: document.getElementById('grand-total').value,
-            
-            status: 'Open'
-        };
-
-        try {
-            const id = await DB.saveDoc('quotes', payload, DOC_ID);
-            alert("Quote Saved! ID: " + id);
-            if (!DOC_ID) window.history.pushState({}, '', `?id=${id}`);
-        } catch (e) {
-            alert("Error: " + e.message);
-        }
-    };
-
+    // --- CONVERT TO WORK ORDER ---
     window.convertToWorkOrder = async function() {
         if(!confirm("Create a Work Order from this Quote?")) return;
         
+        // 1. Get New WO ID
+        const newId = await DB.getNewId('work_order', 500000);
+
         const items = scrapeItems();
         const payload = {
+            ticketNumber: newId,
+            date: new Date().toLocaleDateString(),
             customerName: document.getElementById('bill-name').value,
             address1: document.getElementById('bill-addr1').value,
             address2: document.getElementById('bill-addr2').value,
@@ -333,12 +265,46 @@
         };
 
         try {
-            const newId = await DB.saveDoc('work_orders', payload);
+            await DB.saveDoc('work_orders', payload, newId);
+            
+            // 2. Mark Quote as Converted
+            if (DOC_ID) {
+                await DB.saveDoc('quotes', { status: 'Converted' }, DOC_ID);
+            }
+
             if(confirm("Work Order Created! Open it now?")) {
                 window.location.href = `work_order.html?id=${newId}`;
             }
         } catch (e) {
             alert("Error converting: " + e.message);
+        }
+    };
+
+    window.saveTicket = async function() {
+        const items = scrapeItems();
+        const payload = {
+            ticketNumber: document.getElementById('quote-no').value,
+            date: document.getElementById('quote-date').value,
+            poNumber: document.getElementById('quote-po').value,
+            rep: document.getElementById('quote-rep').value,
+            customerName: document.getElementById('bill-name').value,
+            address1: document.getElementById('bill-addr1').value,
+            address2: document.getElementById('bill-addr2').value,
+            phone: document.getElementById('bill-phone').value,
+            siteAddress: document.getElementById('site-addr1').value,
+            accountId: document.getElementById('acct-id').value,
+            proposalText: document.getElementById('prop-text').value,
+            items: items,
+            grandTotal: document.getElementById('grand-total').value,
+            status: 'Open'
+        };
+
+        try {
+            const id = await DB.saveDoc('quotes', payload, DOC_ID);
+            alert("Quote Saved! ID: " + id);
+            if (!DOC_ID) window.history.pushState({}, '', `?id=${id}`);
+        } catch (e) {
+            alert("Error: " + e.message);
         }
     };
 
@@ -361,11 +327,7 @@
     }
 
     function setVal(id, val) { if(val) document.getElementById(id).value = val; }
-
-    window.autoGrow = function(element) {
-        element.style.height = "5px";
-        element.style.height = (element.scrollHeight) + "px";
-    }
+    window.autoGrow = function(element) { element.style.height = "5px"; element.style.height = (element.scrollHeight) + "px"; }
 
     window.addRow = function(data = null) {
         const container = document.getElementById('items-list');
@@ -418,25 +380,15 @@
         clearTimeout(searchTimeout);
         const box = document.getElementById('suggestions');
         const val = input.value.trim();
-        
-        if (val.length < 3) { 
-            box.style.display = 'none'; 
-            return; 
-        }
-
+        if (val.length < 3) { box.style.display = 'none'; return; }
         searchTimeout = setTimeout(async () => {
             const client = await DB.findCustomerByPhone(val);
             if (client) {
-                box.innerHTML = `<div class="suggestion-item" onclick="fillCustomer('${client.name}', '${client.address1}', '${client.address2}', '${client.phone}', '${client.id || ''}')">
-                    <strong>${client.name}</strong><br>${client.address1}
-                </div>`;
+                box.innerHTML = `<div class="suggestion-item" onclick="fillCustomer('${client.name}', '${client.address1}', '${client.address2}', '${client.phone}', '${client.id || ''}')"><strong>${client.name}</strong><br>${client.address1}</div>`;
                 box.style.display = 'block';
-            } else {
-                box.style.display = 'none';
-            }
+            } else { box.style.display = 'none'; }
         }, 500);
     }
-
     window.fillCustomer = function(name, addr1, addr2, phone, id) {
         document.getElementById('bill-name').value = name;
         document.getElementById('bill-addr1').value = addr1;
@@ -445,13 +397,7 @@
         document.getElementById('acct-id').value = id;
         document.getElementById('suggestions').style.display = 'none';
     }
-    
-    document.addEventListener('click', function(e) {
-        if (!e.target.closest('.input-group')) {
-            document.getElementById('suggestions').style.display = 'none';
-        }
-    });
-
+    document.addEventListener('click', function(e) { if (!e.target.closest('.input-group')) document.getElementById('suggestions').style.display = 'none'; });
     window.updateRolodex = function() {
         const data = {
             name: document.getElementById('bill-name').value,
@@ -460,12 +406,7 @@
             address2: document.getElementById('bill-addr2').value,
             id: document.getElementById('acct-id').value
         };
-        if(data.phone) {
-            DB.saveCustomer(data);
-            alert("Rolodex Updated for: " + data.name);
-        } else {
-            alert("Phone number required to update Rolodex.");
-        }
+        if(data.phone) { DB.saveCustomer(data); alert("Rolodex Updated for: " + data.name); } else { alert("Phone number required to update Rolodex."); }
     }
 </script>
 </body>
