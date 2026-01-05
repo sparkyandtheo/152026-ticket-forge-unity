@@ -3,7 +3,8 @@
 // 1. Imports
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
 import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-analytics.js";
-import { getFirestore, enableIndexedDbPersistence } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+// UPDATED: Imported enableMultiTabIndexedDbPersistence
+import { getFirestore, enableMultiTabIndexedDbPersistence } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 import { getAuth } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 import { getStorage } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
 
@@ -25,11 +26,11 @@ const db = getFirestore(app);
 const auth = getAuth(app);
 const storage = getStorage(app);
 
-// 4. Enable Offline Persistence
-// This allows the app to work when the tech loses cell service.
-enableIndexedDbPersistence(db).catch((err) => {
+// 4. Enable Offline Persistence (Multi-Tab Support)
+// This allows the app to work offline even if open in multiple tabs.
+enableMultiTabIndexedDbPersistence(db).catch((err) => {
     if (err.code == 'failed-precondition') {
-        console.warn('Persistence failed: Multiple tabs open');
+        console.warn('Persistence failed: Multiple tabs open (and multi-tab support failed)');
     } else if (err.code == 'unimplemented') {
         console.warn('Persistence not available in this browser');
     }
