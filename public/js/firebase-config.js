@@ -1,6 +1,6 @@
 // public/js/firebase-config.js
 
-// 1. Imports using full URL paths (Required for browser usage without bundlers)
+// 1. Imports
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
 import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-analytics.js";
 import { getFirestore, enableIndexedDbPersistence } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
@@ -20,12 +20,12 @@ const firebaseConfig = {
 
 // 3. Initialize the App
 const app = initializeApp(firebaseConfig);
-const analytics = getAnalytics(app); // Added per your request
+const analytics = getAnalytics(app); 
 const db = getFirestore(app);
 const auth = getAuth(app);
 const storage = getStorage(app);
 
-// 4. Enable Offline Persistence (The "Basement" Feature)
+// 4. Enable Offline Persistence
 // This allows the app to work when the tech loses cell service.
 enableIndexedDbPersistence(db).catch((err) => {
     if (err.code == 'failed-precondition') {
@@ -35,5 +35,5 @@ enableIndexedDbPersistence(db).catch((err) => {
     }
 });
 
-// 5. Export these tools so other files (like db.js) can use them
+// 5. Export these tools so auth.js and db.js can use them
 export { app, analytics, db, auth, storage };
