@@ -19,12 +19,28 @@
             font-family: sans-serif; 
         }
 
-        /* --- TOOLBAR --- */
+        /* --- TOOLBAR LAYOUT (Absolute Center) --- */
         .toolbar { 
             position: fixed; top: 0; left: 0; right: 0; height: 60px; 
-            background: #202124; display: flex; align-items: center; 
-            justify-content: center; gap: 10px; z-index: 1000; 
+            background: #202124; 
+            display: flex; align-items: center; justify-content: space-between; 
+            padding: 0 20px; 
+            z-index: 1000; 
             box-shadow: 0 2px 8px rgba(0,0,0,0.4); 
+            position: relative; /* Needed for absolute centering */
+        }
+        
+        .tb-left { z-index: 2; }
+        .tb-right { z-index: 2; display: flex; gap: 10px; }
+
+        /* Dead Center Positioning */
+        .tb-center { 
+            position: absolute; 
+            left: 50%; 
+            transform: translateX(-50%); 
+            display: flex; 
+            gap: 8px; /* Tighter gap to keep buttons closer */
+            z-index: 1;
         }
 
         /* --- BUTTONS --- */
@@ -92,14 +108,20 @@
 <body>
 
 <div class="toolbar">
-    <button class="btn btn-gray" onclick="location.href='dashboard.html'" style="margin-right: auto;">← Dash</button>
+    <div class="tb-left">
+        <button class="btn btn-gray" onclick="location.href='dashboard.html'">← Dash</button>
+    </div>
     
-    <button class="btn btn-blue" onclick="convertToIntake('service')">🛠 Start Service Ticket</button>
-    <button class="btn btn-green" onclick="convertToIntake('sales')">💼 Start Sales Call</button>
-    <button class="btn btn-orange" onclick="convertToIntake('quote')">📝 Start Quote</button>
+    <div class="tb-center">
+        <button class="btn btn-blue" onclick="convertToIntake('service')">🛠 Start Service Ticket</button>
+        <button class="btn btn-green" onclick="convertToIntake('sales')">💼 Start Sales Call</button>
+        <button class="btn btn-orange" onclick="convertToIntake('quote')">📝 Start Quote</button>
+    </div>
     
-    <div style="width: 20px;"></div> <button class="btn btn-gray" onclick="window.print()">Print</button>
-    <button class="btn btn-red" onclick="if(confirm('Clear form?')) location.reload();">Clear</button>
+    <div class="tb-right">
+        <button class="btn btn-gray" onclick="window.print()">Print</button>
+        <button class="btn btn-red" onclick="if(confirm('Clear form?')) location.reload();">Clear</button>
+    </div>
 </div>
 
 <div class="page">
@@ -242,7 +264,6 @@
         try {
             let collection, page;
             
-            // Logic for the 3 buttons
             if (targetType === 'service') {
                 collection = 'service_tickets';
                 page = 'service.html';
