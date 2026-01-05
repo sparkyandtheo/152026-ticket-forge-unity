@@ -77,6 +77,7 @@
             flex-direction: column;
             transition: transform 0.2s;
             position: relative;
+            min-height: 200px; /* Ensure visual consistency */
         }
 
         .doc-stack:hover {
@@ -114,7 +115,7 @@
             list-style: none;
             padding: 0;
             margin: 0;
-            min-height: 50px;
+            flex-grow: 1; /* Pushes content to fill space */
         }
 
         .doc-item {
@@ -141,8 +142,8 @@
             color: #70757a;
         }
 
+        /* NEW BUTTON (Top Toolbar Only) */
         .btn-new {
-            margin-top: 15px;
             padding: 10px;
             background: var(--primary);
             color: white;
@@ -206,7 +207,6 @@
             display: block;
         }
 
-        /* Adjust button to look good as a trigger */
         .btn-new.dropbtn {
             margin-top: 0;
             display: flex;
@@ -238,12 +238,12 @@
             <div class="dropdown">
                 <button class="btn-new dropbtn">+ CREATE NEW ▼</button>
                 <div class="dropdown-content">
-                    <a href="/views/forms/phone_message.html">📞 Phone Message</a>
+                    <a href="/views/forms/phone_message.html">📥 Phone Message</a>
                     <a href="/views/forms/sales_call.html">💼 Sales Lead</a>
                     <a href="/views/forms/quote.html">📝 Quote</a>
-                    <a href="/views/forms/work_order.html">🔨 Work Order</a>
-                    <a href="/views/forms/service.html">🛠 Service Ticket</a>
-                    <a href="/views/forms/invoice.html">💲 Invoice</a>
+                    <a href="/views/forms/work_order.html">🛠️ Work Order</a>
+                    <a href="/views/forms/service.html">🖥️ Service Ticket</a>
+                    <a href="/views/forms/invoice.html">💰 Invoice</a>
                 </div>
             </div>
 
@@ -259,7 +259,6 @@
             <div class="doc-list">
                 <div style="padding:10px; color:#999; font-size:11px;">Loading...</div>
             </div>
-            <a href="/views/forms/phone_message.html" class="btn-new">New Message</a>
         </div>
 
         <div class="doc-stack" data-type="quote">
@@ -267,7 +266,6 @@
             <div class="doc-list">
                 <div style="padding:10px; color:#999; font-size:11px;">Loading...</div>
             </div>
-            <a href="/views/forms/quote.html" class="btn-new">New Quote</a>
         </div>
 
         <div class="doc-stack" data-type="work-order">
@@ -275,7 +273,6 @@
             <div class="doc-list">
                 <div style="padding:10px; color:#999; font-size:11px;">Loading...</div>
             </div>
-            <a href="/views/forms/work_order.html" class="btn-new">New Work Order</a>
         </div>
 
         <div class="doc-stack" data-type="service">
@@ -283,7 +280,6 @@
             <div class="doc-list">
                 <div style="padding:10px; color:#999; font-size:11px;">Loading...</div>
             </div>
-            <a href="/views/forms/service.html" class="btn-new">New Ticket</a>
         </div>
 
         <div class="doc-stack" data-type="invoice">
@@ -291,7 +287,6 @@
             <div class="doc-list">
                 <div style="padding:10px; color:#999; font-size:11px;">Loading...</div>
             </div>
-            <a href="/views/forms/invoice.html" class="btn-new">New Invoice</a>
         </div>
     </div>
 
@@ -313,7 +308,7 @@
             });
         };
 
-        // --- 1. FIXED SEARCH FUNCTIONALITY ---
+        // --- 1. SEARCH FUNCTIONALITY ---
         window.filterDocs = function() {
             const input = document.getElementById('mainSearch').value.toUpperCase().trim();
             const items = document.getElementsByClassName('doc-item');
@@ -321,15 +316,12 @@
             
             // A. Filter Items
             for (let i = 0; i < items.length; i++) {
-                // Get the hidden search string we built during loadLiveDocs
                 const searchString = items[i].dataset.search || "";
-                
-                // Perform strict inclusion check
                 if (searchString.includes(input)) {
-                    items[i].style.display = ""; // Show
+                    items[i].style.display = ""; 
                     hasGlobalMatch = true;
                 } else {
-                    items[i].style.display = "none"; // Hide
+                    items[i].style.display = "none"; 
                 }
             }
 
@@ -339,7 +331,6 @@
                 const stackItems = stacks[s].getElementsByClassName('doc-item');
                 let hasVisibleInStack = false;
                 
-                // Check if any items in this stack are currently visible
                 for(let k=0; k<stackItems.length; k++) {
                     if(stackItems[k].style.display !== 'none') {
                         hasVisibleInStack = true;
@@ -347,6 +338,7 @@
                     }
                 }
 
+                // If searching and no matches in stack, hide stack. If clearing search, show stack.
                 if (input !== "" && !hasVisibleInStack) {
                     stacks[s].style.display = "none";
                 } else {
@@ -367,7 +359,7 @@
         function loadLiveDocs(collectionName, stackType, pageLink) {
             if(!db) { console.error("Database not initialized"); return; }
 
-            const q = query(collection(db, collectionName), orderBy("lastUpdated", "desc"), limit(20)); // Increased limit
+            const q = query(collection(db, collectionName), orderBy("lastUpdated", "desc"), limit(20));
             
             onSnapshot(q, (snapshot) => {
                 const listContainer = document.querySelector(`.doc-stack[data-type="${stackType}"] .doc-list`);
@@ -387,7 +379,6 @@
                     
                     let dateStr = '---';
                     if (data.lastUpdated) {
-                        // Safe Date Handling
                         if (typeof data.lastUpdated.toDate === 'function') {
                             dateStr = new Date(data.lastUpdated.toDate()).toLocaleDateString();
                         } else {
@@ -404,8 +395,7 @@
                         <span class="date">${dateStr}</span>
                     `;
 
-                    // --- SEARCH INDEX BUILDER ---
-                    // We combine all meaningful fields into one long string for searching
+                    // Search Index
                     const searchTerms = [
                         displayId, 
                         displayName,
@@ -418,9 +408,9 @@
                         data.siteAddress2 || '',
                         data.jobNumber || '',
                         data.poNumber || ''
-                    ].join(' ').toUpperCase(); // Store as UPPERCASE for easier comparison
+                    ].join(' ').toUpperCase();
 
-                    div.dataset.search = searchTerms; // Save to DOM attribute
+                    div.dataset.search = searchTerms; 
 
                     div.onclick = () => {
                         location.href = `${pageLink}?id=${doc.id}`;
@@ -429,7 +419,6 @@
                     listContainer.appendChild(div);
                 });
                 
-                // Re-run filter if user was already typing
                 if(document.getElementById('mainSearch').value !== "") {
                     window.filterDocs();
                 }
