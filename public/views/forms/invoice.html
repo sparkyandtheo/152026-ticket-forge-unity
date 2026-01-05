@@ -12,7 +12,7 @@
         .toolbar { position: fixed; top: 0; left: 0; right: 0; height: 60px; background: #202124; display: flex; align-items: center; justify-content: center; gap: 15px; z-index: 1000; box-shadow: 0 2px 8px rgba(0,0,0,0.4); }
         
         @media print {
-            .toolbar, .add-row-btn { display: none !important; }
+            .toolbar, .add-row-btn, .btn-rolodex-update, .suggestions-box { display: none !important; }
             body { background: white; padding: 0; margin: 0; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
             .page { margin: 0; box-shadow: none; border: none; width: 100%; height: auto; padding: 0; overflow: visible; }
             .grid-header { grid-template-columns: 6ch 1fr 6ch 8ch 10ch 10ch !important; }
@@ -53,12 +53,38 @@
         .add-row-btn { background: transparent; border: 1px dashed #ccc; color: #666; width: 100%; padding: 5px; margin-bottom: 20px; cursor: pointer; }
         .mt-auto { margin-top: auto; }
         .footer-terms { font-size: 9px; margin-top: 15px; border: 1px solid #ddd; padding: 10px; line-height: 1.4; text-align: center; }
+
+        /* --- ADDED ROLODEX STYLES --- */
+        .input-group { position: relative; display:flex; width: 100%; }
+        .suggestions-box {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            width: 100%;
+            background: white;
+            border: 1px solid #ccc;
+            border-top: none;
+            z-index: 1000;
+            max-height: 150px;
+            overflow-y: auto;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            display: none;
+        }
+        .suggestion-item {
+            padding: 8px;
+            border-bottom: 1px solid #eee;
+            cursor: pointer;
+            font-size: 11px;
+            color: #333;
+        }
+        .suggestion-item:hover { background-color: #f0f8ff; color: #1a73e8; }
+        .suggestion-item strong { color: #000; }
     </style>
 </head>
 <body>
 
 <div class="toolbar">
-    <button class="btn btn-gray" onclick="location.href='../office/dashboard.html'" style="margin-right: auto; margin-left: 20px;">← Dashboard</button>
+    <button class="btn btn-gray" onclick="location.href='dashboard.html'" style="margin-right: auto; margin-left: 20px;">← Dashboard</button>
     <button class="btn btn-save" onclick="saveTicket()">💾 Save to Cloud</button>
     <button class="btn btn-blue" onclick="window.print()">Print Setup</button>
     <button class="btn btn-green" onclick="alert('Select \'Save as PDF\' in the print destination.'); window.print();">Save as PDF</button>
@@ -93,7 +119,15 @@
             <input type="text" id="bill-name" placeholder="NAME"><br>
             <input type="text" id="bill-addr1" placeholder="ADDRESS"><br>
             <input type="text" id="bill-addr2" placeholder="CITY, STATE ZIP"><br>
-            <div style="display:flex;">PH: <input type="text" id="bill-phone" placeholder="PHONE"></div>
+            
+            <div style="display:flex; margin-top:2px;">
+                <span style="white-space:nowrap; margin-right:5px;">PH:</span> 
+                <div class="input-group">
+                    <input type="text" id="bill-phone" placeholder="START TYPING PHONE..." onkeyup="lookupCustomer(this)" autocomplete="off">
+                    <div id="suggestions" class="suggestions-box"></div>
+                </div>
+            </div>
+            <button class="btn btn-save btn-rolodex-update" style="font-size: 9px; padding: 4px; margin-top:5px;" onclick="updateRolodex()">UPDATE ROLODEX</button>
         </div>
         <div style="width: 48%;">
             <div style="display:flex; justify-content:space-between; margin-bottom:2px;"><span class="label">TERMS:</span> <input type="text" id="meta-terms" value="UPON RECEIPT" style="text-align:right;"></div>
@@ -179,6 +213,9 @@
             const data = await DB.getDoc('invoices', DOC_ID);
             if (data) loadForm(data);
         } else {
+            // FIX 2: Clear any cached data for a fresh start
+            clearForm();
+            
             // Default Date
             const d = new Date();
             const dateStr = (d.getMonth()+1)+'/'+d.getDate()+'/'+d.getFullYear();
@@ -187,6 +224,18 @@
             addRow(); // Empty start row
         }
     };
+
+    function clearForm() {
+        document.getElementById('inv-no').value = 'INV-NEW';
+        document.getElementById('inv-job').value = '';
+        document.getElementById('bill-name').value = '';
+        document.getElementById('bill-addr1').value = '';
+        document.getElementById('bill-addr2').value = '';
+        document.getElementById('bill-phone').value = '';
+        document.getElementById('meta-acct').value = '';
+        document.getElementById('items-list').innerHTML = '';
+        document.getElementById('grand-total').value = '$0.00';
+    }
 
     function loadForm(data) {
         setVal('inv-no', data.ticketNumber || DOC_ID.substring(0,6).toUpperCase());
@@ -334,6 +383,62 @@
     }
 
     function formatMoney(num) { return num.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
+
+    // --- FIX 3: ROLODEX LOGIC ADDED ---
+    let searchTimeout;
+    window.lookupCustomer = function(input) {
+        clearTimeout(searchTimeout);
+        const box = document.getElementById('suggestions');
+        const val = input.value.trim();
+        
+        if (val.length < 3) { 
+            box.style.display = 'none'; 
+            return; 
+        }
+
+        searchTimeout = setTimeout(async () => {
+            const client = await DB.findCustomerByPhone(val);
+            if (client) {
+                box.innerHTML = `<div class="suggestion-item" onclick="fillCustomer('${client.name}', '${client.address1}', '${client.address2}', '${client.phone}', '${client.id || ''}')">
+                    <strong>${client.name}</strong><br>${client.address1}
+                </div>`;
+                box.style.display = 'block';
+            } else {
+                box.style.display = 'none';
+            }
+        }, 500);
+    }
+
+    window.fillCustomer = function(name, addr1, addr2, phone, id) {
+        document.getElementById('bill-name').value = name;
+        document.getElementById('bill-addr1').value = addr1;
+        document.getElementById('bill-addr2').value = addr2;
+        document.getElementById('bill-phone').value = phone;
+        document.getElementById('meta-acct').value = id;
+        document.getElementById('suggestions').style.display = 'none';
+    }
+    
+    document.addEventListener('click', function(e) {
+        if (!e.target.closest('.input-group')) {
+            document.getElementById('suggestions').style.display = 'none';
+        }
+    });
+
+    window.updateRolodex = function() {
+        const data = {
+            name: document.getElementById('bill-name').value,
+            phone: document.getElementById('bill-phone').value,
+            address1: document.getElementById('bill-addr1').value,
+            address2: document.getElementById('bill-addr2').value,
+            id: document.getElementById('meta-acct').value
+        };
+        if(data.phone) {
+            DB.saveCustomer(data);
+            alert("Rolodex Updated for: " + data.name);
+        } else {
+            alert("Phone number required to update Rolodex.");
+        }
+    }
 </script>
 </body>
 </html>

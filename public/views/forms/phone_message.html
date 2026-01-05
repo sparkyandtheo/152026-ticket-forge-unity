@@ -54,7 +54,7 @@
         .btn-gray { background: #5f6368; color: white; }
         .btn-red { background: #d93025; color: white; }
         
-        /* --- NEW ROLODEX BUTTON STYLE --- */
+        /* --- ROLODEX BUTTON STYLE --- */
         .btn-rolodex {
             width: 100%;
             margin-top: 8px;
@@ -65,25 +65,12 @@
             text-transform: uppercase;
             background: transparent;
             color: #aaa;
-            border: 2px dashed #ccc; /* Looks like a placeholder */
+            border: 2px dashed #ccc; 
             cursor: not-allowed;
             transition: all 0.3s;
             text-align: center;
         }
         
-        /* ACTIVE STATE - LOOKS LIKE A STAMP */
-        .btn-rolodex.active {
-            background: #000;
-            color: #fff;
-            border: 2px solid #000;
-            cursor: pointer;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.2);
-        }
-        .btn-rolodex.active:hover {
-            background: #333;
-            transform: translateY(-1px);
-        }
-
         /* ACTION ROW */
         .action-row { margin-top: 20px; display: flex; gap: 20px; padding-top: 20px; border-top: 2px dashed #ddd; }
         .action-btn { flex: 1; padding: 15px; border: 2px solid #ddd; background: #f8f9fa; border-radius: 8px; cursor: pointer; text-align: left; transition: all 0.2s; }
@@ -101,7 +88,7 @@
 <body>
 
 <div class="toolbar">
-    <button class="btn btn-gray" onclick="location.href='../office/dashboard.html'" style="margin-right: auto; margin-left: 20px;">← Dashboard</button>
+    <button class="btn btn-gray" onclick="location.href='dashboard.html'" style="margin-right: auto; margin-left: 20px;">← Dashboard</button>
     <button class="btn btn-blue" onclick="window.print()">Print</button>
     <button class="btn btn-red" onclick="if(confirm('Clear form?')) location.reload();">Clear Form</button>
 </div>
@@ -118,7 +105,7 @@
             <div style="font-size: 20px; font-weight: 800; text-transform: uppercase; margin-bottom: 10px; letter-spacing: 1px; white-space: nowrap;">
                 === PHONE MESSAGE ===
             </div>
-            <div style="display:flex; justify-content:flex-end; gap:10px; margin-bottom:5px;"><b class="label">REF #:</b> <input type="text" value="MSG-NEW" style="width: 15ch; text-align:right;"></div>
+            <div style="display:flex; justify-content:flex-end; gap:10px; margin-bottom:5px;"><b class="label">REF #:</b> <input type="text" id="msg-id" value="MSG-NEW" style="width: 15ch; text-align:right;"></div>
             <div style="display:flex; justify-content:flex-end; gap:10px;"><span class="label">DATE:</span> <input type="text" value="" id="date-field" style="width: 15ch; text-align:right;"></div>
         </div>
     </div>
@@ -130,8 +117,7 @@
             <b>CUSTOMER / CALLER:</b><br>
             
             <div class="input-group" style="margin-bottom: 5px;">
-                <input type="text" id="cust-name" class="watch-change" placeholder="NAME (TYPE TO SEARCH...)" onkeyup="lookupCustomer(this, 'name')" oninput="markChanged(this)" autocomplete="off">
-                <div id="suggestions-name" class="suggestions-box"></div>
+                <input type="text" id="cust-name" class="watch-change" placeholder="NAME" oninput="markChanged(this)">
             </div>
 
             <input type="text" id="cust-addr1" class="watch-change" placeholder="ADDRESS LINE 1" style="margin-bottom: 5px;" oninput="markChanged(this)"><br>
@@ -140,7 +126,7 @@
             <div class="input-group" style="margin-top:5px;">
                 <span class="label" style="align-self:center;">PH:</span> 
                 <div style="position:relative; width:100%;">
-                    <input type="text" id="cust-phone" class="watch-change" placeholder="PHONE (TYPE TO SEARCH...)" onkeyup="lookupCustomer(this, 'phone')" oninput="markChanged(this)" autocomplete="off">
+                    <input type="text" id="cust-phone" class="watch-change" placeholder="PHONE (TYPE TO SEARCH...)" onkeyup="lookupCustomer(this)" oninput="markChanged(this)" autocomplete="off">
                     <div id="suggestions-phone" class="suggestions-box"></div>
                 </div>
             </div>
@@ -195,8 +181,28 @@
             console.log("Loading Message...", DOC_ID);
             const data = await DB.getDoc('phone_messages', DOC_ID);
             if(data) loadForm(data);
+        } else {
+            // FIX 2: Clear cached form
+            clearForm();
         }
     };
+
+    function clearForm() {
+        document.getElementById('msg-id').value = 'MSG-NEW';
+        document.getElementById('cust-name').value = '';
+        document.getElementById('cust-phone').value = '';
+        document.getElementById('cust-addr1').value = '';
+        document.getElementById('cust-addr2').value = '';
+        document.getElementById('site-addr1').value = '';
+        document.getElementById('site-addr2').value = '';
+        document.getElementById('cust-id').value = '';
+        document.getElementById('intake-notes').value = '';
+        
+        // Remove changed states
+        document.querySelectorAll('.input-changed').forEach(i => {
+            i.classList.remove('input-changed');
+        });
+    }
 
     function loadForm(data) {
         document.getElementById('cust-name').value = data.customerName || '';
@@ -213,41 +219,54 @@
         });
     }
 
-    // 2. ROLODEX LOGIC (Cloud-Based)
+    // 2. ROLODEX LOGIC (Standardized)
     let searchTimeout;
-    // We attach this to window so the HTML 'onkeyup' attribute can find it
-    window.lookupCustomer = async function(input, type) {
+    window.lookupCustomer = function(input) {
         clearTimeout(searchTimeout);
-        searchTimeout = setTimeout(async () => {
-            const val = input.value.trim();
-            if (val.length < 3) return;
+        const box = document.getElementById('suggestions-phone');
+        const val = input.value.trim();
 
-            if (type === 'phone') {
-                const client = await DB.findCustomerByPhone(val);
-                if (client) showSuggestion(client);
+        if (val.length < 3) { 
+            box.style.display = 'none'; 
+            return; 
+        }
+
+        searchTimeout = setTimeout(async () => {
+            // Only search by phone for now as DB.js supports that
+            const client = await DB.findCustomerByPhone(val);
+            if (client) {
+                box.innerHTML = `<div class="suggestion-item" onclick="fillCustomer('${client.name}', '${client.address1}', '${client.address2}', '${client.phone}', '${client.id || ''}')">
+                    <strong>${client.name}</strong><br>${client.address1}
+                </div>`;
+                box.style.display = 'block';
+            } else {
+                box.style.display = 'none';
             }
         }, 500);
     };
+
+    window.fillCustomer = function(name, addr1, addr2, phone, id) {
+        document.getElementById('cust-name').value = name;
+        document.getElementById('cust-addr1').value = addr1;
+        document.getElementById('cust-addr2').value = addr2;
+        document.getElementById('cust-phone').value = phone;
+        document.getElementById('cust-id').value = id;
+        document.getElementById('suggestions-phone').style.display = 'none';
+        
+        // Visual feedback
+        document.querySelectorAll('#cust-name, #cust-addr1, #cust-addr2, #cust-phone').forEach(markChanged);
+    }
 
     window.markChanged = function(input) {
         input.classList.add('input-changed');
     };
 
-    function showSuggestion(client) {
-        const box = document.getElementById('suggestions-phone');
-        box.innerHTML = `<div class="suggestion-item"><strong>${client.name}</strong> | ${client.address1}</div>`;
-        box.style.display = 'block';
-        
-        // Fix: Use event delegation or closure to handle click
-        // Adding the event listener directly to the new element
-        box.querySelector('.suggestion-item').onclick = () => {
-            document.getElementById('cust-name').value = client.name || '';
-            document.getElementById('cust-addr1').value = client.address1 || '';
-            document.getElementById('cust-addr2').value = client.address2 || '';
-            document.getElementById('cust-id').value = client.id || ''; // If you store IDs
-            box.style.display = 'none';
-        };
-    }
+    // Hide suggestions when clicking outside
+    document.addEventListener('click', function(e) {
+        if (!e.target.closest('.input-group')) {
+            document.getElementById('suggestions-phone').style.display = 'none';
+        }
+    });
 
     // 3. CONVERSION LOGIC (The Magic Buttons)
     window.convertToIntake = async function(targetType) {
@@ -283,7 +302,6 @@
             if (targetType === 'service') {
                 window.location.href = `service.html?id=${newId}`;
             } else {
-                // Assuming you'll create sales_call.html next, or use quote.html
                 window.location.href = `sales_call.html?id=${newId}`; 
             }
         } catch (e) {

@@ -76,7 +76,8 @@
 <body>
 
 <div class="toolbar">
-    <button class="btn btn-gray" onclick="location.href='../office/dashboard.html'" style="margin-right: auto; margin-left: 20px;">← Dashboard</button>
+    <button class="btn btn-gray" onclick="location.href='dashboard.html'" style="margin-right: auto; margin-left: 20px;">← Dashboard</button>
+    
     <button class="btn btn-save" onclick="saveTicket()">💾 Save Quote</button>
     <button class="btn btn-blue" onclick="convertToWorkOrder()">➡️ Convert to Order</button>
     <button class="btn btn-green" onclick="alert('Select \'Save as PDF\' in the print destination.'); window.print();">Save as PDF</button>
@@ -211,9 +212,24 @@
             const data = await DB.getDoc('quotes', DOC_ID);
             if (data) loadForm(data);
         } else {
+            // FIX 2: Explicitly clear form to prevent "ghost" data from cached state
+            clearForm(); 
             addRow(); // Empty row for new quote
         }
     };
+
+    function clearForm() {
+        document.getElementById('quote-no').value = 'Q-NEW';
+        document.getElementById('quote-po').value = '';
+        document.getElementById('bill-name').value = '';
+        document.getElementById('bill-addr1').value = '';
+        document.getElementById('bill-addr2').value = '';
+        document.getElementById('bill-phone').value = '';
+        document.getElementById('site-addr1').value = '';
+        document.getElementById('acct-id').value = '';
+        document.getElementById('items-list').innerHTML = '';
+        document.getElementById('grand-total').value = '$0.00';
+    }
 
     function loadForm(data) {
         setVal('quote-no', data.ticketNumber || DOC_ID.substring(0,6).toUpperCase());
@@ -374,21 +390,65 @@
         document.getElementById('grand-total').value = "$" + (taxableSum + nonTaxableSum + tax).toFixed(2);
     }
     
-    // Rolodex Logic (retained)
+    // FIX 3: Hooked up Rolodex Logic to Real DB
+    let searchTimeout;
     window.lookupCustomer = function(input) {
-        const val = input.value.toUpperCase();
+        clearTimeout(searchTimeout);
         const box = document.getElementById('suggestions');
-        if (val.length < 2) { box.style.display = 'none'; return; }
-        // Simple mock since DB lookup is async and specialized in db.js
-        // You can wire this to DB.findCustomerByPhone if you like
+        const val = input.value.trim();
+        
+        if (val.length < 3) { 
+            box.style.display = 'none'; 
+            return; 
+        }
+
+        searchTimeout = setTimeout(async () => {
+            // Call the real DB function from db.js
+            const client = await DB.findCustomerByPhone(val);
+            if (client) {
+                box.innerHTML = `<div class="suggestion-item" onclick="fillCustomer('${client.name}', '${client.address1}', '${client.address2}', '${client.phone}', '${client.id || ''}')">
+                    <strong>${client.name}</strong><br>${client.address1}
+                </div>`;
+                box.style.display = 'block';
+            } else {
+                box.style.display = 'none';
+            }
+        }, 500);
+    }
+
+    // Helper to fill data when suggestion is clicked
+    window.fillCustomer = function(name, addr1, addr2, phone, id) {
+        document.getElementById('bill-name').value = name;
+        document.getElementById('bill-addr1').value = addr1;
+        document.getElementById('bill-addr2').value = addr2;
+        document.getElementById('bill-phone').value = phone;
+        document.getElementById('acct-id').value = id;
+        document.getElementById('suggestions').style.display = 'none';
     }
     
-    // Hide suggestions
+    // Hide suggestions when clicking outside
     document.addEventListener('click', function(e) {
         if (!e.target.closest('.input-group')) {
             document.getElementById('suggestions').style.display = 'none';
         }
     });
+
+    // Simple Update Rolodex function (Mock/Placeholder logic from original)
+    window.updateRolodex = function() {
+        const data = {
+            name: document.getElementById('bill-name').value,
+            phone: document.getElementById('bill-phone').value,
+            address1: document.getElementById('bill-addr1').value,
+            address2: document.getElementById('bill-addr2').value,
+            id: document.getElementById('acct-id').value
+        };
+        if(data.phone) {
+            DB.saveCustomer(data);
+            alert("Rolodex Updated for: " + data.name);
+        } else {
+            alert("Phone number required to update Rolodex.");
+        }
+    }
 </script>
 </body>
 </html>

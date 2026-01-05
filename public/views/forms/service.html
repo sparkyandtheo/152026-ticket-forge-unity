@@ -9,7 +9,7 @@
         body { background: #525659; display: flex; flex-direction: column; align-items: center; padding: 80px 0 40px 0; margin: 0; font-family: sans-serif; }
         .toolbar { position: fixed; top: 0; left: 0; right: 0; height: 60px; background: #202124; display: flex; align-items: center; justify-content: center; gap: 15px; z-index: 1000; box-shadow: 0 2px 8px rgba(0,0,0,0.4); }
         @media print {
-            .toolbar { display: none !important; }
+            .toolbar, .btn-rolodex-update, .suggestions-box { display: none !important; }
             body { background: white; padding: 0; margin: 0; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
             .page { margin: 0; box-shadow: none; border: none; width: 100%; height: auto; padding: 0; overflow: visible; }
         }
@@ -32,14 +32,42 @@
         .btn-green { background: #1e8e3e; color: white; }
         .btn-gray { background: #5f6368; color: white; }
         .btn-red { background: #d93025; color: white; }
+        .btn-save { background: #f9ab00; color: #000; } /* Yellow Save Button */
         .mt-auto { margin-top: auto; }
         .tech-section { border: 1px solid #000; padding: 10px; margin-top: 10px; }
+
+        /* --- ADDED ROLODEX STYLES --- */
+        .input-group { position: relative; display:flex; width: 100%; }
+        .suggestions-box {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            width: 100%;
+            background: white;
+            border: 1px solid #ccc;
+            border-top: none;
+            z-index: 1000;
+            max-height: 150px;
+            overflow-y: auto;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            display: none;
+        }
+        .suggestion-item {
+            padding: 8px;
+            border-bottom: 1px solid #eee;
+            cursor: pointer;
+            font-size: 11px;
+            color: #333;
+        }
+        .suggestion-item:hover { background-color: #f0f8ff; color: #1a73e8; }
+        .suggestion-item strong { color: #000; }
     </style>
 </head>
 <body>
 
 <div class="toolbar">
     <button class="btn btn-gray" onclick="location.href='dashboard.html'" style="margin-right: auto; margin-left: 20px;">← Dashboard</button>
+    <button class="btn btn-save" onclick="saveTicket()">💾 Save to Cloud</button>
     <button class="btn btn-blue" onclick="window.print()">Print Setup</button>
     <button class="btn btn-gray" onclick="window.print()">Quick Print</button>
     <button class="btn btn-green" onclick="alert('Select \'Save as PDF\' in the print destination.'); window.print();">Save as PDF</button>
@@ -59,10 +87,10 @@
             <div style="font-size: 20px; font-weight: 800; text-transform: uppercase; margin-bottom: 10px; letter-spacing: 1px; white-space: nowrap;">
                 === SERVICE TICKET ===
             </div>
-            <div style="display:flex; justify-content:flex-end; gap:10px;"><b class="label">NO:</b> <input type="text" value="394518" style="width: 12ch; text-align:right;"></div>
-            <div style="display:flex; justify-content:flex-end; gap:10px;"><span class="label">DATE:</span> <input type="text" value="2/20/2025" style="width: 12ch; text-align:right;"></div>
-            <div style="display:flex; justify-content:flex-end; gap:10px;"><span class="label">PO #:</span> <input type="text" placeholder="OPTIONAL" style="width: 12ch; text-align:right;"></div>
-            <div style="display:flex; justify-content:flex-end; gap:10px;"><span class="label">REP:</span> <input type="text" value="MARIO" style="width: 12ch; text-align:right;"></div>
+            <div style="display:flex; justify-content:flex-end; gap:10px;"><b class="label">NO:</b> <input type="text" id="svc-no" value="S-NEW" style="width: 12ch; text-align:right;"></div>
+            <div style="display:flex; justify-content:flex-end; gap:10px;"><span class="label">DATE:</span> <input type="text" id="svc-date" value="" style="width: 12ch; text-align:right;"></div>
+            <div style="display:flex; justify-content:flex-end; gap:10px;"><span class="label">PO #:</span> <input type="text" id="svc-po" placeholder="OPTIONAL" style="width: 12ch; text-align:right;"></div>
+            <div style="display:flex; justify-content:flex-end; gap:10px;"><span class="label">REP:</span> <input type="text" id="svc-rep" value="" style="width: 12ch; text-align:right;"></div>
         </div>
     </div>
 
@@ -71,47 +99,53 @@
     <div class="row">
         <div style="width: 48%;">
             <b>BILL TO:</b><br>
-            <input type="text" value="KAREN BAKER-BALDUF"><br>
-            <input type="text" value="130 FAIRLAWN DRIVE"><br>
-            <input type="text" value="AMHERST, NY 14226"><br>
-            <div style="display:flex;">PH: <input type="text" value="(917) 282-0299"></div>
+            <input type="text" id="bill-name" placeholder="NAME"><br>
+            <input type="text" id="bill-addr1" placeholder="ADDRESS LINE 1"><br>
+            <input type="text" id="bill-addr2" placeholder="CITY, STATE ZIP"><br>
+            
+            <div style="display:flex; margin-top:2px;">
+                <span style="white-space:nowrap; margin-right:5px;">PH:</span> 
+                <div class="input-group">
+                    <input type="text" id="bill-phone" placeholder="START TYPING PHONE..." onkeyup="lookupCustomer(this)" autocomplete="off">
+                    <div id="suggestions" class="suggestions-box"></div>
+                </div>
+            </div>
+            <button class="btn btn-save btn-rolodex-update" style="font-size: 9px; padding: 4px; margin-top:5px;" onclick="updateRolodex()">UPDATE ROLODEX</button>
         </div>
+        
         <div style="width: 48%;">
             <b>JOB SITE:</b><br>
-            <input type="text" value="130 FAIRLAWN DRIVE"><br>
-            <input type="text" value="AMHERST, NY 14226"><br>
-            <div style="display:flex;">ACCT: <input type="text" value="BAKEK-H"></div>
-            <div style="display:flex;">SITE: <input type="text" value="RESIDENTIAL GARAGE"></div>
+            <input type="text" id="site-addr1" placeholder="JOB ADDRESS LINE 1"><br>
+            <input type="text" id="site-addr2" placeholder="CITY, STATE ZIP"><br>
+            <div style="display:flex;">ACCT: <input type="text" id="site-acct" placeholder="ACCOUNT ID"></div>
+            <div style="display:flex;">SITE: <input type="text" id="site-type" value="RESIDENTIAL GARAGE"></div>
         </div>
     </div>
 
     <div class="divider"></div>
     
     <b class="label">SCOPE OF WORK / INSTRUCTIONS:</b>
-    <textarea rows="14" oninput="autoGrow(this)" style="margin-top: 10px; border: 1px dashed #eee; padding: 5px;">AMHERST - 16' X 7' SOLID WOOD DOOR WITH 4 EXTENSION SPRINGS.
-REPLACE BLUE EXTENSION SPRING(S). CHARGE PARTS & LABOR AS NEEDED.
-
-NOTE: NO CHARGE - REPLACE BROKEN BBU ON A 87504-267 INSTALLED BY US IN 2022. OFF MAIN ST NEAR HARLEM.</textarea>
+    <textarea rows="14" id="svc-scope" oninput="autoGrow(this)" style="margin-top: 10px; border: 1px dashed #eee; padding: 5px;"></textarea>
 
     <div class="mt-auto">
         <div class="tech-section">
             <div class="row" style="margin-bottom: 0;">
                 <div class="col">
-                    <div style="display:flex;"><span class="label">START TIME:</span> <input type="text"></div>
-                    <div style="display:flex;"><span class="label">FINISH TIME:</span> <input type="text"></div>
+                    <div style="display:flex;"><span class="label">START TIME:</span> <input type="text" id="time-start"></div>
+                    <div style="display:flex;"><span class="label">FINISH TIME:</span> <input type="text" id="time-finish"></div>
                 </div>
                 <div class="col">
-                    <div style="display:flex;"><span class="label">WORK DATE:</span> <input type="text"></div>
+                    <div style="display:flex;"><span class="label">WORK DATE:</span> <input type="text" id="work-date"></div>
                     <div style="display:flex; margin-top:5px;">
                         <span class="label">JOB COMPLETE?</span> 
-                        <label class="chk-group"><input type="checkbox"> YES</label>
-                        <label class="chk-group" style="margin-left:10px;"><input type="checkbox"> NO</label>
+                        <label class="chk-group"><input type="checkbox" id="chk-yes" onclick="toggleChk(this, 'complete')"> YES</label>
+                        <label class="chk-group" style="margin-left:10px;"><input type="checkbox" id="chk-no" onclick="toggleChk(this, 'complete')"> NO</label>
                     </div>
                 </div>
                 <div class="col">
                     <div class="label" style="margin-bottom: 5px;">EQUIPMENT USED:</div>
-                    <label class="chk-group"><input type="checkbox"> FORK LIFT</label>
-                    <label class="chk-group"><input type="checkbox"> MAN LIFT</label>
+                    <label class="chk-group"><input type="checkbox" id="eq-fork"> FORK LIFT</label>
+                    <label class="chk-group"><input type="checkbox" id="eq-lift"> MAN LIFT</label>
                 </div>
             </div>
             
@@ -120,7 +154,7 @@ NOTE: NO CHARGE - REPLACE BROKEN BBU ON A 87504-267 INSTALLED BY US IN 2022. OFF
             <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-top: 15px;">
                 <div style="width: 100%;">
                     <span class="label">TECHNICIAN SIGNATURE:</span>
-                    <input type="text" style="border-bottom: 1px solid #000; width: 95%;">
+                    <input type="text" id="tech-sig" style="border-bottom: 1px solid #000; width: 95%;">
                 </div>
             </div>
         </div>
@@ -134,20 +168,209 @@ NOTE: NO CHARGE - REPLACE BROKEN BBU ON A 87504-267 INSTALLED BY US IN 2022. OFF
             <div style="display: flex; justify-content: space-between;">
                 <div style="width: 70%;">
                     <span class="label">CUSTOMER SIGNATURE:</span>
-                    <input type="text" style="border-bottom: 1px solid #000; width: 100%;">
+                    <input type="text" id="cust-sig" style="border-bottom: 1px solid #000; width: 100%;">
                 </div>
                 <div style="width: 25%;">
                     <span class="label">DATE:</span>
-                    <input type="text" style="border-bottom: 1px solid #000; width: 100%;">
+                    <input type="text" id="cust-date" style="border-bottom: 1px solid #000; width: 100%;">
                 </div>
             </div>
         </div>
     </div>
 </div>
 
-<script>
-    function autoGrow(element) { element.style.height = "5px"; element.style.height = (element.scrollHeight) + "px"; }
-    window.onload = function() { document.querySelectorAll("textarea").forEach(autoGrow); }
+<script type="module">
+    import { DB } from '../../js/db.js';
+
+    const urlParams = new URLSearchParams(window.location.search);
+    const DOC_ID = urlParams.get('id');
+
+    window.onload = async () => {
+        // Set Default Date
+        const today = new Date();
+        document.getElementById('svc-date').value = (today.getMonth()+1)+'/'+today.getDate()+'/'+today.getFullYear();
+
+        document.querySelectorAll("textarea").forEach(autoGrow);
+
+        if (DOC_ID) {
+            console.log("Loading Service Ticket...", DOC_ID);
+            const data = await DB.getDoc('service_tickets', DOC_ID);
+            
+            if (data) loadForm(data);
+        } else {
+            // FIX: Clear form for new tickets
+            clearForm();
+        }
+    };
+
+    function clearForm() {
+        document.getElementById('svc-no').value = 'S-NEW';
+        document.getElementById('svc-po').value = '';
+        document.getElementById('svc-rep').value = '';
+        document.getElementById('bill-name').value = '';
+        document.getElementById('bill-addr1').value = '';
+        document.getElementById('bill-addr2').value = '';
+        document.getElementById('bill-phone').value = '';
+        document.getElementById('site-addr1').value = '';
+        document.getElementById('site-addr2').value = '';
+        document.getElementById('site-acct').value = '';
+        document.getElementById('site-type').value = 'RESIDENTIAL GARAGE';
+        document.getElementById('svc-scope').value = '';
+    }
+
+    function loadForm(data) {
+        setVal('svc-no', data.ticketNumber || DOC_ID.substring(0,6).toUpperCase());
+        setVal('svc-date', data.date);
+        setVal('svc-po', data.poNumber);
+        setVal('svc-rep', data.rep);
+
+        // Bill To
+        setVal('bill-name', data.customerName);
+        setVal('bill-addr1', data.address1);
+        setVal('bill-addr2', data.address2);
+        setVal('bill-phone', data.phone);
+
+        // Job Site
+        setVal('site-addr1', data.siteAddress1);
+        setVal('site-addr2', data.siteAddress2);
+        setVal('site-acct', data.accountNumber);
+        setVal('site-type', data.siteType);
+
+        // Scope
+        setVal('svc-scope', data.description);
+
+        // Tech Section
+        setVal('time-start', data.techStart);
+        setVal('time-finish', data.techFinish);
+        setVal('work-date', data.workDate);
+        setChk('chk-yes', data.visitComplete === 'yes');
+        setChk('chk-no', data.visitComplete === 'no');
+        setChk('eq-fork', data.eqFork);
+        setChk('eq-lift', data.eqLift);
+        setVal('tech-sig', data.techSig);
+        
+        // Footer
+        setVal('cust-sig', data.custSig);
+        setVal('cust-date', data.custDate);
+    }
+
+    window.saveTicket = async function() {
+        const payload = {
+            ticketNumber: document.getElementById('svc-no').value,
+            date: document.getElementById('svc-date').value,
+            poNumber: document.getElementById('svc-po').value,
+            rep: document.getElementById('svc-rep').value,
+            
+            customerName: document.getElementById('bill-name').value,
+            address1: document.getElementById('bill-addr1').value,
+            address2: document.getElementById('bill-addr2').value,
+            phone: document.getElementById('bill-phone').value,
+            
+            siteAddress1: document.getElementById('site-addr1').value,
+            siteAddress2: document.getElementById('site-addr2').value,
+            accountNumber: document.getElementById('site-acct').value,
+            siteType: document.getElementById('site-type').value,
+            
+            description: document.getElementById('svc-scope').value,
+
+            // Tech Section
+            techStart: document.getElementById('time-start').value,
+            techFinish: document.getElementById('time-finish').value,
+            workDate: document.getElementById('work-date').value,
+            visitComplete: document.getElementById('chk-yes').checked ? 'yes' : (document.getElementById('chk-no').checked ? 'no' : ''),
+            eqFork: document.getElementById('eq-fork').checked,
+            eqLift: document.getElementById('eq-lift').checked,
+            techSig: document.getElementById('tech-sig').value,
+            
+            custSig: document.getElementById('cust-sig').value,
+            custDate: document.getElementById('cust-date').value,
+
+            // Status for Dispatch Board
+            status: document.getElementById('chk-yes').checked ? 'Complete' : 'Scheduled' // Default to Scheduled
+        };
+
+        try {
+            const id = await DB.saveDoc('service_tickets', payload, DOC_ID);
+            alert("Saved! ID: " + id);
+            if (!DOC_ID) {
+                window.history.pushState({}, '', `?id=${id}`);
+            }
+        } catch (e) {
+            alert("Error saving: " + e.message);
+        }
+    };
+
+    // UI Helpers
+    function setVal(id, val) { if(val) document.getElementById(id).value = val; }
+    function setChk(id, val) { if(val) document.getElementById(id).checked = true; }
+    
+    window.toggleChk = function(chk, group) {
+        if(group === 'complete') {
+            const other = chk.id === 'chk-yes' ? 'chk-no' : 'chk-yes';
+            if(chk.checked) document.getElementById(other).checked = false;
+        }
+    };
+
+    window.autoGrow = function(element) {
+        element.style.height = "5px";
+        element.style.height = (element.scrollHeight) + "px";
+    };
+
+    // --- ROLODEX LOGIC ---
+    let searchTimeout;
+    window.lookupCustomer = function(input) {
+        clearTimeout(searchTimeout);
+        const box = document.getElementById('suggestions');
+        const val = input.value.trim();
+        
+        if (val.length < 3) { 
+            box.style.display = 'none'; 
+            return; 
+        }
+
+        searchTimeout = setTimeout(async () => {
+            const client = await DB.findCustomerByPhone(val);
+            if (client) {
+                box.innerHTML = `<div class="suggestion-item" onclick="fillCustomer('${client.name}', '${client.address1}', '${client.address2}', '${client.phone}', '${client.id || ''}')">
+                    <strong>${client.name}</strong><br>${client.address1}
+                </div>`;
+                box.style.display = 'block';
+            } else {
+                box.style.display = 'none';
+            }
+        }, 500);
+    }
+
+    window.fillCustomer = function(name, addr1, addr2, phone, id) {
+        document.getElementById('bill-name').value = name;
+        document.getElementById('bill-addr1').value = addr1;
+        document.getElementById('bill-addr2').value = addr2;
+        document.getElementById('bill-phone').value = phone;
+        document.getElementById('site-acct').value = id;
+        document.getElementById('suggestions').style.display = 'none';
+    }
+    
+    document.addEventListener('click', function(e) {
+        if (!e.target.closest('.input-group')) {
+            document.getElementById('suggestions').style.display = 'none';
+        }
+    });
+
+    window.updateRolodex = function() {
+        const data = {
+            name: document.getElementById('bill-name').value,
+            phone: document.getElementById('bill-phone').value,
+            address1: document.getElementById('bill-addr1').value,
+            address2: document.getElementById('bill-addr2').value,
+            id: document.getElementById('site-acct').value
+        };
+        if(data.phone) {
+            DB.saveCustomer(data);
+            alert("Rolodex Updated for: " + data.name);
+        } else {
+            alert("Phone number required to update Rolodex.");
+        }
+    }
 </script>
 </body>
 </html>

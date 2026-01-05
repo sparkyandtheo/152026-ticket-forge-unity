@@ -3,6 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#202124">
+    <link rel="manifest" href="/manifest.json">
     
     <meta http-equiv="Content-Security-Policy" content="
         default-src 'self' 'unsafe-inline' 'unsafe-eval' data: 
@@ -47,15 +49,13 @@
     </div>
 
     <script type="module">
-        // UPDATE: Changed './js/auth.js' to '/js/auth.js' (Absolute Path)
         import { AuthService } from '/js/auth.js';
 
         window.handleLogin = async () => {
             const errorDiv = document.getElementById('error-msg');
             try {
                 await AuthService.loginWithGoogle();
-                // If successful, auth.js listener redirects us. 
-                // We just save the role preference here.
+                // AuthState listener in auth.js will handle the redirect
                 localStorage.setItem('user_role', 'office'); 
             } catch (error) {
                 console.error(error);
@@ -63,6 +63,16 @@
                 errorDiv.innerText = "Error: " + error.message;
             }
         };
+    </script>
+
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/sw.js')
+                    .then(reg => console.log('SW registered!', reg))
+                    .catch(err => console.log('SW failed', err));
+            });
+        }
     </script>
 </body>
 </html>
