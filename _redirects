@@ -1,0 +1,7 @@
+# Automatically serve index.html for folder requests
+/*/  /index.html  200
+
+# Pretty URLs (Optional - lets you skip .html)
+/dashboard  /views/office/dashboard.html  200
+/dispatch   /views/office/dispatch.html   200
+/mobile     /views/mobile/index.html      200
