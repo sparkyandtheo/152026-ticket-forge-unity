@@ -4,184 +4,149 @@
     <meta charset="UTF-8">
     <title>Work Order - Hamburg Overhead Door</title>
     <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&display=swap" rel="stylesheet">
+    
     <style>
-        :root {
-            --page-width: 8.5in;
-            --page-height: 11in;
-        }
-        
+        /* --- GLOBAL VARIABLES & RESET --- */
+        :root { --page-width: 8.5in; --page-height: 11in; }
+
         body { 
             background: #525659; 
             display: flex; 
             flex-direction: column; 
             align-items: center; 
             padding: 80px 0 40px 0; 
-            margin: 0;
+            margin: 0; 
             font-family: sans-serif; 
         }
 
-        /* TOOLBAR STYLES */
+        /* --- TOOLBAR LAYOUT (GRID) --- */
         .toolbar { 
-            position: fixed; 
-            top: 0; 
-            left: 0;
-            right: 0;
-            height: 60px;
+            position: fixed; top: 0; left: 0; right: 0; height: 60px; 
             background: #202124; 
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 15px;
-            z-index: 1000;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.4);
+            display: grid; 
+            grid-template-columns: 1fr auto 1fr; 
+            align-items: center; 
+            padding: 0 20px; 
+            z-index: 1000; 
+            box-shadow: 0 2px 8px rgba(0,0,0,0.4); 
+        }
+        
+        .tb-left { justify-self: start; }
+        .tb-center { display: flex; gap: 10px; }
+        .tb-right { justify-self: end; display: flex; gap: 10px; }
+
+        /* --- BUTTONS --- */
+        .btn { padding: 8px 12px; border-radius: 4px; border: none; cursor: pointer; font-weight: 600; font-size: 11px; text-transform: uppercase; color: white; transition: all 0.2s; white-space: nowrap; }
+        .btn:hover { transform: translateY(-1px); filter: brightness(1.1); }
+        .btn-blue { background: #1a73e8; } 
+        .btn-green { background: #1e8e3e; } 
+        .btn-gray { background: #5f6368; } 
+        .btn-red { background: #d93025; } 
+        .btn-orange { background: #e37400; }
+        .btn-purple { background: #a142f4; }
+        .btn-save { background: #f9ab00; color: #000; }
+        
+        .btn-rolodex {
+            width: 100%; margin-top: 8px; padding: 8px;
+            font-family: 'IBM Plex Mono', monospace; font-weight: 600; font-size: 10px;
+            text-transform: uppercase; background: #f9ab00; color: #000;
+            border: 1px solid #e37400; cursor: pointer;
         }
 
-        @media print {
-            .toolbar, .add-row-btn, .suggestions-box, .btn-rolodex-update { display: none !important; }
-            body { background: white; padding: 0; margin: 0; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-            .page { margin: 0; box-shadow: none; border: none; width: 100%; height: auto; padding: 0; overflow: visible; }
-            
-            .tax-col { visibility: hidden; width: 0 !important; }
-            .grid-header { grid-template-columns: 4ch 12ch 1fr 10ch 10ch 0ch !important; }
-            .item-row { grid-template-columns: 4ch 12ch 1fr 10ch 10ch 0ch !important; }
-            input, textarea { background: transparent !important; border: none !important; border-bottom: 1px solid #ccc !important; }
+        .add-row-btn { background: transparent; border: 1px dashed #ccc; color: #666; width: 100%; padding: 5px; margin-bottom: 20px; cursor: pointer; font-size: 11px; font-weight: bold; }
+
+        /* --- PAGE SHEET --- */
+        .page { 
+            background: white; width: var(--page-width); min-height: var(--page-height); 
+            padding: 0.5in; box-shadow: 0 0 15px rgba(0,0,0,0.3); 
+            font-family: 'IBM Plex Mono', monospace; font-size: 12px; 
+            display: flex; flex-direction: column; box-sizing: border-box; position: relative; 
         }
 
-        /* PAPER SHEET */
-        .page {
-            background: white;
-            width: var(--page-width);
-            height: var(--page-height);
-            padding: 0.5in;
-            box-shadow: 0 0 15px rgba(0,0,0,0.3);
-            font-family: 'IBM Plex Mono', monospace;
-            font-size: 12px;
-            display: flex;
-            flex-direction: column;
-            box-sizing: border-box;
-            position: relative;
-        }
-
-        /* --- VISUAL INPUT STYLES --- */
-        input, textarea { 
-            font-family: 'IBM Plex Mono', monospace; 
-            font-size: 12px; 
-            border: 1px solid #ddd; 
-            border-bottom: 2px solid #ccc; 
-            outline: none; 
-            text-transform: uppercase; 
-            color: #000; 
-            width: 100%; 
-            transition: all 0.2s; 
-            background: #ffffcc; /* IDLE: YELLOW */ 
-            padding: 4px; 
-        }
-        input:hover, textarea:hover { background: #e6fffa; border-color: #1e8e3e; cursor: text; }
-        input:focus, textarea:focus { border-bottom: 2px solid #d500f9; background: #ffccff; font-weight: 600; }
-        .input-changed { background-color: #e3f2fd !important; border-color: #2196F3 !important; border-bottom: 2px solid #2196F3 !important; }
-
-        textarea { resize: none; overflow: hidden; display: block; line-height: 1.3; }
-
-        /* LAYOUT */
+        /* --- UTILITIES --- */
         .header-row { display: flex; justify-content: space-between; align-items: flex-start; }
         .double-divider { border-top: 3px double #000; border-bottom: 1px solid #000; height: 1px; margin: 10px 0; }
         .divider { border-top: 1px solid #000; margin: 10px 0; }
         .dashed-divider { border-top: 1px dashed #999; margin: 10px 0; }
-        
-        /* GRID SYSTEM */
-        .grid-header, .item-row { 
-            display: grid; 
-            grid-template-columns: 4ch 12ch 1fr 10ch 10ch 3ch; 
-            gap: 10px; 
-            align-items: start;
+        .mt-auto { margin-top: auto; }
+        .label { font-weight: 600; white-space: nowrap; margin-right: 5px; }
+
+        /* --- INPUTS --- */
+        input, textarea { 
+            font-family: 'IBM Plex Mono', monospace; font-size: 12px; 
+            border: 1px solid #ddd; border-bottom: 2px solid #ccc; outline: none; 
+            text-transform: uppercase; color: #000; width: 100%; 
+            transition: all 0.2s; background: #ffffcc; padding: 4px; 
         }
-        
+        input:hover, textarea:hover { background: #e6fffa; border-color: #1e8e3e; cursor: text; }
+        input:focus, textarea:focus { border-bottom: 2px solid #d500f9; background: #ffccff; font-weight: 600; }
+        .input-changed { background-color: #e3f2fd !important; border-color: #2196F3 !important; border-bottom: 2px solid #2196F3 !important; }
+        textarea { resize: none; overflow: hidden; display: block; line-height: 1.3; }
+
+        /* --- GRIDS --- */
+        .grid-header, .item-row { display: grid; grid-template-columns: 4ch 12ch 1fr 10ch 10ch 3ch; gap: 10px; align-items: start; }
         .grid-header { font-weight: 600; border-bottom: 1px solid #000; padding-bottom: 5px; margin-bottom: 10px; }
         .item-row { margin-bottom: 8px; }
 
-        /* BUTTONS */
-        .btn { padding: 8px 16px; border-radius: 4px; border: none; cursor: pointer; font-weight: 600; font-size: 11px; text-transform: uppercase; transition: all 0.2s; }
-        .btn:hover { transform: translateY(-1px); filter: brightness(1.1); }
-        .btn-blue { background: #1a73e8; color: white; }
-        .btn-green { background: #1e8e3e; color: white; }
-        .btn-gray { background: #5f6368; color: white; }
-        .btn-red { background: #d93025; color: white; }
-        .btn-save { background: #f9ab00; color: #000; } /* Yellow Save Button */
-        .btn-orange { background: #f9ab00; color: #202124; border: 1px solid #e37400; } /* Orange for Regression */
-        
-        .add-row-btn {
-            background: transparent; border: 1px dashed #ccc; color: #666; width: 100%; padding: 5px; margin-bottom: 20px; cursor: pointer;
-        }
-        .add-row-btn:hover { background: #f9f9f9; border-color: #999; }
-
-        /* FOOTER / SERVICE TICKET STYLES */
-        .mt-auto { margin-top: auto; }
-        .tech-section { border: 1px solid #000; padding: 10px; margin-top: 10px; }
-        .row { display: flex; justify-content: space-between; gap: 20px; }
-        .col { flex: 1; }
-        .label { font-weight: 600; white-space: nowrap; margin-right: 5px; }
-        
-        /* Checkbox Style */
+        /* --- CHECKBOXES --- */
         .chk-group { display: flex; align-items: center; gap: 5px; font-size: 11px; }
-        .tax-chk { width: auto; transform: scale(0.8); cursor: pointer; }
         input[type="checkbox"] { width: auto; margin: 0; }
 
-        /* --- ADDED ROLODEX STYLES --- */
-        .suggestions-box {
-            position: absolute;
-            top: 100%;
-            left: 0;
-            width: 100%;
-            background: white;
-            border: 1px solid #ccc;
-            border-top: none;
-            z-index: 1000;
-            max-height: 150px;
-            overflow-y: auto;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-            display: none;
-        }
-        .suggestion-item {
-            padding: 8px;
-            border-bottom: 1px solid #eee;
-            cursor: pointer;
-            font-size: 11px;
-            color: #333;
-        }
+        /* --- ROLODEX DROPDOWN --- */
+        .input-group { position: relative; display:flex; width: 100%; }
+        .suggestions-box { position: absolute; top: 100%; left: 0; width: 100%; background: white; border: 1px solid #ccc; z-index: 1000; max-height: 150px; overflow-y: auto; display: none; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        .suggestion-item { padding: 8px; border-bottom: 1px solid #eee; cursor: pointer; font-size: 11px; }
         .suggestion-item:hover { background-color: #f0f8ff; color: #1a73e8; }
-        .suggestion-item strong { color: #000; }
+
+        .tech-section { border: 1px solid #000; padding: 10px; margin-top: 10px; }
+
+        /* --- PRINT MEDIA --- */
+        @media print {
+            .toolbar, .add-row-btn, .btn-rolodex { display: none !important; }
+            body { background: white; padding: 0; margin: 0; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            .page { margin: 0; box-shadow: none; border: none; width: 100%; height: auto; padding: 0; overflow: visible; }
+            .tax-col { visibility: hidden; width: 0 !important; }
+            .grid-header, .item-row { grid-template-columns: 4ch 12ch 1fr 10ch 10ch 0ch !important; }
+            input, textarea { background: transparent !important; border: none !important; border-bottom: 1px solid #ccc !important; }
+        }
     </style>
 </head>
 <body>
 
 <div class="toolbar">
-    <button class="btn btn-gray" onclick="location.href='dashboard.html'" style="margin-right: auto; margin-left: 20px;">← Dashboard</button>
-    <button class="btn btn-save" onclick="saveTicket()">💾 Save</button>
+    <div class="tb-left">
+        <button class="btn btn-gray" onclick="location.href='dashboard.html'">← Dash</button>
+    </div>
     
-    <button class="btn btn-orange" onclick="convertToQuote()">⬅️ Convert to Quote</button>
-    <button class="btn btn-blue" onclick="convertToInvoice()">➡️ Convert to Invoice</button>
+    <div class="tb-center">
+        <button class="btn btn-save" onclick="saveTicket()">💾 Save</button>
+        <button class="btn btn-purple" onclick="sendToDispatch()">📤 Dispatch</button>
+        <button class="btn btn-blue" onclick="convertToInvoice()">➡️ Invoice</button>
+        <button class="btn btn-orange" onclick="convertToQuote()">⬅️ Quote</button>
+    </div>
     
-    <button class="btn btn-green" onclick="alert('Select \'Save as PDF\' in the print destination.'); window.print();">PDF</button>
+    <div class="tb-right">
+        <button class="btn btn-gray" onclick="window.print()">Print</button>
+        <button class="btn btn-red" onclick="if(confirm('Clear?')) location.reload();">Clear</button>
+    </div>
 </div>
 
 <div class="page">
     <div class="header-row">
         <div>
             <b style="font-size: 16px;">HAMBURG OVERHEAD DOOR, INC.</b><br>
-            5659 Herman Hill Road<br>
-            Hamburg, NY 14075<br>
+            5659 Herman Hill Road, Hamburg, NY 14075<br>
             716-649-3600 | www.hamburgdoor.com
         </div>
         
-        <div style="text-align: right; width: 240px;">
+        <div style="text-align: right; width: 340px;">
             <div style="font-size: 20px; font-weight: 800; text-transform: uppercase; margin-bottom: 10px; letter-spacing: 1px;">
                 === WORK ORDER ===
             </div>
-            
-            <div style="display:flex; justify-content:space-between;"><b>NO:</b> <input type="text" id="wo-number" value="NEW" style="width: 10ch; text-align:right;"></div>
-            <div style="display:flex; justify-content:space-between;">DATE: <input type="text" id="wo-date" value="" style="width: 10ch; text-align:right;"></div>
-            <div style="display:flex; justify-content:space-between;">PO #: <input type="text" id="wo-po" placeholder="REQUIRED" style="width: 10ch; text-align:right;"></div>
-            <div style="display:flex; justify-content:space-between;">REP: <input type="text" id="wo-rep" value="" style="width: 10ch; text-align:right;"></div>
+            <div style="display:flex; justify-content:flex-end; gap:10px;"><b class="label">NO:</b> <input type="text" id="wo-number" value="NEW" style="width: 12ch; text-align:right;"></div>
+            <div style="display:flex; justify-content:flex-end; gap:10px;"><span class="label">DATE:</span> <input type="text" id="wo-date" style="width: 12ch; text-align:right;"></div>
+            <div style="display:flex; justify-content:flex-end; gap:10px;"><span class="label">PO #:</span> <input type="text" id="wo-po" placeholder="REQUIRED" style="width: 12ch; text-align:right;"></div>
+            <div style="display:flex; justify-content:flex-end; gap:10px;"><span class="label">REP:</span> <input type="text" id="wo-rep" style="width: 12ch; text-align:right;"></div>
         </div>
     </div>
 
@@ -196,49 +161,44 @@
             
             <div style="display:flex; margin-top:2px;">
                 <span style="white-space:nowrap; margin-right:5px;">PH:</span> 
-                <div style="position:relative; width:100%;" class="input-group">
-                    <input type="text" id="bill-phone" placeholder="START TYPING PHONE..." onkeyup="lookupCustomer(this)" autocomplete="off">
+                <div class="input-group">
+                    <input type="text" id="bill-phone" placeholder="SEARCH PHONE..." autocomplete="off">
                     <div id="suggestions" class="suggestions-box"></div>
                 </div>
             </div>
-            <button class="btn btn-save btn-rolodex-update" style="font-size: 9px; padding: 4px; margin-top:5px;" onclick="updateRolodex()">UPDATE ROLODEX</button>
+            <button class="btn-rolodex" onclick="doUpdateRolodex()">UPDATE ROLODEX</button>
         </div>
         
         <div style="width: 48%;">
             <b>JOB SITE:</b><br>
             <input type="text" id="site-addr" placeholder="JOB SITE ADDRESS"><br>
-            <div style="display:flex;">ACCT: <input type="text" id="site-acct" placeholder="ACCOUNT ID"></div>
+            <div style="display:flex;">ACCT: <input type="text" id="site-acct" placeholder="ID"></div>
             <div style="display:flex;">SITE: <input type="text" id="site-type" value="RESIDENTIAL"></div>
         </div>
     </div>
 
     <div class="divider"></div>
     <b>SCOPE OF WORK / PROPOSAL:</b>
-    <textarea rows="2" id="scope-text" oninput="autoGrow(this)">WE PROPOSE: NEW CONSTRUCTION INSTALLATION OF THREE NEW CLOPAY DOORS AS SPECIFIED BELOW. 50% DEPOSIT REQUIRED TO PROCEED. LEAD TIME 5-7 WEEKS.</textarea>
+    <textarea rows="2" id="scope-text" oninput="autoGrow(this)">WE PROPOSE: NEW CONSTRUCTION INSTALLATION. 50% DEPOSIT REQUIRED.</textarea>
     <div class="divider"></div>
 
     <div class="grid-header">
-        <span>QTY</span>
-        <span>ID</span>
-        <span>DESCRIPTION</span>
-        <span style="text-align: right;">PRICE</span>
-        <span style="text-align: right;">TOTAL</span>
+        <span>QTY</span><span>ID</span><span>DESCRIPTION</span>
+        <span style="text-align: right;">PRICE</span><span style="text-align: right;">TOTAL</span>
         <span class="tax-col" style="font-size: 9px; text-align:center;">TAX?</span>
     </div>
 
-    <div id="items-list">
-        </div>
-
+    <div id="items-list"></div>
     <button class="add-row-btn" onclick="addRow()">+ ADD LINE ITEM</button>
 
     <div class="mt-auto">
         <div class="tech-section">
-            <div class="row" style="margin-bottom: 0;">
-                <div class="col">
+            <div style="display: flex; justify-content: space-between; gap: 20px;">
+                <div style="flex: 1;">
                     <div style="display:flex;"><span class="label">START TIME:</span> <input type="text" id="time-start"></div>
                     <div style="display:flex;"><span class="label">FINISH TIME:</span> <input type="text" id="time-finish"></div>
                 </div>
-                <div class="col">
+                <div style="flex: 1;">
                     <div style="display:flex;"><span class="label">WORK DATE:</span> <input type="text" id="work-date"></div>
                     <div style="display:flex; margin-top:5px;">
                         <span class="label">JOB COMPLETE?</span> 
@@ -246,114 +206,69 @@
                         <label class="chk-group" style="margin-left:10px;"><input type="checkbox" name="complete" id="chk-no" onclick="toggleChk(this)"> NO</label>
                     </div>
                 </div>
-                <div class="col">
-                    <div class="label" style="margin-bottom: 5px;">EQUIPMENT USED:</div>
+                <div style="flex: 1;">
+                    <div class="label" style="margin-bottom: 5px;">EQUIPMENT:</div>
                     <label class="chk-group"><input type="checkbox" id="eq-fork"> FORK LIFT</label>
                     <label class="chk-group"><input type="checkbox" id="eq-lift"> MAN LIFT</label>
                 </div>
             </div>
-            
             <div class="dashed-divider"></div>
-            
-            <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-top: 15px;">
-                <div style="width: 100%;">
-                    <span class="label">TECHNICIAN SIGNATURE:</span>
-                    <input type="text" id="tech-sig" style="border-bottom: 1px solid #000; width: 95%;">
-                </div>
-            </div>
+            <div style="margin-top: 15px;"><span class="label">TECHNICIAN SIGNATURE:</span> <input type="text" id="tech-sig" style="border-bottom: 1px solid #000; width: 90%;"></div>
         </div>
-
-        <div style="font-size: 10px; margin-top: 10px; border: 1px solid #ddd; padding: 8px; text-align: center;">
-            **PLEASE NOTE: LUBRICATION OF DOOR OR THE MISALIGNMENT OF PHOTO EYES ARE NOT COVERED BY WARRANTY**<br>
-            MATERIAL AND SERVICE PERFORMED IS SATISFACTORY
-        </div>
-
         <div style="margin-top: 20px; border: 1px solid #000; padding: 15px;">
             <div style="display: flex; justify-content: space-between;">
-                <div style="width: 70%;">
-                    <span class="label">CUSTOMER SIGNATURE:</span>
-                    <input type="text" style="border-bottom: 1px solid #000; width: 100%;">
-                </div>
-                <div style="width: 25%;">
-                    <span class="label">DATE:</span>
-                    <input type="text" style="border-bottom: 1px solid #000; width: 100%;">
-                </div>
+                <div style="width: 70%;"><span class="label">CUSTOMER SIGNATURE:</span> <input type="text" style="border-bottom: 1px solid #000; width: 100%;"></div>
+                <div style="width: 25%;"><span class="label">DATE:</span> <input type="text" style="border-bottom: 1px solid #000; width: 100%;"></div>
             </div>
         </div>
     </div>
-    </div>
+</div>
 
 <script type="module">
     import { DB } from '../../js/db.js';
+    import { getUrlParam, setVal, setChk, autoGrow, setupInputHighlighting, setupRolodex, updateRolodexFromFields } from '../../js/form-utils.js';
 
-    // AUTO-HIGHLIGHT CHANGED FIELDS
-    document.addEventListener('input', function(e) {
-        if(e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') {
-             e.target.classList.add('input-changed');
-        }
-    });
-
-    // 1. SETUP
-    const urlParams = new URLSearchParams(window.location.search);
-    const DOC_ID = urlParams.get('id');
+    const DOC_ID = getUrlParam('id');
 
     window.onload = async () => {
-        // Default Date
+        setupInputHighlighting();
         const today = new Date();
-        document.getElementById('wo-date').value = (today.getMonth()+1)+'/'+today.getDate()+'/'+today.getFullYear();
+        const dateStr = (today.getMonth()+1)+'/'+today.getDate()+'/'+today.getFullYear();
+        setVal('wo-date', dateStr);
+        setVal('work-date', dateStr);
 
-        // LOAD DATA
+        setupRolodex('bill-phone', 'suggestions', (client) => {
+            setVal('bill-name', client.name);
+            setVal('bill-addr1', client.address1);
+            setVal('bill-addr2', client.address2);
+            setVal('bill-phone', client.phone);
+            setVal('site-acct', client.id);
+        });
+
         if (DOC_ID) {
-            console.log("Loading Work Order...", DOC_ID);
             const data = await DB.getDoc('work_orders', DOC_ID);
             if (data) loadForm(data);
         } else {
-            clearForm();
+            setVal('wo-number', await DB.getNewId('work_order', 500000));
             addRow();
-            // Start at 500,000 for Work Orders
-            const newId = await DB.getNewId('work_order', 500000);
-            document.getElementById('wo-number').value = newId;
         }
-        
-        document.querySelectorAll("textarea").forEach(autoGrow);
     };
 
-    function clearForm() {
-        document.getElementById('wo-number').value = 'NEW';
-        document.getElementById('wo-po').value = '';
-        document.getElementById('wo-rep').value = '';
-        document.getElementById('bill-name').value = '';
-        document.getElementById('bill-addr1').value = '';
-        document.getElementById('bill-addr2').value = '';
-        document.getElementById('bill-phone').value = '';
-        document.getElementById('site-addr').value = '';
-        document.getElementById('site-acct').value = '';
-        document.getElementById('items-list').innerHTML = '';
-        document.querySelectorAll('.input-changed').forEach(el => el.classList.remove('input-changed'));
-    }
+    window.doUpdateRolodex = () => updateRolodexFromFields({name: 'bill-name', phone: 'bill-phone', addr1: 'bill-addr1', addr2: 'bill-addr2', acctId: 'site-acct'});
 
     function loadForm(data) {
-        // Header
-        setVal('wo-number', data.ticketNumber || DOC_ID.substring(0,6).toUpperCase());
+        setVal('wo-number', data.ticketNumber);
         setVal('wo-date', data.date);
         setVal('wo-po', data.poNumber);
         setVal('wo-rep', data.rep);
-
-        // Bill To
         setVal('bill-name', data.customerName);
         setVal('bill-addr1', data.address1);
         setVal('bill-addr2', data.address2);
         setVal('bill-phone', data.phone);
-
-        // Job Site
         setVal('site-addr', data.siteAddress);
         setVal('site-acct', data.accountNumber);
         setVal('site-type', data.siteType);
-
-        // Scope
         setVal('scope-text', data.description);
-
-        // Tech Section
         setVal('time-start', data.techStart);
         setVal('time-finish', data.techFinish);
         setVal('work-date', data.workDate);
@@ -363,193 +278,114 @@
         setChk('eq-lift', data.eqLift);
         setVal('tech-sig', data.techSig);
 
-        // Load Items
         const list = document.getElementById('items-list');
         list.innerHTML = '';
-        if (data.items && data.items.length > 0) {
-            data.items.forEach(item => addRow(item));
-        } else {
-            addRow();
-        }
+        (data.items || []).forEach(item => addRow(item));
+        if(!data.items || data.items.length === 0) addRow();
         setTimeout(() => document.querySelectorAll('.input-changed').forEach(el => el.classList.remove('input-changed')), 100);
     }
 
-    // --- CONVERT TO INVOICE (FORWARD) ---
-    window.convertToInvoice = async function() {
-        if(!confirm("Create an Invoice from this Work Order?")) return;
-        
-        const invId = await DB.getNewId('invoice', 600000);
-        
+    function scrapeItems() {
         const items = [];
         document.querySelectorAll('.item-row').forEach(row => {
-            items.push({
-                qty: row.querySelector('.qty').value,
-                desc: row.querySelector('textarea').value,
-                price: row.querySelector('.price').value,
-                tax: row.querySelector('.tax-chk').checked,
-                unit: 'EACH' 
-            });
+            const qty = row.querySelector('.qty').value;
+            const id = row.querySelector('input[placeholder="ID"]').value;
+            const desc = row.querySelector('textarea').value;
+            const price = row.querySelector('.price').value;
+            if(qty || id || desc || price) {
+                items.push({ qty: qty || 0, id: id, desc: desc, price: price || 0, tax: row.querySelector('.tax-chk').checked });
+            }
         });
+        return items;
+    }
 
-        const payload = {
-            ticketNumber: invId,
-            date: new Date().toLocaleDateString(),
-            dueDate: new Date().toLocaleDateString(), 
-            jobNumber: document.getElementById('wo-number').value,
-            customerName: document.getElementById('bill-name').value,
-            address1: document.getElementById('bill-addr1').value,
-            address2: document.getElementById('bill-addr2').value,
-            phone: document.getElementById('bill-phone').value,
-            accountId: document.getElementById('site-acct').value,
-            items: items,
-            originDocId: DOC_ID || 'work-order-new',
-            status: 'Draft'
-        };
-
-        try {
-            await DB.saveDoc('invoices', payload, invId);
-            window.location.href = `invoice.html?id=${invId}`;
-        } catch(e) {
-            alert("Error converting: " + e.message);
-        }
-    };
-
-    // --- CONVERT TO QUOTE (REGRESS) ---
-    window.convertToQuote = async function() {
-        if(!confirm("Backtrack: Create a Quote from this Work Order?")) return;
-        
-        // 1. Get New Quote ID (starts at 300,000)
-        const quoteId = await DB.getNewId('quote', 300000);
-        
-        // 2. Gather Items
-        const items = [];
-        document.querySelectorAll('.item-row').forEach(row => {
-            items.push({
-                qty: row.querySelector('.qty').value,
-                id: row.querySelector('input[placeholder="ID"]').value,
-                desc: row.querySelector('textarea').value,
-                price: row.querySelector('.price').value,
-                tax: row.querySelector('.tax-chk').checked
-            });
-        });
-
-        // 3. Create Payload
-        const payload = {
-            ticketNumber: quoteId,
-            date: new Date().toLocaleDateString(),
-            customerName: document.getElementById('bill-name').value,
-            address1: document.getElementById('bill-addr1').value,
-            address2: document.getElementById('bill-addr2').value,
-            phone: document.getElementById('bill-phone').value,
-            siteAddress: document.getElementById('site-addr').value,
-            accountId: document.getElementById('site-acct').value,
-            proposalText: document.getElementById('scope-text').value,
-            items: items,
-            originDocId: DOC_ID || 'work-order-new',
-            status: 'Open'
-        };
-
-        // 4. Save & Redirect
-        try {
-            await DB.saveDoc('quotes', payload, quoteId);
-            window.location.href = `quote.html?id=${quoteId}`;
-        } catch(e) {
-            alert("Error converting: " + e.message);
-        }
-    };
-
-    // 2. SAVE LOGIC
-    window.saveTicket = async function() {
-        // Gather Items
-        const items = [];
-        document.querySelectorAll('.item-row').forEach(row => {
-            items.push({
-                qty: row.querySelector('.qty').value,
-                id: row.querySelector('input[placeholder="ID"]').value,
-                desc: row.querySelector('textarea').value,
-                price: row.querySelector('.price').value,
-                tax: row.querySelector('.tax-chk').checked
-            });
-        });
-
+    window.saveTicket = async function(statusOverride = null) {
+        const isComplete = document.getElementById('chk-yes').checked;
         const payload = {
             ticketNumber: document.getElementById('wo-number').value,
             date: document.getElementById('wo-date').value,
             poNumber: document.getElementById('wo-po').value,
             rep: document.getElementById('wo-rep').value,
-            
             customerName: document.getElementById('bill-name').value,
             address1: document.getElementById('bill-addr1').value,
             address2: document.getElementById('bill-addr2').value,
             phone: document.getElementById('bill-phone').value,
-            
             siteAddress: document.getElementById('site-addr').value,
             accountNumber: document.getElementById('site-acct').value,
             siteType: document.getElementById('site-type').value,
-            
             description: document.getElementById('scope-text').value,
-            items: items,
-
-            // Tech Section
+            items: scrapeItems(),
             techStart: document.getElementById('time-start').value,
             techFinish: document.getElementById('time-finish').value,
             workDate: document.getElementById('work-date').value,
-            jobComplete: document.getElementById('chk-yes').checked ? 'yes' : (document.getElementById('chk-no').checked ? 'no' : ''),
+            jobComplete: isComplete ? 'yes' : (document.getElementById('chk-no').checked ? 'no' : ''),
             eqFork: document.getElementById('eq-fork').checked,
             eqLift: document.getElementById('eq-lift').checked,
             techSig: document.getElementById('tech-sig').value,
-
-            // Status for Dispatch Board
-            status: document.getElementById('chk-yes').checked ? 'Complete' : 'Scheduled' // Simplified logic
+            status: statusOverride || (isComplete ? 'Complete' : 'Open')
         };
-
         try {
             const id = await DB.saveDoc('work_orders', payload, DOC_ID);
-            alert("Saved! ID: " + id);
-            if (!DOC_ID) {
-                window.history.pushState({}, '', `?id=${id}`);
-            }
-        } catch (e) {
-            alert("Error saving: " + e.message);
-        }
+            if (!DOC_ID) window.history.pushState({}, '', `?id=${id}`);
+            alert("Work Order Saved!");
+            return id;
+        } catch (e) { alert("Error saving: " + e.message); return null; }
     };
 
-    // 3. UI HELPERS
-    function setVal(id, val) { if(val) document.getElementById(id).value = val; }
-    function setChk(id, val) { if(val) document.getElementById(id).checked = true; }
+    window.sendToDispatch = async function() {
+        if(!confirm("Send to Dispatch Board?")) return;
+        // Setting status to 'Scheduled' ensures it shows on the tech board
+        await saveTicket('Scheduled');
+        alert("Sent to Dispatch!");
+    };
 
-    window.toggleChk = function(chk) {
-        const name = chk.name;
-        document.querySelectorAll(`input[name="${name}"]`).forEach(c => {
-            if(c !== chk) c.checked = false;
-        });
-    }
+    window.convertToInvoice = async function() {
+        if(!confirm("Create Invoice?")) return;
+        const invId = await DB.getNewId('invoice', 600000);
+        const payload = {
+            ticketNumber: invId,
+            date: new Date().toLocaleDateString(),
+            customerName: document.getElementById('bill-name').value,
+            address1: document.getElementById('bill-addr1').value,
+            address2: document.getElementById('bill-addr2').value,
+            phone: document.getElementById('bill-phone').value,
+            items: scrapeItems().map(i => ({...i, unit: 'EACH'})),
+            originDocId: DOC_ID || 'new',
+            status: 'Draft'
+        };
+        await DB.saveDoc('invoices', payload, invId);
+        window.location.href = `invoice.html?id=${invId}`;
+    };
 
-    window.autoGrow = function(element) {
-        element.style.height = "5px";
-        element.style.height = (element.scrollHeight) + "px";
-    }
+    window.convertToQuote = async function() {
+        if(!confirm("Backtrack to Quote?")) return;
+        const qId = await DB.getNewId('quote', 300000);
+        const payload = {
+            ticketNumber: qId,
+            date: new Date().toLocaleDateString(),
+            customerName: document.getElementById('bill-name').value,
+            address1: document.getElementById('bill-addr1').value,
+            address2: document.getElementById('bill-addr2').value,
+            phone: document.getElementById('bill-phone').value,
+            proposalText: document.getElementById('scope-text').value,
+            items: scrapeItems(),
+            status: 'Open'
+        };
+        await DB.saveDoc('quotes', payload, qId);
+        window.location.href = `quote.html?id=${qId}`;
+    };
 
     window.addRow = function(data = null) {
         const container = document.getElementById('items-list');
         const div = document.createElement('div');
         div.className = 'item-row';
-        
-        // Default values
-        const qty = data ? data.qty : 1;
-        const id = data ? data.id : '';
-        const desc = data ? data.desc : '';
-        const price = data ? data.price : '';
-        const taxChecked = data ? (data.tax ? 'checked' : '') : 'checked';
-
-        div.innerHTML = `
-            <input type="number" class="qty" value="${qty}" style="text-align: center;" oninput="calcRow(this)">
-            <input type="text" placeholder="ID" value="${id}">
-            <textarea oninput="autoGrow(this)" placeholder="Description...">${desc}</textarea>
-            <input type="number" class="price" placeholder="0.00" value="${price}" style="text-align: right;" oninput="calcRow(this)">
+        const q = data ? data.qty : 1; const p = data ? data.price : '0.00';
+        div.innerHTML = `<input type="number" class="qty" value="${q}" style="text-align: center;" oninput="calcRow(this)">
+            <input type="text" placeholder="ID" value="${data ? data.id : ''}">
+            <textarea oninput="autoGrow(this)" placeholder="Desc">${data ? data.desc : ''}</textarea>
+            <input type="number" class="price" value="${p}" style="text-align: right;" oninput="calcRow(this)">
             <input type="text" class="total" value="0.00" style="text-align: right;" readonly>
-            <div class="tax-col" style="text-align:center;"><input type="checkbox" class="tax-chk" ${taxChecked}></div>
-        `;
+            <div class="tax-col" style="text-align:center;"><input type="checkbox" class="tax-chk" ${data && !data.tax ? '' : 'checked'}></div>`;
         container.appendChild(div);
         autoGrow(div.querySelector('textarea'));
         calcRow(div.querySelector('.qty'));
@@ -557,65 +393,12 @@
 
     window.calcRow = function(input) {
         const row = input.closest('.item-row');
-        const qty = parseFloat(row.querySelector('.qty').value) || 0;
-        const price = parseFloat(row.querySelector('.price').value) || 0;
-        const total = qty * price;
-        row.querySelector('.total').value = total.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        const total = (parseFloat(row.querySelector('.qty').value)||0) * (parseFloat(row.querySelector('.price').value)||0);
+        row.querySelector('.total').value = total.toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2});
     }
 
-    let searchTimeout;
-    window.lookupCustomer = function(input) {
-        clearTimeout(searchTimeout);
-        const box = document.getElementById('suggestions');
-        const val = input.value.trim();
-        
-        if (val.length < 3) { 
-            box.style.display = 'none'; 
-            return; 
-        }
-
-        searchTimeout = setTimeout(async () => {
-            const client = await DB.findCustomerByPhone(val);
-            if (client) {
-                box.innerHTML = `<div class="suggestion-item" onclick="fillCustomer('${client.name}', '${client.address1}', '${client.address2}', '${client.phone}', '${client.id || ''}')">
-                    <strong>${client.name}</strong><br>${client.address1}
-                </div>`;
-                box.style.display = 'block';
-            } else {
-                box.style.display = 'none';
-            }
-        }, 500);
-    }
-
-    window.fillCustomer = function(name, addr1, addr2, phone, id) {
-        document.getElementById('bill-name').value = name;
-        document.getElementById('bill-addr1').value = addr1;
-        document.getElementById('bill-addr2').value = addr2;
-        document.getElementById('bill-phone').value = phone;
-        document.getElementById('site-acct').value = id;
-        document.getElementById('suggestions').style.display = 'none';
-    }
-    
-    document.addEventListener('click', function(e) {
-        if (!e.target.closest('.input-group')) {
-            document.getElementById('suggestions').style.display = 'none';
-        }
-    });
-
-    window.updateRolodex = function() {
-        const data = {
-            name: document.getElementById('bill-name').value,
-            phone: document.getElementById('bill-phone').value,
-            address1: document.getElementById('bill-addr1').value,
-            address2: document.getElementById('bill-addr2').value,
-            id: document.getElementById('site-acct').value
-        };
-        if(data.phone) {
-            DB.saveCustomer(data);
-            alert("Rolodex Updated for: " + data.name);
-        } else {
-            alert("Phone number required to update Rolodex.");
-        }
+    window.toggleChk = function(chk) {
+        document.querySelectorAll('input[name="complete"]').forEach(c => { if(c !== chk) c.checked = false; });
     }
 </script>
 
