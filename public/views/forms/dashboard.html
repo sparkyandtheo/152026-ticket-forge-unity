@@ -55,7 +55,7 @@
             background: white;
             color: black;
             outline: none;
-            box-shadow: 0 0 0 4px rgba(26, 115, 232, 0.4); /* Subtle Blue Focus to match theme */
+            box-shadow: 0 0 0 4px rgba(26, 115, 232, 0.4); /* Subtle Blue Focus */
         }
 
         /* DASHBOARD LAYOUT */
@@ -325,8 +325,18 @@
                     div.className = 'doc-item';
                     
                     let dateStr = '---';
+                    // FIX: Safe check for lastUpdated to prevent "toDate is not a function" error
                     if (data.lastUpdated) {
-                        dateStr = new Date(data.lastUpdated.toDate()).toLocaleDateString();
+                        if (typeof data.lastUpdated.toDate === 'function') {
+                            // Firestore Timestamp
+                            dateStr = new Date(data.lastUpdated.toDate()).toLocaleDateString();
+                        } else {
+                            // Standard Date/String fallback
+                            const d = new Date(data.lastUpdated);
+                            if(!isNaN(d.getTime())) {
+                                dateStr = d.toLocaleDateString();
+                            }
+                        }
                     }
 
                     const displayName = data.customerName || data.name || "UNKNOWN CLIENT";
