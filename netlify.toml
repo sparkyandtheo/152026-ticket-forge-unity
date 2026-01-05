@@ -24,9 +24,9 @@
   [headers.values]
     Cache-Control = "no-cache"
 
-    # Append this to the bottom of netlify.toml
-
+# Security Headers (CSP)
 [[headers]]
   for = "/*"
   [headers.values]
-    Content-Security-Policy = "default-src 'self' 'unsafe-inline' 'unsafe-eval' https://*.googleapis.com https://*.gstatic.com https://*.firebaseapp.com https://*.firebaseio.com https://*.googletagmanager.com https://apis.google.com wss://*.firebaseio.com;"
+    # UPDATED: Added https://*.google-analytics.com and data: to the allowed list
+    Content-Security-Policy = "default-src 'self' 'unsafe-inline' 'unsafe-eval' data: https://*.googleapis.com https://*.gstatic.com https://*.firebaseapp.com https://*.firebaseio.com https://*.googletagmanager.com https://*.google-analytics.com https://apis.google.com wss://*.firebaseio.com;"
