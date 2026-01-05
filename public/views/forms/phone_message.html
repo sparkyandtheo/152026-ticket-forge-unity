@@ -20,7 +20,6 @@
         }
 
         /* --- TOOLBAR LAYOUT (GRID) --- */
-        /* This creates 3 equal columns so the center is truly centered */
         .toolbar { 
             position: fixed; top: 0; left: 0; right: 0; height: 60px; 
             background: #202124; 
@@ -106,6 +105,8 @@
     </div>
     
     <div class="tb-center">
+        <button class="btn btn-save" onclick="saveMessage()">💾 Save to Queue</button>
+        
         <button class="btn btn-blue" onclick="convertToIntake('service')">🛠 Start Service</button>
         <button class="btn btn-green" onclick="convertToIntake('sales')">💼 Start Sales</button>
         <button class="btn btn-orange" onclick="convertToIntake('quote')">📝 Start Quote</button>
@@ -215,6 +216,8 @@
     });
 
     function loadForm(data) {
+        setVal('msg-id', data.ticketNumber); // Load Ref # if exists
+        setVal('date-field', data.date);
         setVal('cust-name', data.customerName);
         setVal('cust-phone', data.phone);
         setVal('cust-addr1', data.address1);
@@ -222,11 +225,38 @@
         setVal('site-addr1', data.siteAddress1);
         setVal('site-addr2', data.siteAddress2);
         setVal('intake-notes', data.notes);
+        setVal('cust-id', data.accountId);
         
         setTimeout(() => document.querySelectorAll('input, textarea').forEach(el => {
             if(el.value) el.classList.add('input-changed');
         }), 100);
     }
+
+    // --- SAVE MESSAGE (NEW) ---
+    window.saveMessage = async function() {
+        const payload = {
+            ticketNumber: document.getElementById('msg-id').value,
+            date: document.getElementById('date-field').value,
+            customerName: document.getElementById('cust-name').value,
+            phone: document.getElementById('cust-phone').value,
+            address1: document.getElementById('cust-addr1').value,
+            address2: document.getElementById('cust-addr2').value,
+            siteAddress1: document.getElementById('site-addr1').value,
+            siteAddress2: document.getElementById('site-addr2').value,
+            accountId: document.getElementById('cust-id').value,
+            notes: document.getElementById('intake-notes').value,
+            status: 'Open'
+        };
+
+        try {
+            const id = await DB.saveDoc('phone_messages', payload, DOC_ID);
+            if (!DOC_ID) window.history.pushState({}, '', `?id=${id}`);
+            alert("Message Saved to Dashboard!");
+        } catch (e) {
+            console.error(e);
+            alert("Error saving: " + e.message);
+        }
+    };
 
     // --- CONVERT LOGIC ---
     window.convertToIntake = async function(targetType) {
