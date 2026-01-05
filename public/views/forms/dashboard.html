@@ -184,7 +184,7 @@
     <div class="header">
         <div style="font-weight: 800; font-size: 20px;">HAMBURG DOOR <span style="font-weight: 300; opacity: 0.7;">DOCS</span></div>
         <div class="search-container">
-            <input type="text" class="search-input" id="mainSearch" placeholder="Search by customer name, order #, or date..." oninput="window.filterDocs()">
+            <input type="text" class="search-input" id="mainSearch" placeholder="Search name, phone, address, or email..." oninput="window.filterDocs()">
         </div>
         <div style="display: flex; gap: 10px; align-items: center;">
             <button class="btn-new" style="margin-top:0" onclick="location.href='/views/forms/phone_message.html'">+ CREATE NEW</button>
@@ -254,7 +254,7 @@
             });
         };
 
-        // --- 1. FIXED SEARCH FUNCTIONALITY ---
+        // --- 1. SEARCH FUNCTIONALITY (ENHANCED) ---
         window.filterDocs = function() {
             const input = document.getElementById('mainSearch').value.toUpperCase().trim();
             const items = document.getElementsByClassName('doc-item');
@@ -262,12 +262,15 @@
             
             // A. Filter Items
             for (let i = 0; i < items.length; i++) {
-                let text = items[i].innerText || items[i].textContent;
-                if (text.toUpperCase().indexOf(input) > -1) {
-                    items[i].style.display = "";
+                // Get the hidden search string we built during loadLiveDocs
+                const searchString = items[i].dataset.search || "";
+                
+                // Perform strict inclusion check
+                if (searchString.includes(input)) {
+                    items[i].style.display = ""; // Show
                     hasGlobalMatch = true;
                 } else {
-                    items[i].style.display = "none";
+                    items[i].style.display = "none"; // Hide
                 }
             }
 
@@ -277,7 +280,7 @@
                 const stackItems = stacks[s].getElementsByClassName('doc-item');
                 let hasVisibleInStack = false;
                 
-                // Robust check for visibility
+                // Check if any items in this stack are currently visible
                 for(let k=0; k<stackItems.length; k++) {
                     if(stackItems[k].style.display !== 'none') {
                         hasVisibleInStack = true;
@@ -285,7 +288,6 @@
                     }
                 }
 
-                // If searching and no matches in this stack, hide it
                 if (input !== "" && !hasVisibleInStack) {
                     stacks[s].style.display = "none";
                 } else {
@@ -306,7 +308,7 @@
         function loadLiveDocs(collectionName, stackType, pageLink) {
             if(!db) { console.error("Database not initialized"); return; }
 
-            const q = query(collection(db, collectionName), orderBy("lastUpdated", "desc"), limit(10));
+            const q = query(collection(db, collectionName), orderBy("lastUpdated", "desc"), limit(20)); // Increased limit
             
             onSnapshot(q, (snapshot) => {
                 const listContainer = document.querySelector(`.doc-stack[data-type="${stackType}"] .doc-list`);
@@ -325,17 +327,13 @@
                     div.className = 'doc-item';
                     
                     let dateStr = '---';
-                    // FIX: Safe check for lastUpdated to prevent "toDate is not a function" error
                     if (data.lastUpdated) {
+                        // Safe Date Handling
                         if (typeof data.lastUpdated.toDate === 'function') {
-                            // Firestore Timestamp
                             dateStr = new Date(data.lastUpdated.toDate()).toLocaleDateString();
                         } else {
-                            // Standard Date/String fallback
                             const d = new Date(data.lastUpdated);
-                            if(!isNaN(d.getTime())) {
-                                dateStr = d.toLocaleDateString();
-                            }
+                            if(!isNaN(d.getTime())) dateStr = d.toLocaleDateString();
                         }
                     }
 
@@ -347,6 +345,24 @@
                         <span class="date">${dateStr}</span>
                     `;
 
+                    // --- SEARCH INDEX BUILDER ---
+                    // We combine all meaningful fields into one long string for searching
+                    const searchTerms = [
+                        displayId, 
+                        displayName,
+                        data.phone || '',
+                        data.email || '',
+                        data.address1 || '',
+                        data.address2 || '',
+                        data.siteAddress || '',
+                        data.siteAddress1 || '',
+                        data.siteAddress2 || '',
+                        data.jobNumber || '',
+                        data.poNumber || ''
+                    ].join(' ').toUpperCase(); // Store as UPPERCASE for easier comparison
+
+                    div.dataset.search = searchTerms; // Save to DOM attribute
+
                     div.onclick = () => {
                         location.href = `${pageLink}?id=${doc.id}`;
                     };
@@ -354,7 +370,7 @@
                     listContainer.appendChild(div);
                 });
                 
-                // Re-run filter in case user is typing while data loads
+                // Re-run filter if user was already typing
                 if(document.getElementById('mainSearch').value !== "") {
                     window.filterDocs();
                 }
