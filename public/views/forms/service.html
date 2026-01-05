@@ -14,9 +14,27 @@
             .page { margin: 0; box-shadow: none; border: none; width: 100%; height: auto; padding: 0; overflow: visible; }
         }
         .page { background: white; width: var(--page-width); height: var(--page-height); padding: 0.5in; box-shadow: 0 0 15px rgba(0,0,0,0.3); font-family: 'IBM Plex Mono', monospace; font-size: 12px; display: flex; flex-direction: column; box-sizing: border-box; position: relative; }
-        input, textarea { font-family: 'IBM Plex Mono', monospace; font-size: 12px; border: none; border-bottom: 1px solid transparent; outline: none; text-transform: uppercase; background: transparent; color: #000; width: 100%; }
-        input:focus, textarea:focus { border-bottom: 1px solid #2196F3; background: #f0f8ff; }
+        
+        /* --- VISUAL INPUT STYLES --- */
+        input, textarea { 
+            font-family: 'IBM Plex Mono', monospace; 
+            font-size: 12px; 
+            border: 1px solid #ddd; 
+            border-bottom: 2px solid #ccc; 
+            outline: none; 
+            text-transform: uppercase; 
+            color: #000; 
+            width: 100%; 
+            transition: all 0.2s; 
+            background: #ffffcc; /* IDLE: YELLOW */ 
+            padding: 4px; 
+        }
+        input:hover, textarea:hover { background: #e6fffa; border-color: #1e8e3e; cursor: text; }
+        input:focus, textarea:focus { border-bottom: 2px solid #d500f9; background: #ffccff; font-weight: 600; }
+        .input-changed { background-color: #e3f2fd !important; border-color: #2196F3 !important; border-bottom: 2px solid #2196F3 !important; }
+
         textarea { resize: none; overflow: hidden; display: block; line-height: 1.3; }
+
         .header-row { display: flex; justify-content: space-between; align-items: flex-start; }
         .row { display: flex; justify-content: space-between; gap: 20px; }
         .col { flex: 1; }
@@ -182,6 +200,13 @@
 <script type="module">
     import { DB } from '../../js/db.js';
 
+    // AUTO-HIGHLIGHT CHANGED FIELDS
+    document.addEventListener('input', function(e) {
+        if(e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') {
+             e.target.classList.add('input-changed');
+        }
+    });
+
     const urlParams = new URLSearchParams(window.location.search);
     const DOC_ID = urlParams.get('id');
 
@@ -198,7 +223,6 @@
             
             if (data) loadForm(data);
         } else {
-            // FIX: Clear form for new tickets
             clearForm();
         }
     };
@@ -216,6 +240,7 @@
         document.getElementById('site-acct').value = '';
         document.getElementById('site-type').value = 'RESIDENTIAL GARAGE';
         document.getElementById('svc-scope').value = '';
+        document.querySelectorAll('.input-changed').forEach(el => el.classList.remove('input-changed'));
     }
 
     function loadForm(data) {
@@ -252,6 +277,8 @@
         // Footer
         setVal('cust-sig', data.custSig);
         setVal('cust-date', data.custDate);
+        
+        setTimeout(() => document.querySelectorAll('.input-changed').forEach(el => el.classList.remove('input-changed')), 100);
     }
 
     window.saveTicket = async function() {

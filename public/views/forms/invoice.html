@@ -17,14 +17,30 @@
             .page { margin: 0; box-shadow: none; border: none; width: 100%; height: auto; padding: 0; overflow: visible; }
             .grid-header { grid-template-columns: 6ch 1fr 6ch 8ch 10ch 10ch !important; }
             .item-row { grid-template-columns: 6ch 1fr 6ch 8ch 10ch 10ch !important; }
+            input, textarea { background: transparent !important; border: none !important; border-bottom: 1px solid #ccc !important; }
         }
 
         /* PAGE LAYOUT */
         .page { background: white; width: var(--page-width); height: var(--page-height); padding: 0.5in; box-shadow: 0 0 15px rgba(0,0,0,0.3); font-family: 'IBM Plex Mono', monospace; font-size: 11px; display: flex; flex-direction: column; box-sizing: border-box; position: relative; }
         
-        /* INPUTS */
-        input, textarea { font-family: 'IBM Plex Mono', monospace; font-size: 11px; border: none; border-bottom: 1px solid transparent; outline: none; text-transform: uppercase; background: transparent; color: #000; width: 100%; }
-        input:focus, textarea:focus { border-bottom: 1px solid #2196F3; background: #f0f8ff; }
+        /* --- VISUAL INPUT STYLES --- */
+        input, textarea { 
+            font-family: 'IBM Plex Mono', monospace; 
+            font-size: 12px; 
+            border: 1px solid #ddd; 
+            border-bottom: 2px solid #ccc; 
+            outline: none; 
+            text-transform: uppercase; 
+            color: #000; 
+            width: 100%; 
+            transition: all 0.2s; 
+            background: #ffffcc; /* IDLE: YELLOW */ 
+            padding: 4px; 
+        }
+        input:hover, textarea:hover { background: #e6fffa; border-color: #1e8e3e; cursor: text; }
+        input:focus, textarea:focus { border-bottom: 2px solid #d500f9; background: #ffccff; font-weight: 600; }
+        .input-changed { background-color: #e3f2fd !important; border-color: #2196F3 !important; border-bottom: 2px solid #2196F3 !important; }
+
         textarea { resize: none; overflow: hidden; display: block; line-height: 1.3; }
 
         /* HEADERS & DIVIDERS */
@@ -202,6 +218,13 @@
 <script type="module">
     import { DB } from '../../js/db.js';
 
+    // AUTO-HIGHLIGHT CHANGED FIELDS
+    document.addEventListener('input', function(e) {
+        if(e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') {
+             e.target.classList.add('input-changed');
+        }
+    });
+
     const urlParams = new URLSearchParams(window.location.search);
     const DOC_ID = urlParams.get('id');
 
@@ -213,7 +236,6 @@
             const data = await DB.getDoc('invoices', DOC_ID);
             if (data) loadForm(data);
         } else {
-            // FIX 2: Clear any cached data for a fresh start
             clearForm();
             
             // Default Date
@@ -221,7 +243,7 @@
             const dateStr = (d.getMonth()+1)+'/'+d.getDate()+'/'+d.getFullYear();
             document.getElementById('inv-date').value = dateStr;
             document.getElementById('inv-due').value = dateStr;
-            addRow(); // Empty start row
+            addRow(); 
         }
     };
 
@@ -235,6 +257,7 @@
         document.getElementById('meta-acct').value = '';
         document.getElementById('items-list').innerHTML = '';
         document.getElementById('grand-total').value = '$0.00';
+        document.querySelectorAll('.input-changed').forEach(el => el.classList.remove('input-changed'));
     }
 
     function loadForm(data) {
@@ -262,9 +285,9 @@
             addRow();
         }
         calcAll();
+        setTimeout(() => document.querySelectorAll('.input-changed').forEach(el => el.classList.remove('input-changed')), 100);
     }
 
-    // --- SAVE LOGIC ---
     window.saveTicket = async function() {
         const items = scrapeItems();
         const payload = {
@@ -297,7 +320,6 @@
         }
     };
 
-    // --- HELPERS ---
     function scrapeItems() {
         const items = [];
         document.querySelectorAll('.item-row').forEach(row => {
@@ -305,7 +327,6 @@
             const price = row.querySelector('.price').value;
             const desc = row.querySelector('textarea').value;
             
-            // Save if there is data
             if(desc || qty) {
                 items.push({
                     qty: qty,
@@ -377,14 +398,12 @@
         const finalStr = "$" + formatMoney(grandTotal);
         document.getElementById('grand-total').value = finalStr;
         
-        // Update footer display
         document.getElementById('footer-amt').innerText = finalStr;
         document.getElementById('footer-inv').innerText = "INV # " + document.getElementById('inv-no').value;
     }
 
     function formatMoney(num) { return num.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
 
-    // --- FIX 3: ROLODEX LOGIC ADDED ---
     let searchTimeout;
     window.lookupCustomer = function(input) {
         clearTimeout(searchTimeout);

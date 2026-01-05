@@ -55,6 +55,7 @@
             background: white;
             color: black;
             outline: none;
+            box-shadow: 0 0 0 4px rgba(26, 115, 232, 0.4); /* Subtle Blue Focus to match theme */
         }
 
         /* DASHBOARD LAYOUT */
@@ -155,7 +156,6 @@
 
         .btn-new:hover { opacity: 0.9; }
 
-        /* Logout Button Style */
         .btn-logout {
             background: #5f6368;
             color: white;
@@ -167,6 +167,16 @@
             font-size: 12px;
         }
 
+        /* No Results Message */
+        #no-results {
+            display: none;
+            grid-column: 1 / -1;
+            text-align: center;
+            padding: 40px;
+            color: #666;
+            font-weight: bold;
+        }
+
     </style>
 </head>
 <body>
@@ -174,7 +184,7 @@
     <div class="header">
         <div style="font-weight: 800; font-size: 20px;">HAMBURG DOOR <span style="font-weight: 300; opacity: 0.7;">DOCS</span></div>
         <div class="search-container">
-            <input type="text" class="search-input" id="mainSearch" placeholder="Search by customer name, order #, or date..." onkeyup="window.filterDocs()">
+            <input type="text" class="search-input" id="mainSearch" placeholder="Search by customer name, order #, or date..." oninput="window.filterDocs()">
         </div>
         <div style="display: flex; gap: 10px; align-items: center;">
             <button class="btn-new" style="margin-top:0" onclick="location.href='/views/forms/phone_message.html'">+ CREATE NEW</button>
@@ -183,7 +193,8 @@
     </div>
 
     <div class="dashboard" id="dashboard">
-        
+        <div id="no-results">No documents found matching your search.</div>
+
         <div class="doc-stack" data-type="intake">
             <div class="stack-title">Intake / Phone Msgs</div>
             <div class="doc-list">
@@ -233,7 +244,6 @@
         // --- 0. AUTH & LOGOUT ---
         onAuthStateChanged(auth, (user) => {
             if (!user) {
-                // If not logged in, redirect to login page
                 window.location.href = '/index.html';
             }
         });
@@ -244,29 +254,51 @@
             });
         };
 
-        // --- 1. SEARCH FUNCTIONALITY ---
+        // --- 1. FIXED SEARCH FUNCTIONALITY ---
         window.filterDocs = function() {
-            let input = document.getElementById('mainSearch').value.toUpperCase();
-            let items = document.getElementsByClassName('doc-item');
+            const input = document.getElementById('mainSearch').value.toUpperCase().trim();
+            const items = document.getElementsByClassName('doc-item');
+            let hasGlobalMatch = false;
             
+            // A. Filter Items
             for (let i = 0; i < items.length; i++) {
                 let text = items[i].innerText || items[i].textContent;
                 if (text.toUpperCase().indexOf(input) > -1) {
                     items[i].style.display = "";
-                    items[i].closest('.doc-stack').style.display = "";
+                    hasGlobalMatch = true;
                 } else {
                     items[i].style.display = "none";
                 }
             }
 
+            // B. Hide Empty Stacks
             let stacks = document.getElementsByClassName('doc-stack');
             for (let s = 0; s < stacks.length; s++) {
-                let visibleItems = stacks[s].querySelectorAll('.doc-item[style=""]');
-                if (input !== "" && visibleItems.length === 0) {
+                const stackItems = stacks[s].getElementsByClassName('doc-item');
+                let hasVisibleInStack = false;
+                
+                // Robust check for visibility
+                for(let k=0; k<stackItems.length; k++) {
+                    if(stackItems[k].style.display !== 'none') {
+                        hasVisibleInStack = true;
+                        break;
+                    }
+                }
+
+                // If searching and no matches in this stack, hide it
+                if (input !== "" && !hasVisibleInStack) {
                     stacks[s].style.display = "none";
                 } else {
                     stacks[s].style.display = "";
                 }
+            }
+
+            // C. Show "No Results" message
+            const noResults = document.getElementById('no-results');
+            if(input !== "" && !hasGlobalMatch) {
+                noResults.style.display = 'block';
+            } else {
+                noResults.style.display = 'none';
             }
         };
 
@@ -311,13 +343,18 @@
 
                     listContainer.appendChild(div);
                 });
+                
+                // Re-run filter in case user is typing while data loads
+                if(document.getElementById('mainSearch').value !== "") {
+                    window.filterDocs();
+                }
+
             }, (error) => {
                 console.error(`Error loading ${collectionName}:`, error);
             });
         }
 
         // --- 3. INITIALIZE FEEDS ---
-        // Updated to use Absolute Paths for consistency
         loadLiveDocs('phone_messages', 'intake', '/views/forms/phone_message.html');
         loadLiveDocs('quotes', 'quote', '/views/forms/quote.html');
         loadLiveDocs('work_orders', 'work-order', '/views/forms/work_order.html');
