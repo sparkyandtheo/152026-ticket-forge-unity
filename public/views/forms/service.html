@@ -4,92 +4,103 @@
     <meta charset="UTF-8">
     <title>Service Ticket - Hamburg Overhead Door</title>
     <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&display=swap" rel="stylesheet">
+    
     <style>
+        /* --- GLOBAL VARIABLES & RESET --- */
         :root { --page-width: 8.5in; --page-height: 11in; }
-        body { background: #525659; display: flex; flex-direction: column; align-items: center; padding: 80px 0 40px 0; margin: 0; font-family: sans-serif; }
-        .toolbar { position: fixed; top: 0; left: 0; right: 0; height: 60px; background: #202124; display: flex; align-items: center; justify-content: center; gap: 15px; z-index: 1000; box-shadow: 0 2px 8px rgba(0,0,0,0.4); }
-        @media print {
-            .toolbar, .btn-rolodex-update, .suggestions-box { display: none !important; }
-            body { background: white; padding: 0; margin: 0; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-            .page { margin: 0; box-shadow: none; border: none; width: 100%; height: auto; padding: 0; overflow: visible; }
+
+        body { 
+            background: #525659; 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+            padding: 80px 0 40px 0; 
+            margin: 0; 
+            font-family: sans-serif; 
         }
-        .page { background: white; width: var(--page-width); height: var(--page-height); padding: 0.5in; box-shadow: 0 0 15px rgba(0,0,0,0.3); font-family: 'IBM Plex Mono', monospace; font-size: 12px; display: flex; flex-direction: column; box-sizing: border-box; position: relative; }
-        
-        /* --- VISUAL INPUT STYLES --- */
+
+        /* --- TOOLBAR --- */
+        .toolbar { 
+            position: fixed; top: 0; left: 0; right: 0; height: 60px; 
+            background: #202124; display: flex; align-items: center; 
+            justify-content: center; gap: 10px; z-index: 1000; 
+            box-shadow: 0 2px 8px rgba(0,0,0,0.4); 
+        }
+
+        /* --- BUTTONS --- */
+        .btn { padding: 8px 12px; border-radius: 4px; border: none; cursor: pointer; font-weight: 600; font-size: 11px; text-transform: uppercase; color: white; transition: all 0.2s; white-space: nowrap; }
+        .btn:hover { transform: translateY(-1px); filter: brightness(1.1); }
+        .btn-blue { background: #1a73e8; } 
+        .btn-green { background: #1e8e3e; } 
+        .btn-gray { background: #5f6368; } 
+        .btn-red { background: #d93025; } 
+        .btn-save { background: #f9ab00; color: #000; }
+        .btn-purple { background: #a142f4; } /* Purple for Dispatch */
+
+        /* --- PAGE SHEET --- */
+        .page { 
+            background: white; width: var(--page-width); min-height: var(--page-height); 
+            padding: 0.5in; box-shadow: 0 0 15px rgba(0,0,0,0.3); 
+            font-family: 'IBM Plex Mono', monospace; font-size: 12px; 
+            display: flex; flex-direction: column; box-sizing: border-box; position: relative; 
+        }
+
+        /* --- UTILITIES --- */
+        .header-row { display: flex; justify-content: space-between; align-items: flex-start; }
+        .row { display: flex; justify-content: space-between; gap: 20px; }
+        .col { flex: 1; }
+        .double-divider { border-top: 3px double #000; border-bottom: 1px solid #000; height: 1px; margin: 10px 0; }
+        .divider { border-top: 1px solid #000; margin: 10px 0; }
+        .dashed-divider { border-top: 1px dashed #999; margin: 10px 0; }
+        .mt-auto { margin-top: auto; }
+        .label { font-weight: 600; white-space: nowrap; margin-right: 5px; }
+
+        /* --- INPUTS --- */
         input, textarea { 
-            font-family: 'IBM Plex Mono', monospace; 
-            font-size: 12px; 
-            border: 1px solid #ddd; 
-            border-bottom: 2px solid #ccc; 
-            outline: none; 
-            text-transform: uppercase; 
-            color: #000; 
-            width: 100%; 
-            transition: all 0.2s; 
-            background: #ffffcc; /* IDLE: YELLOW */ 
-            padding: 4px; 
+            font-family: 'IBM Plex Mono', monospace; font-size: 12px; 
+            border: 1px solid #ddd; border-bottom: 2px solid #ccc; outline: none; 
+            text-transform: uppercase; color: #000; width: 100%; 
+            transition: all 0.2s; background: #ffffcc; padding: 4px; 
         }
         input:hover, textarea:hover { background: #e6fffa; border-color: #1e8e3e; cursor: text; }
         input:focus, textarea:focus { border-bottom: 2px solid #d500f9; background: #ffccff; font-weight: 600; }
         .input-changed { background-color: #e3f2fd !important; border-color: #2196F3 !important; border-bottom: 2px solid #2196F3 !important; }
-
         textarea { resize: none; overflow: hidden; display: block; line-height: 1.3; }
 
-        .header-row { display: flex; justify-content: space-between; align-items: flex-start; }
-        .row { display: flex; justify-content: space-between; gap: 20px; }
-        .col { flex: 1; }
-        .divider { border-top: 1px solid #000; margin: 10px 0; }
-        .double-divider { border-top: 3px double #000; border-bottom: 1px solid #000; height: 1px; margin: 10px 0; }
-        .dashed-divider { border-top: 1px dashed #999; margin: 10px 0; }
-        .label { font-weight: 600; white-space: nowrap; margin-right: 5px; }
+        /* --- CHECKBOXES --- */
         .chk-group { display: flex; align-items: center; gap: 5px; font-size: 11px; }
         input[type="checkbox"] { width: auto; margin: 0; }
-        .btn { padding: 8px 16px; border-radius: 4px; border: none; cursor: pointer; font-weight: 600; font-size: 11px; text-transform: uppercase; transition: all 0.2s; }
-        .btn:hover { transform: translateY(-1px); filter: brightness(1.1); }
-        .btn-blue { background: #1a73e8; color: white; }
-        .btn-green { background: #1e8e3e; color: white; }
-        .btn-gray { background: #5f6368; color: white; }
-        .btn-red { background: #d93025; color: white; }
-        .btn-save { background: #f9ab00; color: #000; } /* Yellow Save Button */
-        .mt-auto { margin-top: auto; }
+
+        /* --- ROLODEX DROPDOWN --- */
+        .input-group { position: relative; display:flex; width: 100%; }
+        .suggestions-box { position: absolute; top: 100%; left: 0; width: 100%; background: white; border: 1px solid #ccc; z-index: 1000; max-height: 150px; overflow-y: auto; display: none; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        .suggestion-item { padding: 8px; border-bottom: 1px solid #eee; cursor: pointer; font-size: 11px; }
+        .suggestion-item:hover { background-color: #f0f8ff; color: #1a73e8; }
+
+        /* --- TECH SECTION --- */
         .tech-section { border: 1px solid #000; padding: 10px; margin-top: 10px; }
 
-        /* --- ADDED ROLODEX STYLES --- */
-        .input-group { position: relative; display:flex; width: 100%; }
-        .suggestions-box {
-            position: absolute;
-            top: 100%;
-            left: 0;
-            width: 100%;
-            background: white;
-            border: 1px solid #ccc;
-            border-top: none;
-            z-index: 1000;
-            max-height: 150px;
-            overflow-y: auto;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-            display: none;
+        /* --- PRINT MEDIA --- */
+        @media print {
+            .toolbar, .btn-rolodex-update { display: none !important; }
+            body { background: white; padding: 0; margin: 0; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            .page { margin: 0; box-shadow: none; border: none; width: 100%; height: auto; padding: 0; overflow: visible; }
+            input, textarea { background: transparent !important; border: none !important; border-bottom: 1px solid #ccc !important; }
         }
-        .suggestion-item {
-            padding: 8px;
-            border-bottom: 1px solid #eee;
-            cursor: pointer;
-            font-size: 11px;
-            color: #333;
-        }
-        .suggestion-item:hover { background-color: #f0f8ff; color: #1a73e8; }
-        .suggestion-item strong { color: #000; }
     </style>
 </head>
 <body>
 
 <div class="toolbar">
-    <button class="btn btn-gray" onclick="location.href='dashboard.html'" style="margin-right: auto; margin-left: 20px;">← Dashboard</button>
-    <button class="btn btn-save" onclick="saveTicket()">💾 Save to Cloud</button>
-    <button class="btn btn-blue" onclick="window.print()">Print Setup</button>
-    <button class="btn btn-gray" onclick="window.print()">Quick Print</button>
-    <button class="btn btn-green" onclick="alert('Select \'Save as PDF\' in the print destination.'); window.print();">Save as PDF</button>
-    <button class="btn btn-red" onclick="if(confirm('Clear ticket?')) location.reload();">Clear Ticket</button>
+    <button class="btn btn-gray" onclick="location.href='dashboard.html'" style="margin-right: auto;">← Dash</button>
+    
+    <button class="btn btn-save" onclick="saveTicket()">💾 Save Ticket</button>
+    <button class="btn btn-purple" onclick="sendToDispatch()">📤 Send to Dispatch</button>
+    
+    <div style="width: 20px;"></div>
+    
+    <button class="btn btn-gray" onclick="window.print()">Print</button>
+    <button class="btn btn-red" onclick="if(confirm('Clear?')) location.reload();">Clear</button>
 </div>
 
 <div class="page">
@@ -109,6 +120,11 @@
             <div style="display:flex; justify-content:flex-end; gap:10px;"><span class="label">DATE:</span> <input type="text" id="svc-date" value="" style="width: 12ch; text-align:right;"></div>
             <div style="display:flex; justify-content:flex-end; gap:10px;"><span class="label">PO #:</span> <input type="text" id="svc-po" placeholder="OPTIONAL" style="width: 12ch; text-align:right;"></div>
             <div style="display:flex; justify-content:flex-end; gap:10px;"><span class="label">REP:</span> <input type="text" id="svc-rep" value="" style="width: 12ch; text-align:right;"></div>
+            
+            <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:5px;">
+                <span class="label">STATUS:</span> 
+                <input type="text" id="svc-status" value="Draft" style="width: 12ch; text-align:right; border:none; background:transparent; font-weight:bold;" readonly>
+            </div>
         </div>
     </div>
 
@@ -124,11 +140,11 @@
             <div style="display:flex; margin-top:2px;">
                 <span style="white-space:nowrap; margin-right:5px;">PH:</span> 
                 <div class="input-group">
-                    <input type="text" id="bill-phone" placeholder="START TYPING PHONE..." onkeyup="lookupCustomer(this)" autocomplete="off">
+                    <input type="text" id="bill-phone" placeholder="START TYPING PHONE..." autocomplete="off">
                     <div id="suggestions" class="suggestions-box"></div>
                 </div>
             </div>
-            <button class="btn btn-save btn-rolodex-update" style="font-size: 9px; padding: 4px; margin-top:5px;" onclick="updateRolodex()">UPDATE ROLODEX</button>
+            <button class="btn btn-save btn-rolodex-update" style="font-size: 9px; padding: 4px; margin-top:5px; width:100%;" onclick="doUpdateRolodex()">UPDATE ROLODEX</button>
         </div>
         
         <div style="width: 48%;">
@@ -199,72 +215,53 @@
 
 <script type="module">
     import { DB } from '../../js/db.js';
+    import { getUrlParam, setVal, setChk, autoGrow, setupInputHighlighting, setupRolodex, updateRolodexFromFields } from '../../js/form-utils.js';
 
-    // AUTO-HIGHLIGHT CHANGED FIELDS
-    document.addEventListener('input', function(e) {
-        if(e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') {
-             e.target.classList.add('input-changed');
-        }
-    });
-
-    const urlParams = new URLSearchParams(window.location.search);
-    const DOC_ID = urlParams.get('id');
+    const DOC_ID = getUrlParam('id');
 
     window.onload = async () => {
-        // Set Default Date
+        setupInputHighlighting();
         const today = new Date();
         document.getElementById('svc-date').value = (today.getMonth()+1)+'/'+today.getDate()+'/'+today.getFullYear();
 
-        document.querySelectorAll("textarea").forEach(autoGrow);
+        setupRolodex('bill-phone', 'suggestions', (client) => {
+            setVal('bill-name', client.name);
+            setVal('bill-addr1', client.address1);
+            setVal('bill-addr2', client.address2);
+            setVal('bill-phone', client.phone);
+            setVal('site-acct', client.id);
+        });
 
         if (DOC_ID) {
-            console.log("Loading Service Ticket...", DOC_ID);
             const data = await DB.getDoc('service_tickets', DOC_ID);
-            
             if (data) loadForm(data);
         } else {
-            clearForm();
+            document.getElementById('svc-no').value = await DB.getNewId('service', 700000); 
         }
     };
 
-    function clearForm() {
-        document.getElementById('svc-no').value = 'S-NEW';
-        document.getElementById('svc-po').value = '';
-        document.getElementById('svc-rep').value = '';
-        document.getElementById('bill-name').value = '';
-        document.getElementById('bill-addr1').value = '';
-        document.getElementById('bill-addr2').value = '';
-        document.getElementById('bill-phone').value = '';
-        document.getElementById('site-addr1').value = '';
-        document.getElementById('site-addr2').value = '';
-        document.getElementById('site-acct').value = '';
-        document.getElementById('site-type').value = 'RESIDENTIAL GARAGE';
-        document.getElementById('svc-scope').value = '';
-        document.querySelectorAll('.input-changed').forEach(el => el.classList.remove('input-changed'));
-    }
+    window.doUpdateRolodex = () => updateRolodexFromFields({
+        name: 'bill-name', phone: 'bill-phone', addr1: 'bill-addr1', addr2: 'bill-addr2', acctId: 'site-acct'
+    });
 
     function loadForm(data) {
-        setVal('svc-no', data.ticketNumber || DOC_ID.substring(0,6).toUpperCase());
+        setVal('svc-no', data.ticketNumber);
         setVal('svc-date', data.date);
         setVal('svc-po', data.poNumber);
         setVal('svc-rep', data.rep);
+        setVal('svc-status', data.status || 'Open');
 
-        // Bill To
         setVal('bill-name', data.customerName);
         setVal('bill-addr1', data.address1);
         setVal('bill-addr2', data.address2);
         setVal('bill-phone', data.phone);
 
-        // Job Site
         setVal('site-addr1', data.siteAddress1);
         setVal('site-addr2', data.siteAddress2);
         setVal('site-acct', data.accountNumber);
         setVal('site-type', data.siteType);
-
-        // Scope
         setVal('svc-scope', data.description);
 
-        // Tech Section
         setVal('time-start', data.techStart);
         setVal('time-finish', data.techFinish);
         setVal('work-date', data.workDate);
@@ -273,64 +270,13 @@
         setChk('eq-fork', data.eqFork);
         setChk('eq-lift', data.eqLift);
         setVal('tech-sig', data.techSig);
-        
-        // Footer
         setVal('cust-sig', data.custSig);
         setVal('cust-date', data.custDate);
         
         setTimeout(() => document.querySelectorAll('.input-changed').forEach(el => el.classList.remove('input-changed')), 100);
     }
 
-    window.saveTicket = async function() {
-        const payload = {
-            ticketNumber: document.getElementById('svc-no').value,
-            date: document.getElementById('svc-date').value,
-            poNumber: document.getElementById('svc-po').value,
-            rep: document.getElementById('svc-rep').value,
-            
-            customerName: document.getElementById('bill-name').value,
-            address1: document.getElementById('bill-addr1').value,
-            address2: document.getElementById('bill-addr2').value,
-            phone: document.getElementById('bill-phone').value,
-            
-            siteAddress1: document.getElementById('site-addr1').value,
-            siteAddress2: document.getElementById('site-addr2').value,
-            accountNumber: document.getElementById('site-acct').value,
-            siteType: document.getElementById('site-type').value,
-            
-            description: document.getElementById('svc-scope').value,
-
-            // Tech Section
-            techStart: document.getElementById('time-start').value,
-            techFinish: document.getElementById('time-finish').value,
-            workDate: document.getElementById('work-date').value,
-            visitComplete: document.getElementById('chk-yes').checked ? 'yes' : (document.getElementById('chk-no').checked ? 'no' : ''),
-            eqFork: document.getElementById('eq-fork').checked,
-            eqLift: document.getElementById('eq-lift').checked,
-            techSig: document.getElementById('tech-sig').value,
-            
-            custSig: document.getElementById('cust-sig').value,
-            custDate: document.getElementById('cust-date').value,
-
-            // Status for Dispatch Board
-            status: document.getElementById('chk-yes').checked ? 'Complete' : 'Scheduled' // Default to Scheduled
-        };
-
-        try {
-            const id = await DB.saveDoc('service_tickets', payload, DOC_ID);
-            alert("Saved! ID: " + id);
-            if (!DOC_ID) {
-                window.history.pushState({}, '', `?id=${id}`);
-            }
-        } catch (e) {
-            alert("Error saving: " + e.message);
-        }
-    };
-
-    // UI Helpers
-    function setVal(id, val) { if(val) document.getElementById(id).value = val; }
-    function setChk(id, val) { if(val) document.getElementById(id).checked = true; }
-    
+    // Toggle Helper
     window.toggleChk = function(chk, group) {
         if(group === 'complete') {
             const other = chk.id === 'chk-yes' ? 'chk-no' : 'chk-yes';
@@ -338,66 +284,65 @@
         }
     };
 
-    window.autoGrow = function(element) {
-        element.style.height = "5px";
-        element.style.height = (element.scrollHeight) + "px";
-    };
-
-    // --- ROLODEX LOGIC ---
-    let searchTimeout;
-    window.lookupCustomer = function(input) {
-        clearTimeout(searchTimeout);
-        const box = document.getElementById('suggestions');
-        const val = input.value.trim();
+    // --- SAVE LOGIC ---
+    window.saveTicket = async function(statusOverride = null) {
+        const isComplete = document.getElementById('chk-yes').checked;
         
-        if (val.length < 3) { 
-            box.style.display = 'none'; 
-            return; 
-        }
-
-        searchTimeout = setTimeout(async () => {
-            const client = await DB.findCustomerByPhone(val);
-            if (client) {
-                box.innerHTML = `<div class="suggestion-item" onclick="fillCustomer('${client.name}', '${client.address1}', '${client.address2}', '${client.phone}', '${client.id || ''}')">
-                    <strong>${client.name}</strong><br>${client.address1}
-                </div>`;
-                box.style.display = 'block';
-            } else {
-                box.style.display = 'none';
-            }
-        }, 500);
-    }
-
-    window.fillCustomer = function(name, addr1, addr2, phone, id) {
-        document.getElementById('bill-name').value = name;
-        document.getElementById('bill-addr1').value = addr1;
-        document.getElementById('bill-addr2').value = addr2;
-        document.getElementById('bill-phone').value = phone;
-        document.getElementById('site-acct').value = id;
-        document.getElementById('suggestions').style.display = 'none';
-    }
-    
-    document.addEventListener('click', function(e) {
-        if (!e.target.closest('.input-group')) {
-            document.getElementById('suggestions').style.display = 'none';
-        }
-    });
-
-    window.updateRolodex = function() {
-        const data = {
-            name: document.getElementById('bill-name').value,
-            phone: document.getElementById('bill-phone').value,
+        const payload = {
+            ticketNumber: document.getElementById('svc-no').value,
+            date: document.getElementById('svc-date').value,
+            poNumber: document.getElementById('svc-po').value,
+            rep: document.getElementById('svc-rep').value,
+            customerName: document.getElementById('bill-name').value,
             address1: document.getElementById('bill-addr1').value,
             address2: document.getElementById('bill-addr2').value,
-            id: document.getElementById('site-acct').value
+            phone: document.getElementById('bill-phone').value,
+            siteAddress1: document.getElementById('site-addr1').value,
+            siteAddress2: document.getElementById('site-addr2').value,
+            accountNumber: document.getElementById('site-acct').value,
+            siteType: document.getElementById('site-type').value,
+            description: document.getElementById('svc-scope').value,
+            techStart: document.getElementById('time-start').value,
+            techFinish: document.getElementById('time-finish').value,
+            workDate: document.getElementById('work-date').value,
+            visitComplete: isComplete ? 'yes' : (document.getElementById('chk-no').checked ? 'no' : ''),
+            eqFork: document.getElementById('eq-fork').checked,
+            eqLift: document.getElementById('eq-lift').checked,
+            techSig: document.getElementById('tech-sig').value,
+            custSig: document.getElementById('cust-sig').value,
+            custDate: document.getElementById('cust-date').value,
+            
+            // Logic: Use override if provided (e.g. 'Open' for Dispatch), 
+            // otherwise use 'Complete' if checked, else default to 'Draft'.
+            status: statusOverride || (isComplete ? 'Complete' : 'Draft')
         };
-        if(data.phone) {
-            DB.saveCustomer(data);
-            alert("Rolodex Updated for: " + data.name);
-        } else {
-            alert("Phone number required to update Rolodex.");
+
+        try {
+            const id = await DB.saveDoc('service_tickets', payload, DOC_ID);
+            if (!DOC_ID) window.history.pushState({}, '', `?id=${id}`);
+            
+            // Update UI
+            document.getElementById('svc-status').value = payload.status;
+            
+            return id; // Return ID for chaining
+        } catch (e) {
+            alert("Error saving: " + e.message);
+            return null;
         }
-    }
+    };
+
+    // --- SEND TO DISPATCH ---
+    window.sendToDispatch = async function() {
+        if(!confirm("Send this ticket to the Dispatch Board?")) return;
+        
+        // Save with Status = 'Open' so it appears in the "Unscheduled" parking lot
+        const id = await saveTicket('Open'); 
+        
+        if(id) {
+            alert("Ticket sent to Dispatch Board!");
+            // Optional: Redirect or just stay here
+        }
+    };
 </script>
 </body>
 </html>
