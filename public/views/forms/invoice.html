@@ -17,6 +17,7 @@
             .page { margin: 0; box-shadow: none; border: none; width: 100%; height: auto; padding: 0; overflow: visible; }
             .grid-header { grid-template-columns: 6ch 1fr 6ch 8ch 10ch 10ch !important; }
             .item-row { grid-template-columns: 6ch 1fr 6ch 8ch 10ch 10ch !important; }
+            /* Remove background colors on print */
             input, textarea { background: transparent !important; border: none !important; border-bottom: 1px solid #ccc !important; }
         }
 
@@ -61,6 +62,7 @@
 
         /* BUTTONS */
         .btn { padding: 8px 16px; border-radius: 4px; border: none; cursor: pointer; font-weight: 600; font-size: 11px; text-transform: uppercase; transition: all 0.2s; }
+        .btn:hover { transform: translateY(-1px); filter: brightness(1.1); }
         .btn-blue { background: #1a73e8; color: white; }
         .btn-green { background: #1e8e3e; color: white; }
         .btn-gray { background: #5f6368; color: white; }
@@ -120,7 +122,7 @@
             <div style="font-size: 20px; font-weight: 800; text-transform: uppercase; margin-bottom: 10px; letter-spacing: 1px; white-space: nowrap;">
                 === INVOICE ===
             </div>
-            <div style="display:flex; justify-content:flex-end; gap:10px;"><b class="label">INV #:</b> <input type="text" id="inv-no" value="INV-NEW" style="width: 12ch; text-align:right;"></div>
+            <div style="display:flex; justify-content:flex-end; gap:10px;"><b class="label">INV #:</b> <input type="text" id="inv-no" value="LOADING..." style="width: 12ch; text-align:right;"></div>
             <div style="display:flex; justify-content:flex-end; gap:10px;"><span class="label">DATE:</span> <input type="text" id="inv-date" value="" style="width: 12ch; text-align:right;"></div>
             <div style="display:flex; justify-content:flex-end; gap:10px;"><span class="label">DUE:</span> <input type="text" id="inv-due" value="" style="width: 12ch; text-align:right;"></div>
             <div style="display:flex; justify-content:flex-end; gap:10px;"><span class="label">JOB #:</span> <input type="text" id="inv-job" value="" style="width: 12ch; text-align:right;"></div>
@@ -238,6 +240,10 @@
         } else {
             clearForm();
             
+            // START AT 600,000
+            const newId = await DB.getNewId('invoice', 600000); 
+            document.getElementById('inv-no').value = newId;
+
             // Default Date
             const d = new Date();
             const dateStr = (d.getMonth()+1)+'/'+d.getDate()+'/'+d.getFullYear();
@@ -248,7 +254,7 @@
     };
 
     function clearForm() {
-        document.getElementById('inv-no').value = 'INV-NEW';
+        document.getElementById('inv-no').value = 'LOADING...';
         document.getElementById('inv-job').value = '';
         document.getElementById('bill-name').value = '';
         document.getElementById('bill-addr1').value = '';
@@ -288,6 +294,7 @@
         setTimeout(() => document.querySelectorAll('.input-changed').forEach(el => el.classList.remove('input-changed')), 100);
     }
 
+    // --- SAVE LOGIC ---
     window.saveTicket = async function() {
         const items = scrapeItems();
         const payload = {
@@ -312,7 +319,11 @@
         };
 
         try {
-            const id = await DB.saveDoc('invoices', payload, DOC_ID);
+            // Use the Invoice Number as the ID if creating new
+            const customId = document.getElementById('inv-no').value;
+            const idToSave = DOC_ID || customId;
+
+            const id = await DB.saveDoc('invoices', payload, idToSave);
             alert("Invoice Saved! ID: " + id);
             if (!DOC_ID) window.history.pushState({}, '', `?id=${id}`);
         } catch (e) {
@@ -320,6 +331,7 @@
         }
     };
 
+    // --- HELPERS ---
     function scrapeItems() {
         const items = [];
         document.querySelectorAll('.item-row').forEach(row => {
@@ -327,6 +339,7 @@
             const price = row.querySelector('.price').value;
             const desc = row.querySelector('textarea').value;
             
+            // Save if there is data
             if(desc || qty) {
                 items.push({
                     qty: qty,
@@ -398,12 +411,14 @@
         const finalStr = "$" + formatMoney(grandTotal);
         document.getElementById('grand-total').value = finalStr;
         
+        // Update footer display
         document.getElementById('footer-amt').innerText = finalStr;
         document.getElementById('footer-inv').innerText = "INV # " + document.getElementById('inv-no').value;
     }
 
     function formatMoney(num) { return num.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
 
+    // --- ROLODEX LOGIC ---
     let searchTimeout;
     window.lookupCustomer = function(input) {
         clearTimeout(searchTimeout);
