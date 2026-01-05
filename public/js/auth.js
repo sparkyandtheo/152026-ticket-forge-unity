@@ -20,8 +20,8 @@ onAuthStateChanged(auth, (user) => {
     if (user) {
         console.log('User is logged in:', user.email);
         if (isLoginPage) {
-            // FIX: Absolute path redirect to Dashboard
-            window.location.href = '/views/office/dashboard.html'; 
+            // FIX: Absolute path redirect to the CORRECT Dashboard location
+            window.location.href = '/views/forms/dashboard.html'; 
         }
     } else {
         console.log('User is logged out');
