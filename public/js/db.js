@@ -1,15 +1,26 @@
 // public/js/db.js
 import { db } from './firebase-config.js';
-import { collection, doc, setDoc, getDoc, addDoc, serverTimestamp, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+import { 
+    collection, 
+    doc, 
+    setDoc, 
+    getDoc, 
+    addDoc, 
+    serverTimestamp, 
+    query, 
+    where, 
+    getDocs,
+    runTransaction 
+} from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-// Helper to sanitize data (remove undefined values)
 const clean = (obj) => JSON.parse(JSON.stringify(obj));
 
 export const DB = {
-    // --- GENERIC SAVER (Works for any collection) ---
+    // --- GENERIC SAVER ---
     async saveDoc(collectionName, data, id = null) {
         const payload = clean({ ...data, lastUpdated: serverTimestamp() });
         if (id) {
+            // If ID is provided (e.g. "600001"), use it as the Document ID
             await setDoc(doc(db, collectionName, id), payload, { merge: true });
             return id;
         } else {
@@ -18,16 +29,12 @@ export const DB = {
         }
     },
 
-    // --- GENERIC LOADER ---
     async getDoc(collectionName, id) {
         const snap = await getDoc(doc(db, collectionName, id));
         return snap.exists() ? { id: snap.id, ...snap.data() } : null;
     },
 
-    // --- CUSTOMER ROLODEX (Phone Lookup) ---
     async findCustomerByPhone(phoneNumber) {
-        // Remove non-numeric chars for better matching if needed, 
-        // but for now we assume exact match or strict formatting.
         const q = query(collection(db, "customers"), where("phone", "==", phoneNumber));
         const querySnapshot = await getDocs(q);
         if (!querySnapshot.empty) {
@@ -37,11 +44,44 @@ export const DB = {
     },
 
     async saveCustomer(data) {
-        // Use Phone as ID for uniqueness, or auto-ID if no phone
         if (data.phone) {
             await setDoc(doc(db, "customers", data.phone), clean(data), { merge: true });
         } else {
             await addDoc(collection(db, "customers"), clean(data));
+        }
+    },
+
+    // --- SEQUENTIAL ID GENERATOR ---
+    async getNewId(counterName, startFrom = 1000) {
+        const counterRef = doc(db, "counters", counterName);
+        
+        try {
+            const newId = await runTransaction(db, async (transaction) => {
+                const counterDoc = await transaction.get(counterRef);
+                
+                let currentCount;
+                if (!counterDoc.exists()) {
+                    // Start at the requested number if no counter exists
+                    currentCount = startFrom;
+                } else {
+                    currentCount = counterDoc.data().count;
+                }
+
+                // If the current database count is somehow LOWER than our desired start
+                // (e.g. we changed logic), jump up to the start number.
+                if(currentCount < startFrom) {
+                    currentCount = startFrom;
+                }
+
+                const nextCount = currentCount + 1;
+                transaction.set(counterRef, { count: nextCount });
+                return nextCount;
+            });
+            
+            return newId.toString(); // Return as string
+        } catch (e) {
+            console.error("ID Generation Failed: ", e);
+            return "ERR-" + Date.now();
         }
     }
 };
