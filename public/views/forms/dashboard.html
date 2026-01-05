@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document Manager - Hamburg Overhead Door</title>
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=Inter:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #1a73e8;
+            --bg: #f8f9fa;
+            --dark: #202124;
+            --border: #dadce0;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg);
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+        }
+
+        /* HEADER & SEARCH */
+        .header {
+            background: var(--dark);
+            color: white;
+            padding: 20px 40px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .search-container {
+            flex-grow: 1;
+            max-width: 600px;
+            margin: 0 40px;
+            position: relative;
+        }
+
+        .search-input {
+            width: 100%;
+            padding: 12px 20px;
+            border-radius: 8px;
+            border: none;
+            font-size: 16px;
+            background: rgba(255,255,255,0.1);
+            color: white;
+            transition: all 0.3s;
+        }
+
+        .search-input:focus {
+            background: white;
+            color: black;
+            outline: none;
+        }
+
+        /* DASHBOARD LAYOUT */
+        .dashboard {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 30px;
+            padding: 40px;
+            overflow-y: auto;
+        }
+
+        /* STACK CARDS */
+        .doc-stack {
+            background: white;
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            transition: transform 0.2s;
+            position: relative;
+        }
+
+        .doc-stack:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 24px rgba(0,0,0,0.1);
+        }
+
+        /* Visual Stack Effect */
+        .doc-stack::before, .doc-stack::after {
+            content: "";
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            background: white;
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            z-index: -1;
+            left: 0;
+        }
+        .doc-stack::before { top: 4px; left: 4px; }
+        .doc-stack::after { top: 8px; left: 8px; }
+
+        .stack-title {
+            font-size: 14px;
+            font-weight: 700;
+            color: var(--primary);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 15px;
+            border-bottom: 2px solid var(--primary);
+            padding-bottom: 5px;
+        }
+
+        .doc-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            min-height: 50px;
+        }
+
+        .doc-item {
+            padding: 10px;
+            border-radius: 6px;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #f1f1f1;
+        }
+
+        .doc-item:hover {
+            background: #f1f8ff;
+        }
+
+        .doc-item .name {
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 13px;
+        }
+
+        .doc-item .date {
+            font-size: 11px;
+            color: #70757a;
+        }
+
+        .btn-new {
+            margin-top: 15px;
+            padding: 10px;
+            background: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-weight: bold;
+            cursor: pointer;
+            text-align: center;
+            text-decoration: none;
+        }
+
+        .btn-new:hover { opacity: 0.9; }
+
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <div style="font-weight: 800; font-size: 20px;">HAMBURG DOOR <span style="font-weight: 300; opacity: 0.7;">DOCS</span></div>
+        <div class="search-container">
+            <input type="text" class="search-input" id="mainSearch" placeholder="Search by customer name, order #, or date..." onkeyup="window.filterDocs()">
+        </div>
+        <div>
+            <button class="btn-new" style="margin-top:0" onclick="location.href='../forms/phone_message.html'">+ CREATE NEW</button>
+        </div>
+    </div>
+
+    <div class="dashboard" id="dashboard">
+        
+        <div class="doc-stack" data-type="intake">
+            <div class="stack-title">Intake / Phone Msgs</div>
+            <div class="doc-list">
+                <div style="padding:10px; color:#999; font-size:11px;">Loading...</div>
+            </div>
+            <a href="../forms/phone_message.html" class="btn-new">New Message</a>
+        </div>
+
+        <div class="doc-stack" data-type="quote">
+            <div class="stack-title">Quotes & Proposals</div>
+            <div class="doc-list">
+                <div style="padding:10px; color:#999; font-size:11px;">Loading...</div>
+            </div>
+            <a href="../forms/quote.html" class="btn-new">New Quote</a>
+        </div>
+
+        <div class="doc-stack" data-type="work-order">
+            <div class="stack-title">Work Orders</div>
+            <div class="doc-list">
+                <div style="padding:10px; color:#999; font-size:11px;">Loading...</div>
+            </div>
+            <a href="../forms/work_order.html" class="btn-new">New Work Order</a>
+        </div>
+
+        <div class="doc-stack" data-type="service">
+            <div class="stack-title">Service Tickets</div>
+            <div class="doc-list">
+                <div style="padding:10px; color:#999; font-size:11px;">Loading...</div>
+            </div>
+            <a href="../forms/service.html" class="btn-new">New Ticket</a>
+        </div>
+
+        <div class="doc-stack" data-type="invoice">
+            <div class="stack-title">Invoices</div>
+            <div class="doc-list">
+                <div style="padding:10px; color:#999; font-size:11px;">Loading...</div>
+            </div>
+            <a href="../forms/invoice.html" class="btn-new">New Invoice</a>
+        </div>
+    </div>
+
+    <script type="module">
+        import { db } from '../../js/firebase-config.js';
+        import { collection, query, orderBy, limit, onSnapshot } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+        // --- 1. SEARCH FUNCTIONALITY ---
+        // Attached to window so the HTML input can call it
+        window.filterDocs = function() {
+            let input = document.getElementById('mainSearch').value.toUpperCase();
+            let items = document.getElementsByClassName('doc-item');
+            
+            for (let i = 0; i < items.length; i++) {
+                let text = items[i].innerText || items[i].textContent;
+                if (text.toUpperCase().indexOf(input) > -1) {
+                    items[i].style.display = "";
+                    items[i].closest('.doc-stack').style.display = "";
+                } else {
+                    items[i].style.display = "none";
+                }
+            }
+
+            // Hide stacks if no items are visible
+            let stacks = document.getElementsByClassName('doc-stack');
+            for (let s = 0; s < stacks.length; s++) {
+                let visibleItems = stacks[s].querySelectorAll('.doc-item[style=""]');
+                // Only hide stack if we are actually searching
+                if (input !== "" && visibleItems.length === 0) {
+                    stacks[s].style.display = "none";
+                } else {
+                    stacks[s].style.display = "";
+                }
+            }
+        };
+
+        // --- 2. LIVE DATA LOADER ---
+        function loadLiveDocs(collectionName, stackType, pageLink) {
+            // Safety check: ensure DB is initialized
+            if(!db) { console.error("Database not initialized"); return; }
+
+            const q = query(collection(db, collectionName), orderBy("lastUpdated", "desc"), limit(10));
+            
+            // Real-time Listener
+            onSnapshot(q, (snapshot) => {
+                const listContainer = document.querySelector(`.doc-stack[data-type="${stackType}"] .doc-list`);
+                if (!listContainer) return;
+
+                listContainer.innerHTML = ''; // Clear "Loading..."
+
+                if(snapshot.empty) {
+                    listContainer.innerHTML = '<div style="padding:10px; color:#999; font-size:11px;">No active documents</div>';
+                    return;
+                }
+
+                snapshot.forEach((doc) => {
+                    const data = doc.data();
+                    const div = document.createElement('div');
+                    div.className = 'doc-item';
+                    
+                    // Format Date
+                    let dateStr = '---';
+                    if (data.lastUpdated) {
+                        dateStr = new Date(data.lastUpdated.toDate()).toLocaleDateString();
+                    }
+
+                    // Determine Display Name (Fallback to ID if name missing)
+                    const displayName = data.customerName || data.name || "UNKNOWN CLIENT";
+                    const displayId = data.ticketNumber || data.id || "---";
+
+                    div.innerHTML = `
+                        <span class="name">#${displayId} | ${displayName}</span>
+                        <span class="date">${dateStr}</span>
+                    `;
+
+                    // Click to Open Form
+                    div.onclick = () => {
+                        location.href = `${pageLink}?id=${doc.id}`;
+                    };
+
+                    listContainer.appendChild(div);
+                });
+            }, (error) => {
+                console.error(`Error loading ${collectionName}:`, error);
+            });
+        }
+
+        // --- 3. INITIALIZE FEEDS ---
+        // We map the DB Collection Names to your HTML Stacks
+        loadLiveDocs('phone_messages', 'intake', '../forms/phone_message.html');
+        loadLiveDocs('quotes', 'quote', '../forms/quote.html');
+        loadLiveDocs('work_orders', 'work-order', '../forms/work_order.html');
+        loadLiveDocs('service_tickets', 'service', '../forms/service.html');
+        loadLiveDocs('invoices', 'invoice', '../forms/invoice.html');
+
+    </script>
+</body>
+</html>

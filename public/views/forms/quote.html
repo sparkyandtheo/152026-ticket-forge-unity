@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Quote Generator - Hamburg Overhead Door</title>
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&display=swap" rel="stylesheet">
+    <style>
+        :root { --page-width: 8.5in; --page-height: 11in; }
+        body { background: #525659; display: flex; flex-direction: column; align-items: center; padding: 80px 0 40px 0; margin: 0; font-family: sans-serif; }
+        .toolbar { position: fixed; top: 0; left: 0; right: 0; height: 60px; background: #202124; display: flex; align-items: center; justify-content: center; gap: 15px; z-index: 1000; box-shadow: 0 2px 8px rgba(0,0,0,0.4); }
+        @media print {
+            .toolbar, .add-row-btn, .save-btn, .suggestions-box { display: none !important; }
+            body { background: white; padding: 0; margin: 0; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            .page { margin: 0; box-shadow: none; border: none; width: 100%; height: auto; padding: 0; overflow: visible; }
+            .tax-col { visibility: hidden; width: 0 !important; }
+            .grid-header { grid-template-columns: 4ch 12ch 1fr 10ch 10ch 0ch !important; }
+            .item-row { grid-template-columns: 4ch 12ch 1fr 10ch 10ch 0ch !important; }
+        }
+        .page { background: white; width: var(--page-width); height: var(--page-height); padding: 0.5in; box-shadow: 0 0 15px rgba(0,0,0,0.3); font-family: 'IBM Plex Mono', monospace; font-size: 12px; display: flex; flex-direction: column; box-sizing: border-box; position: relative; }
+        input, textarea { font-family: 'IBM Plex Mono', monospace; font-size: 12px; border: none; border-bottom: 1px solid transparent; outline: none; text-transform: uppercase; background: transparent; color: #000; width: 100%; }
+        input:focus, textarea:focus { border-bottom: 1px solid #2196F3; background: #f0f8ff; }
+        textarea { resize: none; overflow: hidden; display: block; line-height: 1.3; }
+        
+        /* LAYOUT & UTILS */
+        .header-row { display: flex; justify-content: space-between; align-items: flex-start; }
+        .double-divider { border-top: 3px double #000; border-bottom: 1px solid #000; height: 1px; margin: 10px 0; }
+        .divider { border-top: 1px solid #000; margin: 10px 0; }
+        .grid-header, .item-row { display: grid; grid-template-columns: 4ch 12ch 1fr 10ch 10ch 3ch; gap: 10px; align-items: start; }
+        .grid-header { font-weight: 600; border-bottom: 1px solid #000; padding-bottom: 5px; margin-bottom: 10px; }
+        .item-row { margin-bottom: 8px; }
+        .mt-auto { margin-top: auto; }
+
+        /* BUTTONS */
+        .btn { padding: 8px 16px; border-radius: 4px; border: none; cursor: pointer; font-weight: 600; font-size: 11px; text-transform: uppercase; transition: all 0.2s; }
+        .btn:hover { transform: translateY(-1px); filter: brightness(1.1); }
+        .btn-blue { background: #1a73e8; color: white; }
+        .btn-green { background: #1e8e3e; color: white; }
+        .btn-gray { background: #5f6368; color: white; }
+        .btn-red { background: #d93025; color: white; }
+        .btn-save { background: #f9ab00; color: #000; } /* Yellow Save Button */
+        .add-row-btn { background: transparent; border: 1px dashed #ccc; color: #666; width: 100%; padding: 5px; margin-bottom: 20px; cursor: pointer; }
+        .add-row-btn:hover { background: #f9f9f9; border-color: #999; }
+        
+        /* FOOTER ELEMENTS */
+        .footer-terms { font-size: 10px; margin-top: 15px; border: 1px solid #ddd; padding: 10px; line-height: 1.4; }
+        .signature-box { margin-top: 15px; border: 1px solid #000; padding: 15px; }
+        .tax-chk { width: auto; transform: scale(0.8); cursor: pointer; }
+
+        /* --- AUTOCOMPLETE SUGGESTIONS STYLING --- */
+        .input-group { position: relative; display:flex; width: 100%; }
+        .suggestions-box {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            width: 100%;
+            background: white;
+            border: 1px solid #ccc;
+            border-top: none;
+            z-index: 1000;
+            max-height: 150px;
+            overflow-y: auto;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            display: none; /* Hidden by default */
+        }
+        .suggestion-item {
+            padding: 8px;
+            border-bottom: 1px solid #eee;
+            cursor: pointer;
+            font-size: 11px;
+            color: #333;
+        }
+        .suggestion-item:hover { background-color: #f0f8ff; color: #1a73e8; }
+        .suggestion-item strong { color: #000; }
+    </style>
+</head>
+<body>
+
+<div class="toolbar">
+    <button class="btn btn-gray" onclick="location.href='../office/dashboard.html'" style="margin-right: auto; margin-left: 20px;">← Dashboard</button>
+    <button class="btn btn-save" onclick="saveTicket()">💾 Save Quote</button>
+    <button class="btn btn-blue" onclick="convertToWorkOrder()">➡️ Convert to Order</button>
+    <button class="btn btn-green" onclick="alert('Select \'Save as PDF\' in the print destination.'); window.print();">Save as PDF</button>
+</div>
+
+<div class="page">
+    <div class="header-row">
+        <div>
+            <b style="font-size: 16px;">HAMBURG OVERHEAD DOOR, INC.</b><br>
+            5659 Herman Hill Road<br>
+            Hamburg, NY 14075<br>
+            716-649-3600 | www.hamburgdoor.com
+        </div>
+        
+        <div style="text-align: right; width: 340px;">
+            <div style="font-size: 20px; font-weight: 800; text-transform: uppercase; margin-bottom: 10px; letter-spacing: 1px; white-space: nowrap;">
+                === QUOTE ===
+            </div>
+            <div style="display:flex; justify-content:flex-end; gap: 10px;"><b>NO:</b> <input type="text" id="quote-no" value="Q-NEW" style="width: 10ch; text-align:right;"></div>
+            <div style="display:flex; justify-content:flex-end; gap: 10px;">DATE: <input type="text" id="quote-date" style="width: 10ch; text-align:right;"></div>
+            <div style="display:flex; justify-content:flex-end; gap: 10px;">PO #: <input type="text" id="quote-po" placeholder="REQUIRED" style="width: 10ch; text-align:right;"></div>
+            <div style="display:flex; justify-content:flex-end; gap: 10px;">REP: <input type="text" id="quote-rep" value="" style="width: 10ch; text-align:right;"></div>
+        </div>
+    </div>
+
+    <div class="double-divider"></div>
+
+    <div style="display: flex; justify-content: space-between;">
+        <div style="width: 48%;">
+            <b>BILL TO:</b><br>
+            <input type="text" id="bill-name" placeholder="NAME"><br>
+            <input type="text" id="bill-addr1" placeholder="ADDRESS"><br>
+            <input type="text" id="bill-addr2" placeholder="CITY, STATE ZIP"><br>
+            
+            <div style="display:flex; margin-top:2px;">
+                <span style="white-space:nowrap; margin-right:5px;">PH:</span> 
+                <div class="input-group">
+                    <input type="text" id="bill-phone" placeholder="START TYPING PHONE..." onkeyup="lookupCustomer(this)" autocomplete="off">
+                    <div id="suggestions" class="suggestions-box"></div>
+                </div>
+            </div>
+            
+            <button class="btn btn-save" style="font-size: 9px; padding: 4px; margin-top:5px;" onclick="updateRolodex()">UPDATE ROLODEX</button>
+        </div>
+        
+        <div style="width: 48%;">
+            <b>JOB SITE:</b><br>
+            <input type="text" id="site-addr1" placeholder="JOB ADDRESS"><br>
+            <div style="display:flex;">ACCT: <input type="text" id="acct-id" placeholder="ID"></div>
+            <div style="display:flex;">SITE: <input type="text" value="RESIDENTIAL"></div>
+        </div>
+    </div>
+
+    <div class="divider"></div>
+    <b>PROPOSAL:</b>
+    <textarea rows="2" id="prop-text" oninput="autoGrow(this)">WE PROPOSE: NEW INSTALLATION AS SPECIFIED BELOW. 50% DEPOSIT REQUIRED TO PROCEED.</textarea>
+    <div class="divider"></div>
+
+    <div class="grid-header">
+        <span>QTY</span>
+        <span>ID</span>
+        <span>DESCRIPTION</span>
+        <span style="text-align: right;">PRICE</span>
+        <span style="text-align: right;">TOTAL</span>
+        <span class="tax-col" style="font-size: 9px; text-align:center;">TAX?</span>
+    </div>
+
+    <div id="items-list">
+        </div>
+
+    <button class="add-row-btn" onclick="addRow()">+ ADD LINE ITEM</button>
+
+    <div class="mt-auto">
+        <div style="display: flex; justify-content: flex-end;">
+            <div style="width: 250px;">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
+                    <span>TAXABLE:</span>
+                    <input type="text" id="sum-taxable" value="0.00" style="text-align: right; width: 100px;" readonly>
+                </div>
+                <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
+                    <span>NON-TAXABLE:</span>
+                    <input type="text" id="sum-nontaxable" value="0.00" style="text-align: right; width: 100px;" readonly>
+                </div>
+                <div class="divider" style="margin: 5px 0;"></div>
+                <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
+                    <span>SUB-TOTAL:</span>
+                    <input type="text" id="subtotal" value="0.00" style="text-align: right; width: 100px;" readonly>
+                </div>
+                <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
+                    <span>SALES TAX (8.75%):</span>
+                    <input type="text" id="sales-tax" value="0.00" style="text-align: right; width: 100px;" readonly>
+                </div>
+                <div style="display: flex; justify-content: space-between; border-top: 1px solid #000; padding-top: 5px; font-weight: bold;">
+                    <span>TOTAL:</span>
+                    <input type="text" id="grand-total" value="$0.00" style="text-align: right; width: 100px; font-weight: bold;" readonly>
+                </div>
+            </div>
+        </div>
+
+        <div class="footer-terms">
+            <b>TERMS & CONDITIONS:</b><br>
+            * TERMS ARE NET C.O.D. PAST DUE ACCOUNTS ASSESSED 2% PER MONTH.<br>
+            * GARAGE MUST BE CLEAR 10' BACK FROM OPENING FOR INSTALLATION.<br>
+            * LUBRICATION OR PHOTO EYE MISALIGNMENT NOT COVERED BY WARRANTY.
+        </div>
+
+        <div class="signature-box">
+            <b>CUSTOMER APPROVAL:</b>
+            <div style="font-size: 11px; margin-bottom: 25px;">I hereby accept this quote and authorize the work to proceed.</div>
+            <div style="display: flex; justify-content: space-between;">
+                <div style="width: 65%; border-top: 1px solid #000; padding-top: 5px; font-size: 10px;">SIGNATURE</div>
+                <div style="width: 30%; border-top: 1px solid #000; padding-top: 5px; font-size: 10px;">DATE</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script type="module">
+    import { DB } from '../../js/db.js';
+
+    const urlParams = new URLSearchParams(window.location.search);
+    const DOC_ID = urlParams.get('id');
+
+    window.onload = async () => {
+        // Set Date
+        const d = new Date();
+        document.getElementById('quote-date').value = (d.getMonth()+1)+'/'+d.getDate()+'/'+d.getFullYear();
+        document.querySelectorAll("textarea").forEach(autoGrow); 
+
+        if (DOC_ID) {
+            console.log("Loading Quote...", DOC_ID);
+            const data = await DB.getDoc('quotes', DOC_ID);
+            if (data) loadForm(data);
+        } else {
+            addRow(); // Empty row for new quote
+        }
+    };
+
+    function loadForm(data) {
+        setVal('quote-no', data.ticketNumber || DOC_ID.substring(0,6).toUpperCase());
+        setVal('quote-date', data.date);
+        setVal('quote-po', data.poNumber);
+        setVal('quote-rep', data.rep);
+
+        setVal('bill-name', data.customerName);
+        setVal('bill-addr1', data.address1);
+        setVal('bill-addr2', data.address2);
+        setVal('bill-phone', data.phone);
+        
+        setVal('site-addr1', data.siteAddress);
+        setVal('acct-id', data.accountId);
+        
+        setVal('prop-text', data.proposalText);
+
+        // Load Line Items
+        const list = document.getElementById('items-list');
+        list.innerHTML = '';
+        if (data.items && data.items.length > 0) {
+            data.items.forEach(item => addRow(item));
+        } else {
+            addRow();
+        }
+        calcAll();
+    }
+
+    // --- SAVE LOGIC ---
+    window.saveTicket = async function() {
+        const items = scrapeItems();
+        const payload = {
+            ticketNumber: document.getElementById('quote-no').value,
+            date: document.getElementById('quote-date').value,
+            poNumber: document.getElementById('quote-po').value,
+            rep: document.getElementById('quote-rep').value,
+            
+            customerName: document.getElementById('bill-name').value,
+            address1: document.getElementById('bill-addr1').value,
+            address2: document.getElementById('bill-addr2').value,
+            phone: document.getElementById('bill-phone').value,
+            
+            siteAddress: document.getElementById('site-addr1').value,
+            accountId: document.getElementById('acct-id').value,
+            
+            proposalText: document.getElementById('prop-text').value,
+            items: items,
+            grandTotal: document.getElementById('grand-total').value,
+            
+            status: 'Open'
+        };
+
+        try {
+            const id = await DB.saveDoc('quotes', payload, DOC_ID);
+            alert("Quote Saved! ID: " + id);
+            if (!DOC_ID) window.history.pushState({}, '', `?id=${id}`);
+        } catch (e) {
+            alert("Error: " + e.message);
+        }
+    };
+
+    // --- CONVERT TO WORK ORDER ---
+    window.convertToWorkOrder = async function() {
+        if(!confirm("Create a Work Order from this Quote?")) return;
+        
+        const items = scrapeItems();
+        const payload = {
+            customerName: document.getElementById('bill-name').value,
+            address1: document.getElementById('bill-addr1').value,
+            address2: document.getElementById('bill-addr2').value,
+            phone: document.getElementById('bill-phone').value,
+            siteAddress: document.getElementById('site-addr1').value,
+            description: "INSTALLED PER QUOTE #" + document.getElementById('quote-no').value + "\n" + document.getElementById('prop-text').value,
+            items: items,
+            status: 'Open', // Goes to Dispatch Board
+            originQuoteId: DOC_ID || 'new'
+        };
+
+        try {
+            const newId = await DB.saveDoc('work_orders', payload);
+            if(confirm("Work Order Created! Open it now?")) {
+                window.location.href = `work_order.html?id=${newId}`;
+            }
+        } catch (e) {
+            alert("Error converting: " + e.message);
+        }
+    };
+
+    // --- HELPERS ---
+    function scrapeItems() {
+        const items = [];
+        document.querySelectorAll('.item-row').forEach(row => {
+            const qty = row.querySelector('.qty').value;
+            const price = row.querySelector('.price').value;
+            if(qty || price) { // Changed logic to save if either exists
+                items.push({
+                    qty: qty || 0,
+                    id: row.querySelector('input[placeholder="ID"]').value,
+                    desc: row.querySelector('textarea').value,
+                    price: price || 0,
+                    tax: row.querySelector('.tax-chk').checked
+                });
+            }
+        });
+        return items;
+    }
+
+    function setVal(id, val) { if(val) document.getElementById(id).value = val; }
+
+    window.autoGrow = function(element) {
+        element.style.height = "5px";
+        element.style.height = (element.scrollHeight) + "px";
+    }
+
+    window.addRow = function(data = null) {
+        const container = document.getElementById('items-list');
+        const div = document.createElement('div');
+        div.className = 'item-row';
+        
+        const qty = data ? data.qty : 1;
+        const id = data ? data.id : '';
+        const desc = data ? data.desc : '';
+        const price = data ? data.price : '0.00';
+        const taxChecked = data ? (data.tax ? 'checked' : '') : 'checked';
+
+        div.innerHTML = `<input type="number" class="qty" value="${qty}" style="text-align: center;" oninput="calcRow(this)">
+            <input type="text" placeholder="ID" value="${id}">
+            <textarea oninput="autoGrow(this)" placeholder="Description...">${desc}</textarea>
+            <input type="number" class="price" value="${price}" style="text-align: right;" oninput="calcRow(this)">
+            <input type="text" class="total" value="0.00" style="text-align: right;" readonly>
+            <div class="tax-col" style="text-align:center;"><input type="checkbox" class="tax-chk" ${taxChecked} onchange="calcAll()"></div>`;
+        container.appendChild(div);
+        autoGrow(div.querySelector('textarea'));
+        calcRow(div.querySelector('.qty'));
+    }
+
+    window.calcRow = function(input) {
+        const row = input.closest('.item-row');
+        const qty = parseFloat(row.querySelector('.qty').value) || 0;
+        const price = parseFloat(row.querySelector('.price').value) || 0;
+        row.querySelector('.total').value = (qty * price).toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2});
+        calcAll();
+    }
+
+    window.calcAll = function() {
+        let taxableSum = 0; let nonTaxableSum = 0;
+        document.querySelectorAll('.item-row').forEach(row => {
+            const qty = parseFloat(row.querySelector('.qty').value) || 0;
+            const price = parseFloat(row.querySelector('.price').value) || 0;
+            const val = qty * price;
+            if(row.querySelector('.tax-chk').checked) { taxableSum += val; } else { nonTaxableSum += val; }
+        });
+        const tax = taxableSum * 0.0875;
+        document.getElementById('sum-taxable').value = taxableSum.toFixed(2);
+        document.getElementById('sum-nontaxable').value = nonTaxableSum.toFixed(2);
+        document.getElementById('subtotal').value = (taxableSum + nonTaxableSum).toFixed(2);
+        document.getElementById('sales-tax').value = tax.toFixed(2);
+        document.getElementById('grand-total').value = "$" + (taxableSum + nonTaxableSum + tax).toFixed(2);
+    }
+    
+    // Rolodex Logic (retained)
+    window.lookupCustomer = function(input) {
+        const val = input.value.toUpperCase();
+        const box = document.getElementById('suggestions');
+        if (val.length < 2) { box.style.display = 'none'; return; }
+        // Simple mock since DB lookup is async and specialized in db.js
+        // You can wire this to DB.findCustomerByPhone if you like
+    }
+    
+    // Hide suggestions
+    document.addEventListener('click', function(e) {
+        if (!e.target.closest('.input-group')) {
+            document.getElementById('suggestions').style.display = 'none';
+        }
+    });
+</script>
+</body>
+</html>

@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>TechView | Job List</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&family=IBM+Plex+Mono:wght@500&display=swap" rel="stylesheet">
+    <style>
+        :root { --dark: #202124; --light: #f8f9fa; --blue: #1a73e8; --green: #1e8e3e; --red: #d93025; --yellow: #f9ab00; }
+        body { font-family: 'Inter', sans-serif; background-color: var(--dark); color: white; margin: 0; padding-bottom: 40px; -webkit-tap-highlight-color: transparent; }
+
+        /* HEADER */
+        .app-header { padding: 20px; background: #3c4043; border-bottom: 1px solid #5f6368; display: flex; justify-content: space-between; align-items: center; }
+        .tech-name { font-weight: 900; font-size: 18px; text-transform: uppercase; }
+        .logout-btn { background: transparent; border: 1px solid #9aa0a6; color: #9aa0a6; padding: 5px 10px; border-radius: 4px; font-size: 11px; }
+
+        /* JOB LIST VIEW */
+        .job-list { padding: 15px; }
+        .job-card { background: #303134; border-radius: 12px; padding: 20px; margin-bottom: 15px; border-left: 5px solid var(--blue); cursor: pointer; transition: transform 0.1s; }
+        .job-card:active { transform: scale(0.98); background: #444; }
+        .card-time { color: var(--yellow); font-family: 'IBM Plex Mono', monospace; font-size: 12px; margin-bottom: 5px; font-weight: bold; }
+        .card-addr { font-size: 18px; font-weight: bold; margin-bottom: 5px; }
+        .card-cust { color: #bdc1c6; font-size: 14px; }
+
+        /* JOB DETAIL VIEW (Hidden by default) */
+        #detail-view { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: var(--dark); z-index: 100; overflow-y: auto; }
+        .detail-header { background: #3c4043; padding: 15px; display: flex; align-items: center; gap: 15px; position: sticky; top: 0; }
+        .back-btn { background: transparent; border: none; color: white; font-size: 24px; cursor: pointer; }
+        
+        .big-action-btn { background: #525659; border: none; border-radius: 12px; color: white; padding: 15px; font-size: 16px; font-weight: bold; width: 100%; margin-bottom: 10px; display: flex; align-items: center; justify-content: center; gap: 10px; }
+        .btn-map { background: var(--blue); }
+        .btn-call { background: var(--green); }
+
+        .section { padding: 20px; border-bottom: 1px solid #3c4043; }
+        .section-label { color: var(--yellow); font-size: 11px; font-weight: bold; text-transform: uppercase; margin-bottom: 10px; }
+        .data-box { background: #303134; padding: 15px; border-radius: 8px; font-size: 16px; line-height: 1.4; color: #e8eaed; }
+
+        /* INPUTS */
+        textarea { width: 100%; background: #202124; border: 2px solid #5f6368; color: white; font-size: 16px; padding: 15px; border-radius: 8px; box-sizing: border-box; min-height: 120px; margin-bottom: 10px; font-family: sans-serif; }
+        textarea:focus { border-color: var(--blue); outline: none; }
+        
+        /* FOOTER ACTIONS */
+        .footer-actions { padding: 20px; }
+        .finish-btn { background: var(--yellow); color: black; border: none; width: 100%; padding: 18px; border-radius: 50px; font-size: 18px; font-weight: 900; text-transform: uppercase; box-shadow: 0 4px 10px rgba(0,0,0,0.3); }
+
+        /* EMPTY STATE */
+        .empty-state { text-align: center; color: #9aa0a6; margin-top: 50px; }
+        .loader { border: 3px solid #3c4043; border-top: 3px solid var(--blue); border-radius: 50%; width: 30px; height: 30px; animation: spin 1s linear infinite; margin: 0 auto; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    </style>
+</head>
+<body>
+
+    <div id="list-view">
+        <div class="app-header">
+            <div class="tech-name" id="header-user">LOADING...</div>
+            <button class="logout-btn" onclick="logout()">LOGOUT</button>
+        </div>
+        <div class="job-list" id="job-container">
+            <div class="loader"></div>
+        </div>
+    </div>
+
+    <div id="detail-view">
+        <div class="detail-header">
+            <button class="back-btn" onclick="closeJob()">←</button>
+            <div style="font-weight:bold; font-size:14px;">JOB DETAILS</div>
+        </div>
+        
+        <div class="section">
+            <div id="d-address" class="card-addr"></div>
+            <div id="d-cust" class="card-cust"></div>
+            
+            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-top:20px;">
+                <button class="big-action-btn btn-map" id="btn-nav">🗺️ NAVIGATE</button>
+                <button class="big-action-btn btn-call" id="btn-dial">📞 CALL</button>
+            </div>
+        </div>
+
+        <div class="section">
+            <div class="section-label">SCOPE OF WORK</div>
+            <div class="data-box" id="d-scope"></div>
+        </div>
+
+        <div class="section">
+            <div class="section-label">TECH NOTES</div>
+            <textarea id="d-notes" placeholder="Type resolution notes here..."></textarea>
+            
+            <div class="section-label">SIGNATURE (TYPE NAME)</div>
+            <input type="text" id="d-sig" placeholder="Technician Name" style="width:100%; padding:15px; background:#202124; border:1px solid #5f6368; color:white; border-radius:8px;">
+        </div>
+
+        <div class="footer-actions">
+            <button class="finish-btn" onclick="finishJob()">COMPLETE JOB</button>
+        </div>
+    </div>
+
+    <script type="module">
+        import { db, auth } from '../../js/firebase-config.js';
+        import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+        import { collection, query, where, onSnapshot, doc, updateDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+        let currentTechName = "Guest";
+        let openJobId = null;
+        let openCollection = null;
+
+        // 1. AUTH CHECK
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                // In a real app, you'd fetch the user's profile to get their name
+                // For now, we use the email part
+                currentTechName = user.email.split('@')[0];
+                document.getElementById('header-user').innerText = currentTechName.toUpperCase();
+                loadJobs(currentTechName);
+            } else {
+                window.location.href = '../office/index.html';
+            }
+        });
+
+        window.logout = () => signOut(auth);
+
+        // 2. LOAD JOBS
+        function loadJobs(techName) {
+            // NOTE: In production, match this string exactly to what Dispatch Board saves
+            // We search both Collections: Service Tickets AND Work Orders
+            
+            const container = document.getElementById('job-container');
+            container.innerHTML = ''; // Clear loader
+
+            // A. Service Tickets
+            subscribeToCollection('service_tickets', techName, container);
+            
+            // B. Work Orders
+            subscribeToCollection('work_orders', techName, container);
+        }
+
+        function subscribeToCollection(colName, techName, container) {
+            // Query: Status=Scheduled AND assignedTech matches
+            // Note: Since our Dispatch Board saves "Mario", but login might be "mario@...", 
+            // you might need to adjust this matching logic. 
+            // For this demo, we assume strict match or we fetch ALL scheduled for demo purposes.
+            
+            const q = query(collection(db, colName), where("status", "==", "Scheduled"));
+
+            onSnapshot(q, (snapshot) => {
+                // We filter client-side for "loose" name matching to handle "Mario" vs "mario"
+                snapshot.forEach(doc => {
+                    const data = doc.data();
+                    const assigned = (data.assignedTech || "").toLowerCase();
+                    const current = techName.toLowerCase();
+
+                    // Show if assigned to me OR if I'm the admin testing it
+                    if (assigned.includes(current) || current === 'admin') {
+                        renderCard(doc.id, data, colName, container);
+                    }
+                });
+                
+                if(container.innerHTML === '') {
+                    container.innerHTML = `<div class="empty-state">No jobs scheduled for <b>${techName}</b> today.</div>`;
+                }
+            });
+        }
+
+        function renderCard(id, data, col, container) {
+            // Avoid duplicates if both listeners fire
+            if(document.getElementById(`card-${id}`)) return;
+
+            const div = document.createElement('div');
+            div.className = 'job-card';
+            div.id = `card-${id}`;
+            div.innerHTML = `
+                <div class="card-time">⏰ ${data.scheduledSlot || 'TODAY'}</div>
+                <div class="card-addr">${data.address || data.siteAddress || 'No Address'}</div>
+                <div class="card-cust">${data.customerName || 'Unknown Client'}</div>
+            `;
+            
+            div.onclick = () => openJob(id, data, col);
+            container.appendChild(div);
+        }
+
+        // 3. JOB DETAIL LOGIC
+        function openJob(id, data, col) {
+            openJobId = id;
+            openCollection = col;
+
+            // Fill Data
+            document.getElementById('d-address').innerText = data.address || data.siteAddress || '';
+            document.getElementById('d-cust').innerText = data.customerName || '';
+            document.getElementById('d-scope').innerText = data.description || 'See paper ticket for details.';
+            document.getElementById('d-notes').value = data.techNotes || ''; // Pre-fill if existing
+            
+            // Buttons
+            const addr = data.address || data.siteAddress || '';
+            document.getElementById('btn-nav').onclick = () => window.open(`https://maps.google.com/?q=${encodeURIComponent(addr)}`);
+            document.getElementById('btn-dial').onclick = () => window.location.href = `tel:${data.phone || ''}`;
+
+            // Show View
+            document.getElementById('detail-view').style.display = 'block';
+        }
+
+        window.closeJob = () => {
+            document.getElementById('detail-view').style.display = 'none';
+            openJobId = null;
+        }
+
+        // 4. FINISH JOB
+        window.finishJob = async () => {
+            if(!confirm("Mark this job as COMPLETE?")) return;
+
+            const notes = document.getElementById('d-notes').value;
+            const sig = document.getElementById('d-sig').value;
+
+            if(!sig) { alert("Please sign (type) your name."); return; }
+
+            try {
+                await updateDoc(doc(db, openCollection, openJobId), {
+                    status: "Complete",
+                    techNotes: notes,
+                    techSig: sig,
+                    completedAt: serverTimestamp()
+                });
+                alert("Good job! Synced to office.");
+                closeJob();
+                // Card will disappear automatically due to onSnapshot listener
+            } catch (e) {
+                alert("Error: " + e.message);
+            }
+        }
+    </script>
+</body>
+</html>

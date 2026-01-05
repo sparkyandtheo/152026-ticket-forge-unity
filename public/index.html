@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self' 'unsafe-inline' 'unsafe-eval' https://*.googleapis.com https://*.gstatic.com https://*.firebaseapp.com https://*.firebaseio.com wss://*.firebaseio.com;">
+
+    <title>Hamburg Door | Loading...</title>
+    
+    <script src="./js/auth.js" type="module" defer></script> 
+    
+    <style>
+        body { background: #202124; color: white; display: flex; align-items: center; justify-content: center; height: 100vh; font-family: sans-serif; }
+        .loader { border: 4px solid #333; border-top: 4px solid #1a73e8; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    </style>
+</head>
+<body>
+    <div style="text-align: center;">
+        <div class="loader" style="margin: 0 auto 20px auto;"></div>
+        <div>Connecting to HQ...</div>
+    </div>
+
+    <script>
+        window.addEventListener('load', () => {
+            const role = localStorage.getItem('user_role');
+
+            setTimeout(() => {
+                if (role === 'office') {
+                    // FIX 1: Relative Path
+                    window.location.href = './views/office/dashboard.html';
+                } else {
+                    window.location.href = './views/mobile/index.html';
+                }
+            }, 800); 
+        });
+        
+        if ('serviceWorker' in navigator) {
+            // FIX 1: Relative Path
+            navigator.serviceWorker.register('./sw.js')
+                .then(reg => console.log('Service Worker Registered'))
+                .catch(err => console.log('SW Registration Failed', err));
+        }
+    </script>
+</body>
+</html>

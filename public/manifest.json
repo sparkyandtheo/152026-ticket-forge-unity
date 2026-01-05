@@ -1,0 +1,23 @@
+{
+  "short_name": "Hamburg Door",
+  "name": "Hamburg Overhead Door Field App",
+  "icons": [
+    {
+      "src": "/assets/img/icons/icon-192.png",
+      "type": "image/png",
+      "sizes": "192x192"
+    },
+    {
+      "src": "/assets/img/icons/icon-512.png",
+      "type": "image/png",
+      "sizes": "512x512"
+    }
+  ],
+  "start_url": "/index.html",
+  "background_color": "#202124",
+  "display": "standalone",
+  "scope": "/",
+  "theme_color": "#1a73e8",
+  "orientation": "portrait-primary",
+  "description": "Field service management for Hamburg Overhead Door."
+}

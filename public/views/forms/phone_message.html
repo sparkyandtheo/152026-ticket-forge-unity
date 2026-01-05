@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Phone Message - Hamburg Overhead Door</title>
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&display=swap" rel="stylesheet">
+    <style>
+        :root { --page-width: 8.5in; --page-height: 11in; }
+        body { background: #525659; display: flex; flex-direction: column; align-items: center; padding: 80px 0 40px 0; margin: 0; font-family: sans-serif; }
+        .toolbar { position: fixed; top: 0; left: 0; right: 0; height: 60px; background: #202124; display: flex; align-items: center; justify-content: center; gap: 15px; z-index: 1000; box-shadow: 0 2px 8px rgba(0,0,0,0.4); }
+        .page { background: white; width: var(--page-width); height: var(--page-height); padding: 0.5in; box-shadow: 0 0 15px rgba(0,0,0,0.3); font-family: 'IBM Plex Mono', monospace; font-size: 12px; display: flex; flex-direction: column; box-sizing: border-box; position: relative; }
+        
+        /* --- VISUAL INPUT STYLES --- */
+        input, textarea { 
+            font-family: 'IBM Plex Mono', monospace; 
+            font-size: 12px; 
+            border: 1px solid #ddd;
+            border-bottom: 2px solid #ccc;
+            outline: none; 
+            text-transform: uppercase; 
+            color: #000; 
+            width: 100%; 
+            transition: all 0.2s;
+            background: #ffffcc; /* IDLE: YELLOW */
+            padding: 4px;
+        }
+
+        /* HOVER */
+        input:hover, textarea:hover { background: #e6fffa; border-color: #1e8e3e; cursor: text; }
+
+        /* FOCUS: PINK (ACTIVE) */
+        input:focus, textarea:focus { border-bottom: 2px solid #d500f9; background: #ffccff; font-weight: 600; }
+
+        /* CHANGED STATE: BLUE (EDITED) */
+        .input-changed {
+            background-color: #e3f2fd !important;
+            border-color: #2196F3 !important;
+            border-bottom: 2px solid #2196F3 !important;
+        }
+
+        textarea { resize: none; overflow: hidden; display: block; line-height: 1.3; }
+
+        /* STRUCTURE & UTILS */
+        .header-row { display: flex; justify-content: space-between; align-items: flex-start; }
+        .double-divider { border-top: 3px double #000; border-bottom: 1px solid #000; height: 1px; margin: 10px 0; }
+        .divider { border-top: 1px solid #000; margin: 10px 0; }
+        .label { font-weight: 600; white-space: nowrap; margin-right: 5px; }
+        .mt-auto { margin-top: auto; }
+        
+        /* TOOLBAR BUTTONS */
+        .btn { padding: 8px 16px; border-radius: 4px; border: none; cursor: pointer; font-weight: 600; font-size: 11px; text-transform: uppercase; transition: all 0.2s; }
+        .btn-blue { background: #1a73e8; color: white; }
+        .btn-green { background: #1e8e3e; color: white; }
+        .btn-gray { background: #5f6368; color: white; }
+        .btn-red { background: #d93025; color: white; }
+        
+        /* --- NEW ROLODEX BUTTON STYLE --- */
+        .btn-rolodex {
+            width: 100%;
+            margin-top: 8px;
+            padding: 12px;
+            font-family: 'IBM Plex Mono', monospace;
+            font-weight: 600;
+            font-size: 12px;
+            text-transform: uppercase;
+            background: transparent;
+            color: #aaa;
+            border: 2px dashed #ccc; /* Looks like a placeholder */
+            cursor: not-allowed;
+            transition: all 0.3s;
+            text-align: center;
+        }
+        
+        /* ACTIVE STATE - LOOKS LIKE A STAMP */
+        .btn-rolodex.active {
+            background: #000;
+            color: #fff;
+            border: 2px solid #000;
+            cursor: pointer;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+        }
+        .btn-rolodex.active:hover {
+            background: #333;
+            transform: translateY(-1px);
+        }
+
+        /* ACTION ROW */
+        .action-row { margin-top: 20px; display: flex; gap: 20px; padding-top: 20px; border-top: 2px dashed #ddd; }
+        .action-btn { flex: 1; padding: 15px; border: 2px solid #ddd; background: #f8f9fa; border-radius: 8px; cursor: pointer; text-align: left; transition: all 0.2s; }
+        .action-btn:hover { border-color: #1a73e8; background: #e8f0fe; }
+        .action-title { font-weight: bold; font-size: 14px; color: #1a73e8; display: block; margin-bottom: 5px; }
+        .action-desc { font-size: 10px; color: #666; }
+
+        /* AUTOCOMPLETE */
+        .input-group { position: relative; display:flex; width: 100%; }
+        .suggestions-box { position: absolute; top: 100%; left: 0; width: 100%; background: white; border: 1px solid #ccc; z-index: 1000; max-height: 150px; overflow-y: auto; display: none; }
+        .suggestion-item { padding: 8px; border-bottom: 1px solid #eee; cursor: pointer; font-size: 11px; }
+        .suggestion-item:hover { background-color: #f0f8ff; color: #1a73e8; }
+    </style>
+</head>
+<body>
+
+<div class="toolbar">
+    <button class="btn btn-gray" onclick="location.href='../office/dashboard.html'" style="margin-right: auto; margin-left: 20px;">← Dashboard</button>
+    <button class="btn btn-blue" onclick="window.print()">Print</button>
+    <button class="btn btn-red" onclick="if(confirm('Clear form?')) location.reload();">Clear Form</button>
+</div>
+
+<div class="page">
+    <div class="header-row">
+        <div>
+            <b style="font-size: 16px;">HAMBURG OVERHEAD DOOR, INC.</b><br>
+            5659 Herman Hill Road, Hamburg, NY 14075<br>
+            716-649-3600 | www.hamburgdoor.com
+        </div>
+        
+        <div style="text-align: right; width: 340px;">
+            <div style="font-size: 20px; font-weight: 800; text-transform: uppercase; margin-bottom: 10px; letter-spacing: 1px; white-space: nowrap;">
+                === PHONE MESSAGE ===
+            </div>
+            <div style="display:flex; justify-content:flex-end; gap:10px; margin-bottom:5px;"><b class="label">REF #:</b> <input type="text" value="MSG-NEW" style="width: 15ch; text-align:right;"></div>
+            <div style="display:flex; justify-content:flex-end; gap:10px;"><span class="label">DATE:</span> <input type="text" value="" id="date-field" style="width: 15ch; text-align:right;"></div>
+        </div>
+    </div>
+
+    <div class="double-divider"></div>
+
+    <div style="display: flex; justify-content: space-between; gap: 20px;">
+        <div style="width: 50%;">
+            <b>CUSTOMER / CALLER:</b><br>
+            
+            <div class="input-group" style="margin-bottom: 5px;">
+                <input type="text" id="cust-name" class="watch-change" placeholder="NAME (TYPE TO SEARCH...)" onkeyup="lookupCustomer(this, 'name')" oninput="markChanged(this)" autocomplete="off">
+                <div id="suggestions-name" class="suggestions-box"></div>
+            </div>
+
+            <input type="text" id="cust-addr1" class="watch-change" placeholder="ADDRESS LINE 1" style="margin-bottom: 5px;" oninput="markChanged(this)"><br>
+            <input type="text" id="cust-addr2" class="watch-change" placeholder="CITY, STATE ZIP" oninput="markChanged(this)"><br>
+            
+            <div class="input-group" style="margin-top:5px;">
+                <span class="label" style="align-self:center;">PH:</span> 
+                <div style="position:relative; width:100%;">
+                    <input type="text" id="cust-phone" class="watch-change" placeholder="PHONE (TYPE TO SEARCH...)" onkeyup="lookupCustomer(this, 'phone')" oninput="markChanged(this)" autocomplete="off">
+                    <div id="suggestions-phone" class="suggestions-box"></div>
+                </div>
+            </div>
+            
+            <button id="btn-update-rolodex" class="btn-rolodex" style="opacity:0.5; cursor:default;">[ ENTER INFO TO CREATE CUSTOMER ]</button>
+        </div>
+        
+        <div style="width: 50%;">
+            <b>JOB LOCATION:</b><br>
+            <input type="text" id="site-addr1" placeholder="JOB ADDRESS LINE 1" style="margin-bottom: 5px;" oninput="markChanged(this)"><br>
+            <input type="text" id="site-addr2" placeholder="CITY, STATE ZIP" style="margin-bottom: 5px;" oninput="markChanged(this)"><br>
+            <div style="display:flex;"><span class="label">ACCT ID:</span> <input type="text" id="cust-id" placeholder="CUSTOMER ID" oninput="markChanged(this)"></div>
+        </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <b class="label">MESSAGE / NOTES:</b>
+    <textarea id="intake-notes" rows="18" oninput="autoGrow(this); markChanged(this);" style="margin-top: 10px; border: 1px dashed #eee; padding: 10px;" placeholder="ENTER MESSAGE DETAILS HERE..."></textarea>
+
+    <div class="mt-auto">
+        <div class="action-row">
+            <button class="action-btn" onclick="convertToIntake('service')">
+                <span class="action-title">🛠 CREATE SERVICE TICKET</span>
+                <span class="action-desc">Transfer info to Service Ticket Form</span>
+            </button>
+            <button class="action-btn" onclick="convertToIntake('sales')">
+                <span class="action-title">💼 CREATE SALES LEAD</span>
+                <span class="action-desc">Transfer info to Sales Call Form</span>
+            </button>
+        </div>
+        
+        <div class="footer-note">
+            PHONE MESSAGE / INTAKE RECORD - INTERNAL USE ONLY
+        </div>
+    </div>
+</div>
+
+<script type="module">
+    import { DB } from '../../js/db.js';
+
+    // 1. SETUP & LOADING
+    const urlParams = new URLSearchParams(window.location.search);
+    const DOC_ID = urlParams.get('id');
+
+    window.onload = async () => {
+        // Auto-set Date
+        const today = new Date();
+        document.getElementById('date-field').value = (today.getMonth()+1)+'/'+today.getDate()+'/'+today.getFullYear();
+        
+        if(DOC_ID) {
+            console.log("Loading Message...", DOC_ID);
+            const data = await DB.getDoc('phone_messages', DOC_ID);
+            if(data) loadForm(data);
+        }
+    };
+
+    function loadForm(data) {
+        document.getElementById('cust-name').value = data.customerName || '';
+        document.getElementById('cust-phone').value = data.phone || '';
+        document.getElementById('cust-addr1').value = data.address1 || '';
+        document.getElementById('cust-addr2').value = data.address2 || '';
+        document.getElementById('site-addr1').value = data.siteAddress1 || '';
+        document.getElementById('site-addr2').value = data.siteAddress2 || '';
+        document.getElementById('intake-notes').value = data.notes || '';
+        
+        // Trigger visual "changed" states
+        document.querySelectorAll('input').forEach(i => {
+            if(i.value) i.classList.add('input-changed');
+        });
+    }
+
+    // 2. ROLODEX LOGIC (Cloud-Based)
+    let searchTimeout;
+    // We attach this to window so the HTML 'onkeyup' attribute can find it
+    window.lookupCustomer = async function(input, type) {
+        clearTimeout(searchTimeout);
+        searchTimeout = setTimeout(async () => {
+            const val = input.value.trim();
+            if (val.length < 3) return;
+
+            if (type === 'phone') {
+                const client = await DB.findCustomerByPhone(val);
+                if (client) showSuggestion(client);
+            }
+        }, 500);
+    };
+
+    window.markChanged = function(input) {
+        input.classList.add('input-changed');
+    };
+
+    function showSuggestion(client) {
+        const box = document.getElementById('suggestions-phone');
+        box.innerHTML = `<div class="suggestion-item"><strong>${client.name}</strong> | ${client.address1}</div>`;
+        box.style.display = 'block';
+        
+        // Fix: Use event delegation or closure to handle click
+        // Adding the event listener directly to the new element
+        box.querySelector('.suggestion-item').onclick = () => {
+            document.getElementById('cust-name').value = client.name || '';
+            document.getElementById('cust-addr1').value = client.address1 || '';
+            document.getElementById('cust-addr2').value = client.address2 || '';
+            document.getElementById('cust-id').value = client.id || ''; // If you store IDs
+            box.style.display = 'none';
+        };
+    }
+
+    // 3. CONVERSION LOGIC (The Magic Buttons)
+    window.convertToIntake = async function(targetType) {
+        // A. Gather Data
+        const payload = {
+            customerName: document.getElementById('cust-name').value,
+            phone: document.getElementById('cust-phone').value,
+            address1: document.getElementById('cust-addr1').value,
+            address2: document.getElementById('cust-addr2').value,
+            siteAddress1: document.getElementById('site-addr1').value,
+            siteAddress2: document.getElementById('site-addr2').value,
+            description: document.getElementById('intake-notes').value,
+            origin: 'phone_message',
+            status: 'Open'
+        };
+
+        // B. Save Customer to Rolodex first (Background)
+        if(payload.phone && payload.customerName) {
+            DB.saveCustomer({
+                name: payload.customerName,
+                phone: payload.phone,
+                address1: payload.address1,
+                address2: payload.address2
+            });
+        }
+
+        // C. Create the Target Document
+        try {
+            let collection = targetType === 'service' ? 'service_tickets' : 'sales_leads';
+            const newId = await DB.saveDoc(collection, payload);
+            
+            // D. Redirect to the new form
+            if (targetType === 'service') {
+                window.location.href = `service.html?id=${newId}`;
+            } else {
+                // Assuming you'll create sales_call.html next, or use quote.html
+                window.location.href = `sales_call.html?id=${newId}`; 
+            }
+        } catch (e) {
+            console.error(e);
+            alert("Error creating ticket: " + e.message);
+        }
+    };
+    
+    window.autoGrow = function(element) {
+        element.style.height = "5px";
+        element.style.height = (element.scrollHeight) + "px";
+    };
+</script>
+</body>
+</html>
