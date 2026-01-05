@@ -23,3 +23,10 @@
   for = "/sw.js"
   [headers.values]
     Cache-Control = "no-cache"
+
+    # Append this to the bottom of netlify.toml
+
+[[headers]]
+  for = "/*"
+  [headers.values]
+    Content-Security-Policy = "default-src 'self' 'unsafe-inline' 'unsafe-eval' https://*.googleapis.com https://*.gstatic.com https://*.firebaseapp.com https://*.firebaseio.com https://*.googletagmanager.com https://apis.google.com wss://*.firebaseio.com;"
