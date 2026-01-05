@@ -1,5 +1,7 @@
 // public/js/auth.js
-import { auth } from './firebase-config.js';
+
+// 1. FIX: Use Absolute Path (starts with /) so it works from any subfolder
+import { auth } from '/js/firebase-config.js'; 
 import { 
     onAuthStateChanged, 
     GoogleAuthProvider, 
@@ -11,19 +13,22 @@ const provider = new GoogleAuthProvider();
 
 // Listen for auth status
 onAuthStateChanged(auth, (user) => {
-    const isLoginPage = window.location.pathname.includes('index.html') || window.location.pathname === '/' || window.location.pathname.endsWith('/office/');
+    // Check if we are currently on the login page
+    const isLoginPage = window.location.pathname === '/' || 
+                        window.location.pathname.includes('index.html');
     
     if (user) {
         console.log('User is logged in:', user.email);
         if (isLoginPage) {
-            // Redirect to dashboard if they are already logged in
-            window.location.href = './views/office/dashboard.html'; 
+            // FIX: Absolute path redirect to Dashboard
+            window.location.href = '/views/office/dashboard.html'; 
         }
     } else {
         console.log('User is logged out');
-        // If they are NOT on the login page, kick them back to it
+        // If logged out and NOT on login page, kick them back to Login
         if (!isLoginPage) {
-             window.location.href = '../../index.html';
+             // FIX: Absolute path redirect to Login
+             window.location.href = '/index.html';
         }
     }
 });

@@ -46,7 +46,8 @@
     </div>
 
     <script type="module">
-        import { AuthService } from './js/auth.js';
+        // UPDATE: Changed './js/auth.js' to '/js/auth.js' (Absolute Path)
+        import { AuthService } from '/js/auth.js';
 
         window.handleLogin = async () => {
             const errorDiv = document.getElementById('error-msg');
