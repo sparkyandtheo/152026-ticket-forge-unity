@@ -3,7 +3,18 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self' 'unsafe-inline' 'unsafe-eval' https://*.googleapis.com https://*.gstatic.com https://*.firebaseapp.com https://*.firebaseio.com wss://*.firebaseio.com;">
+    
+    <meta http-equiv="Content-Security-Policy" content="
+        default-src 'self' 'unsafe-inline' 'unsafe-eval' 
+        https://*.googleapis.com 
+        https://*.gstatic.com 
+        https://*.firebaseapp.com 
+        https://*.firebaseio.com 
+        https://*.googletagmanager.com
+        https://apis.google.com
+        wss://*.firebaseio.com;
+    ">
+
     <title>Hamburg Door | Staff Login</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
     <style>
@@ -11,7 +22,6 @@
         .login-card { background: #303134; padding: 40px; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.5); width: 100%; max-width: 350px; text-align: center; }
         .logo { font-weight: 900; font-size: 24px; margin-bottom: 30px; letter-spacing: -1px; }
         
-        /* GOOGLE BUTTON STYLE */
         .btn-google {
             display: flex; align-items: center; justify-content: center;
             background: white; color: #5f6368; width: 100%;
@@ -42,8 +52,8 @@
             const errorDiv = document.getElementById('error-msg');
             try {
                 await AuthService.loginWithGoogle();
-                // Redirect is handled by the onAuthStateChanged listener in auth.js
-                // But we can force save the role preference here
+                // If successful, auth.js listener redirects us. 
+                // We just save the role preference here.
                 localStorage.setItem('user_role', 'office'); 
             } catch (error) {
                 console.error(error);
