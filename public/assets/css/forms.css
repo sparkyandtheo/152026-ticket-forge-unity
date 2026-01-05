@@ -1,0 +1,79 @@
+/* public/css/forms.css */
+
+/* --- GLOBAL VARIABLES & RESET --- */
+:root { --page-width: 8.5in; --page-height: 11in; }
+
+body { 
+    background: #525659; 
+    display: flex; 
+    flex-direction: column; 
+    align-items: center; 
+    padding: 80px 0 40px 0; 
+    margin: 0; 
+    font-family: sans-serif; 
+}
+
+/* --- TOOLBAR --- */
+.toolbar { 
+    position: fixed; top: 0; left: 0; right: 0; height: 60px; 
+    background: #202124; display: flex; align-items: center; 
+    justify-content: center; gap: 15px; z-index: 1000; 
+    box-shadow: 0 2px 8px rgba(0,0,0,0.4); 
+}
+
+/* --- BUTTONS --- */
+.btn { padding: 8px 16px; border-radius: 4px; border: none; cursor: pointer; font-weight: 600; font-size: 11px; text-transform: uppercase; color: white; transition: all 0.2s; }
+.btn:hover { transform: translateY(-1px); filter: brightness(1.1); }
+.btn-blue { background: #1a73e8; } 
+.btn-green { background: #1e8e3e; } 
+.btn-gray { background: #5f6368; } 
+.btn-red { background: #d93025; } 
+.btn-save { background: #f9ab00; color: #000; }
+.add-row-btn { background: transparent; border: 1px dashed #ccc; color: #666; width: 100%; padding: 5px; margin-bottom: 20px; cursor: pointer; }
+.add-row-btn:hover { background: #f9f9f9; border-color: #999; }
+
+/* --- PAGE SHEET --- */
+.page { 
+    background: white; width: var(--page-width); min-height: var(--page-height); 
+    padding: 0.5in; box-shadow: 0 0 15px rgba(0,0,0,0.3); 
+    font-family: 'IBM Plex Mono', monospace; font-size: 12px; 
+    display: flex; flex-direction: column; box-sizing: border-box; position: relative; 
+}
+
+/* --- UTILITIES --- */
+.header-row { display: flex; justify-content: space-between; align-items: flex-start; }
+.double-divider { border-top: 3px double #000; border-bottom: 1px solid #000; height: 1px; margin: 10px 0; }
+.divider { border-top: 1px solid #000; margin: 10px 0; }
+.mt-auto { margin-top: auto; }
+
+/* --- INPUTS --- */
+input, textarea { 
+    font-family: 'IBM Plex Mono', monospace; font-size: 12px; 
+    border: 1px solid #ddd; border-bottom: 2px solid #ccc; outline: none; 
+    text-transform: uppercase; color: #000; width: 100%; 
+    transition: all 0.2s; background: #ffffcc; padding: 4px; 
+}
+input:hover, textarea:hover { background: #e6fffa; border-color: #1e8e3e; cursor: text; }
+input:focus, textarea:focus { border-bottom: 2px solid #d500f9; background: #ffccff; font-weight: 600; }
+.input-changed { background-color: #e3f2fd !important; border-color: #2196F3 !important; border-bottom: 2px solid #2196F3 !important; }
+textarea { resize: none; overflow: hidden; display: block; line-height: 1.3; }
+
+/* --- GRIDS --- */
+.grid-header, .item-row { display: grid; gap: 10px; align-items: start; }
+.grid-header { font-weight: 600; border-bottom: 1px solid #000; padding-bottom: 5px; margin-bottom: 10px; }
+.item-row { margin-bottom: 8px; }
+
+/* --- ROLODEX DROPDOWN --- */
+.input-group { position: relative; display:flex; width: 100%; }
+.suggestions-box { position: absolute; top: 100%; left: 0; width: 100%; background: white; border: 1px solid #ccc; z-index: 1000; max-height: 150px; overflow-y: auto; display: none; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+.suggestion-item { padding: 8px; border-bottom: 1px solid #eee; cursor: pointer; font-size: 11px; }
+.suggestion-item:hover { background-color: #f0f8ff; color: #1a73e8; }
+
+/* --- PRINT MEDIA --- */
+@media print {
+    .toolbar, .add-row-btn, .btn-rolodex-update, .suggestions-box { display: none !important; }
+    body { background: white; padding: 0; margin: 0; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .page { margin: 0; box-shadow: none; border: none; width: 100%; height: auto; padding: 0; overflow: visible; }
+    .tax-col { visibility: hidden; width: 0 !important; }
+    input, textarea { background: transparent !important; border: none !important; border-bottom: 1px solid #ccc !important; }
+}
