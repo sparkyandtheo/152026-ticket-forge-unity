@@ -10,9 +10,17 @@
         body { font-family: 'Inter', sans-serif; background-color: var(--dark); color: white; margin: 0; padding-bottom: 40px; -webkit-tap-highlight-color: transparent; }
 
         /* HEADER */
-        .app-header { padding: 20px; background: #3c4043; border-bottom: 1px solid #5f6368; display: flex; justify-content: space-between; align-items: center; }
+        .app-header { padding: 20px; background: #3c4043; border-bottom: 1px solid #5f6368; display: flex; justify-content: space-between; align-items: center; gap: 10px; }
         .tech-name { font-weight: 900; font-size: 18px; text-transform: uppercase; }
         .logout-btn { background: transparent; border: 1px solid #9aa0a6; color: #9aa0a6; padding: 5px 10px; border-radius: 4px; font-size: 11px; }
+
+        /* ROLE SWITCHER (mobile) */
+        .role-dropdown { position: relative; display: inline-block; }
+        .role-dropdown > button { background: transparent; border: 1px solid #9aa0a6; color: #9aa0a6; padding: 5px 10px; border-radius: 4px; font-size: 11px; font-weight: bold; font-family: 'Inter', sans-serif; cursor: pointer; }
+        .role-dropdown-content { display: none; position: absolute; right: 0; background-color: #303134; min-width: 180px; box-shadow: 0 8px 16px 0 rgba(0,0,0,0.5); z-index: 200; border-radius: 6px; border: 1px solid #5f6368; overflow: hidden; }
+        .role-dropdown-content a { color: #e8eaed; padding: 14px 16px; text-decoration: none; display: block; font-size: 14px; font-family: 'Inter', sans-serif; border-bottom: 1px solid #3c4043; }
+        .role-dropdown-content a:active, .role-dropdown-content a:hover { background-color: var(--blue); color: white; }
+        .role-dropdown.open .role-dropdown-content { display: block; }
 
         /* JOB LIST VIEW */
         .job-list { padding: 15px; }
@@ -54,7 +62,17 @@
     <div id="list-view">
         <div class="app-header">
             <div class="tech-name" id="header-user">LOADING...</div>
-            <button class="logout-btn" onclick="logout()">LOGOUT</button>
+            <div style="display:flex; gap:8px; align-items:center;">
+                <div class="role-dropdown" id="role-dd">
+                    <button onclick="document.getElementById('role-dd').classList.toggle('open')">🛠️ TECH ▼</button>
+                    <div class="role-dropdown-content">
+                        <a href="/views/forms/dashboard.html">👤 Admin (Docs)</a>
+                        <a href="/views/office/dispatch.html">🗓️ Dispatcher (Board)</a>
+                        <a href="/views/mobile/index.html">🛠️ Field Tech (Mobile)</a>
+                    </div>
+                </div>
+                <button class="logout-btn" onclick="logout()">LOGOUT</button>
+            </div>
         </div>
         <div class="job-list" id="job-container">
             <div class="loader"></div>

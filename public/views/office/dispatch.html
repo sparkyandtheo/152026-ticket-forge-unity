@@ -13,6 +13,14 @@
         .view-switcher button { background: #3c4043; border: none; color: #9aa0a6; padding: 8px 16px; border-radius: 4px; font-weight: bold; cursor: pointer; }
         .view-switcher button.active { background: var(--blue); color: white; }
 
+        /* ROLE SWITCHER DROPDOWN */
+        .role-dropdown { position: relative; display: inline-block; }
+        .role-dropdown > button { background: #3c4043; border: none; color: white; padding: 8px 14px; border-radius: 4px; font-weight: bold; cursor: pointer; font-family: 'Inter', sans-serif; font-size: 13px; }
+        .role-dropdown-content { display: none; position: absolute; right: 0; background-color: #ffffff; min-width: 200px; box-shadow: 0 8px 16px 0 rgba(0,0,0,0.3); z-index: 100; border-radius: 6px; border: 1px solid #dadce0; overflow: hidden; }
+        .role-dropdown-content a { color: #333; padding: 12px 16px; text-decoration: none; display: block; font-size: 14px; font-family: 'Inter', sans-serif; text-align: left; border-bottom: 1px solid #f1f3f4; }
+        .role-dropdown-content a:hover { background-color: #e8f0fe; color: var(--blue); }
+        .role-dropdown:hover .role-dropdown-content { display: block; }
+
         /* MAIN LAYOUT */
         .board-container { display: flex; flex: 1; overflow: hidden; }
         
@@ -76,9 +84,19 @@
             <button onclick="switchView('install')" id="btn-install">INSTALL (Weekly)</button>
             <button onclick="switchView('sales')" id="btn-sales">SALES (Weekly)</button>
         </div>
-        <div>
+        <div style="display:flex; align-items:center; gap:10px;">
             <button onclick="window.print()" style="background:transparent; border:1px solid #5f6368; color:white; padding:5px 10px; cursor:pointer;">🖨️ PRINT</button>
-            <button onclick="location.href='dashboard.html'" style="background:#d93025; border:none; color:white; padding:5px 10px; cursor:pointer; margin-left:10px;">EXIT</button>
+
+            <div class="role-dropdown">
+                <button>🗓️ DISPATCHER ▼</button>
+                <div class="role-dropdown-content">
+                    <a href="/views/forms/dashboard.html">👤 Admin (Docs)</a>
+                    <a href="/views/office/dispatch.html">🗓️ Dispatcher (Board)</a>
+                    <a href="/views/mobile/index.html">🛠️ Field Tech (Mobile)</a>
+                </div>
+            </div>
+
+            <button onclick="location.href='/views/forms/dashboard.html'" style="background:#d93025; border:none; color:white; padding:5px 10px; cursor:pointer;">EXIT</button>
         </div>
     </div>
 

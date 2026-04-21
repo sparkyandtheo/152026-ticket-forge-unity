@@ -234,7 +234,16 @@
             <input type="text" class="search-input" id="mainSearch" placeholder="Search name, phone, address, or email..." oninput="window.filterDocs()">
         </div>
         <div style="display: flex; gap: 10px; align-items: center;">
-            
+
+            <div class="dropdown">
+                <button class="btn-new dropbtn" style="background:#3c4043;">👤 ADMIN ▼</button>
+                <div class="dropdown-content">
+                    <a href="/views/forms/dashboard.html">👤 Admin (Docs)</a>
+                    <a href="/views/office/dispatch.html">🗓️ Dispatcher (Board)</a>
+                    <a href="/views/mobile/index.html">🛠️ Field Tech (Mobile)</a>
+                </div>
+            </div>
+
             <div class="dropdown">
                 <button class="btn-new dropbtn">+ CREATE NEW ▼</button>
                 <div class="dropdown-content">
