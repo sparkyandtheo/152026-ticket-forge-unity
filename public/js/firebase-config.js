@@ -9,14 +9,16 @@ import { getAuth } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth
 import { getStorage } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
 
 // 2. Your Specific Configuration
+// Project: hamburg-door-ops (Hamburg Door Staff Portal)
+// Registered 2026-04-21 under william@hamburgdoor.com
 const firebaseConfig = {
-  apiKey: "AIzaSyBYwmWn_uLTCsTbmMO0R6LrPIwCr5yxAsU",
-  authDomain: "planar-alliance-448817-h0.firebaseapp.com",
-  projectId: "planar-alliance-448817-h0",
-  storageBucket: "planar-alliance-448817-h0.firebasestorage.app",
-  messagingSenderId: "1049899901887",
-  appId: "1:1049899901887:web:eefd89e745cfa77cafb70a",
-  measurementId: "G-QMVM7J0YDF"
+  apiKey: "AIzaSyAjrqfUHhTw8u9ohwksE0FPlr1TvL6LLX8",
+  authDomain: "hamburg-door-ops.firebaseapp.com",
+  projectId: "hamburg-door-ops",
+  storageBucket: "hamburg-door-ops.firebasestorage.app",
+  messagingSenderId: "406049238606",
+  appId: "1:406049238606:web:703204bd5dc17ba4bb9d1f",
+  measurementId: "G-NBLEGYCM6P"
 };
 
 // 3. Initialize the App
