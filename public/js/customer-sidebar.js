@@ -24,6 +24,7 @@
 //   - Groups results by type with per-group counts.
 
 import { db } from '/js/firebase-config.js';
+import { DB } from '/js/db.js';
 import { collection, query, where, onSnapshot } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
 const COLLECTIONS = {
@@ -47,6 +48,12 @@ let badgeEl = null;
 let listEl  = null;
 let statusEl = null;
 
+// Franchise popout state
+let franchiseEl = null;
+let franchiseBadgeEl = null;
+let franchiseBodyEl = null;
+let currentCustomer = null;
+
 function escapeHtml(s) {
     return String(s == null ? '' : s)
         .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
@@ -64,8 +71,33 @@ function cleanupSubs() {
     buckets = {};
 }
 
+// Look up the matched customer in the cached rolodex (phone digits
+// matched). Returns null if the customer isn't known or has <2 sites.
+function findFranchiseCustomer(phoneDigits) {
+    if (!phoneDigits || phoneDigits.length < 7) return null;
+    try {
+        const all = DB.getAllCustomers ? DB.getAllCustomers() : [];
+        for (const c of all) {
+            const phones = [c.primaryPhone, c.phone, ...(c.alternatePhones || [])].filter(Boolean);
+            for (const p of phones) {
+                if ((p || '').replace(/\D+/g, '') === phoneDigits) {
+                    const sites = Array.isArray(c.jobSites) ? c.jobSites : [];
+                    // Only flag as franchise when there's >= 2 sites.
+                    if (sites.length >= 2) return c;
+                    return null;
+                }
+            }
+        }
+    } catch (e) {
+        console.warn('[cust-sidebar] franchise lookup failed:', e);
+    }
+    return null;
+}
+
 function subscribeFor(phoneDigits) {
     cleanupSubs();
+    currentCustomer = findFranchiseCustomer(phoneDigits);
+    renderFranchisePopout();
     if (!phoneDigits || phoneDigits.length < 7) {
         render();
         return;
@@ -170,29 +202,305 @@ function installHandlers(config) {
     const phoneEl = document.getElementById(config.phoneFieldId);
     if (phoneEl) {
         let t;
-        const onChange = () => {
+        let lastValue = phoneEl.value || '';
+        const reactTo = (value) => {
             clearTimeout(t);
             t = setTimeout(() => {
-                currentPhone = phoneEl.value || '';
+                currentPhone = value || '';
                 subscribeFor(normalize(currentPhone));
-            }, 300);
+            }, 200);
+        };
+        const onChange = () => {
+            if (phoneEl.value !== lastValue) {
+                lastValue = phoneEl.value;
+                reactTo(lastValue);
+            }
         };
         phoneEl.addEventListener('input',  onChange);
         phoneEl.addEventListener('change', onChange);
-        // If a value is already present (form opened with a ?id=), react now.
+
+        // loadForm() sets values via .value = ... which DOESN'T fire input
+        // events. Poll for changes so programmatic fills (opening an
+        // existing record, autocomplete fill, franchise popout click)
+        // still trigger us. Lightweight — just reads .value every 300ms.
+        const pollTimer = setInterval(() => {
+            if (phoneEl.value !== lastValue) {
+                lastValue = phoneEl.value;
+                reactTo(lastValue);
+            }
+        }, 300);
+        window.addEventListener('beforeunload', () => clearInterval(pollTimer));
+
+        // If a value is already present (unlikely at mount time, but
+        // possible after a fast reload), react now.
         if (phoneEl.value) {
-            currentPhone = phoneEl.value;
-            subscribeFor(normalize(currentPhone));
+            lastValue = phoneEl.value;
+            reactTo(lastValue);
         }
+
+        // Auto-expand the sidebar on first load when this form is
+        // opened with an existing record (?id=). Respects the user's
+        // explicit choice afterward via localStorage.
+        try {
+            const hasExistingId =
+                new URLSearchParams(window.location.search).get('id');
+            const alreadyToggled = localStorage.getItem(LS_KEY + '-explicit');
+            if (hasExistingId && !alreadyToggled) {
+                setOpen(true);
+            }
+        } catch (_) {}
     }
     window.addEventListener('beforeunload', cleanupSubs);
 }
 
-function setOpen(isOpen) {
+function setOpen(isOpen, userInitiated = false) {
     if (!wrapEl) return;
     wrapEl.classList.toggle('cs-open', !!isOpen);
-    try { localStorage.setItem(LS_KEY, isOpen ? '1' : '0'); } catch (_) {}
+    try {
+        localStorage.setItem(LS_KEY, isOpen ? '1' : '0');
+        if (userInitiated) localStorage.setItem(LS_KEY + '-explicit', '1');
+    } catch (_) {}
 }
+
+// ==========================================================================
+// FRANCHISE POPOUT — left edge, only appears when currentCustomer has
+// 2+ job sites. Lets the user click a site to load its address into
+// the current form's job-site fields.
+// ==========================================================================
+
+function mountFranchisePopoutUI() {
+    if (document.getElementById('hd-franchise-popout')) return;
+    const el = document.createElement('div');
+    el.id = 'hd-franchise-popout';
+    el.innerHTML = `
+        <style>
+            #hd-franchise-popout {
+                position: fixed; top: 80px; left: 0; bottom: 0;
+                z-index: 500;
+                display: none; flex-direction: row;
+                font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+                color: #202124;
+                pointer-events: none;
+            }
+            #hd-franchise-popout.fp-show { display: flex; }
+            #hd-franchise-popout > * { pointer-events: auto; }
+
+            .fp-panel {
+                width: 0;
+                max-width: 32vw;
+                overflow: hidden;
+                transition: width 0.28s ease-out;
+                background: #fff8e6;
+                border-right: 1px solid #f9ab00;
+                box-shadow: 8px 0 24px rgba(249,171,0,.12);
+                display: flex; flex-direction: column;
+            }
+            #hd-franchise-popout.fp-open .fp-panel {
+                width: 28vw;
+                min-width: 320px;
+            }
+
+            .fp-tab {
+                display: flex; flex-direction: column;
+                align-items: center; justify-content: center;
+                width: 36px; background: #b06000;
+                color: white; cursor: pointer;
+                border-radius: 0 8px 8px 0;
+                border: 1px solid #7a5a00;
+                border-left: none;
+                align-self: flex-start;
+                padding: 14px 0;
+                margin-top: 8px;
+                box-shadow: 4px 4px 16px rgba(176,96,0,.25);
+                animation: fp-breathe 3s ease-in-out infinite;
+            }
+            @keyframes fp-breathe {
+                0%, 100% { box-shadow: 4px 4px 16px rgba(176,96,0,.25); }
+                50%      { box-shadow: 4px 4px 20px rgba(249,171,0,.55); }
+            }
+            .fp-tab:hover { background: #EF3340; animation: none; }
+            .fp-tab .fp-tab-label {
+                writing-mode: vertical-rl;
+                font-weight: 700; font-size: 11px;
+                letter-spacing: 0.1em; text-transform: uppercase;
+                margin-top: 8px;
+            }
+            .fp-tab .fp-tab-arrow {
+                font-size: 14px; margin-bottom: 4px;
+                transition: transform 0.25s;
+            }
+            #hd-franchise-popout.fp-open .fp-tab-arrow { transform: rotate(180deg); }
+
+            .fp-header {
+                padding: 14px 16px;
+                background: linear-gradient(120deg, #b06000, #7a5a00);
+                color: white;
+                flex-shrink: 0;
+            }
+            .fp-header .fp-alert {
+                font-size: 10px; font-weight: 700;
+                text-transform: uppercase; letter-spacing: 0.1em;
+                opacity: 0.9; margin-bottom: 4px;
+            }
+            .fp-header .fp-name {
+                font-size: 16px; font-weight: 900;
+                letter-spacing: -0.2px;
+            }
+            .fp-header .fp-sub {
+                font-size: 11px; opacity: 0.8; margin-top: 2px;
+            }
+
+            .fp-body {
+                flex: 1; overflow-y: auto; padding: 12px 14px;
+            }
+
+            .fp-site-label {
+                font-size: 10px; font-weight: 700;
+                text-transform: uppercase; letter-spacing: 0.1em;
+                color: #7a5a00; margin: 4px 0 8px;
+            }
+
+            .fp-site {
+                display: flex; flex-direction: column;
+                background: white;
+                padding: 10px 12px;
+                border-radius: 6px;
+                border-left: 3px solid #f9ab00;
+                margin-bottom: 6px;
+                cursor: pointer;
+                transition: all 0.15s;
+                text-align: left;
+                font-family: inherit;
+                border-top: none; border-right: none; border-bottom: none;
+                width: 100%;
+            }
+            .fp-site:hover {
+                background: #fff3cd;
+                transform: translateX(2px);
+                box-shadow: 2px 2px 8px rgba(249,171,0,.35);
+            }
+            .fp-site .fp-site-addr1 {
+                font-weight: 700; font-size: 13px; color: #202124;
+            }
+            .fp-site .fp-site-addr2 {
+                font-size: 11px; color: #5f6368; margin-top: 2px;
+            }
+            .fp-site .fp-site-label-inner {
+                font-size: 10px; font-weight: 700;
+                text-transform: uppercase; color: #b06000;
+                margin-top: 4px;
+            }
+            .fp-site.fp-billing {
+                border-left-color: #1a73e8;
+            }
+            .fp-site.fp-billing .fp-site-label-inner { color: #1a73e8; }
+
+            .fp-help {
+                font-size: 11px; color: #5f6368; font-style: italic;
+                padding: 12px 8px 4px;
+                line-height: 1.4;
+            }
+
+            @media (max-width: 900px) {
+                #hd-franchise-popout { top: 60px; }
+                #hd-franchise-popout.fp-open .fp-panel { width: 80vw; min-width: 280px; }
+            }
+            @media print { #hd-franchise-popout { display: none !important; } }
+        </style>
+
+        <div class="fp-panel">
+            <div class="fp-header">
+                <div class="fp-alert">⚠️ Franchise Customer</div>
+                <div class="fp-name" id="fp-name">—</div>
+                <div class="fp-sub" id="fp-sub">Multiple job sites on file</div>
+            </div>
+            <div class="fp-body" id="fp-body"></div>
+        </div>
+        <div class="fp-tab" id="fp-tab" title="Franchise customer — multiple job sites">
+            <span class="fp-tab-arrow" id="fp-tab-arrow">▶</span>
+            <span class="fp-tab-label">🏢 Franchise</span>
+        </div>
+    `;
+    document.body.appendChild(el);
+    franchiseEl = el;
+    franchiseBodyEl = document.getElementById('fp-body');
+
+    document.getElementById('fp-tab').onclick = () => {
+        el.classList.toggle('fp-open');
+    };
+}
+
+function renderFranchisePopout() {
+    if (!franchiseEl && !currentCustomer) return;
+    mountFranchisePopoutUI();
+    if (!currentCustomer) {
+        franchiseEl.classList.remove('fp-show', 'fp-open');
+        return;
+    }
+    franchiseEl.classList.add('fp-show');
+    document.getElementById('fp-name').textContent = currentCustomer.name || 'UNNAMED FRANCHISE';
+    const n = (currentCustomer.jobSites || []).length;
+    document.getElementById('fp-sub').textContent = `${n} job site${n !== 1 ? 's' : ''} on file`;
+
+    const sites = currentCustomer.jobSites || [];
+    const bill1 = currentCustomer.billingAddress1 || currentCustomer.address1 || '';
+    const bill2 = currentCustomer.billingAddress2 || currentCustomer.address2 || '';
+
+    let html = `
+        <div class="fp-help">
+            Click a site below to load its address into the current form's
+            job-site fields.
+        </div>
+        <div class="fp-site-label">Billing</div>
+        <button class="fp-site fp-billing" data-addr1="${escapeHtml(bill1)}" data-addr2="${escapeHtml(bill2)}">
+            <div class="fp-site-addr1">${escapeHtml(bill1 || '(no billing address)')}</div>
+            ${bill2 ? `<div class="fp-site-addr2">${escapeHtml(bill2)}</div>` : ''}
+            <div class="fp-site-label-inner">💰 Billing / HQ</div>
+        </button>
+        <div class="fp-site-label" style="margin-top: 14px;">Job Sites</div>
+    `;
+    for (const s of sites) {
+        html += `
+            <button class="fp-site" data-addr1="${escapeHtml(s.address1 || '')}" data-addr2="${escapeHtml(s.address2 || '')}">
+                <div class="fp-site-addr1">${escapeHtml(s.address1 || '(no address)')}</div>
+                ${s.address2 ? `<div class="fp-site-addr2">${escapeHtml(s.address2)}</div>` : ''}
+                ${s.label ? `<div class="fp-site-label-inner">📍 ${escapeHtml(s.label)}</div>` : ''}
+            </button>
+        `;
+    }
+    franchiseBodyEl.innerHTML = html;
+
+    franchiseBodyEl.querySelectorAll('.fp-site').forEach(btn => {
+        btn.onclick = () => {
+            const a1 = btn.dataset.addr1 || '';
+            const a2 = btn.dataset.addr2 || '';
+            const siteIds = currentFieldIds?.siteFieldIds;
+            if (!siteIds) return;
+            const s1 = document.getElementById(siteIds.addr1);
+            const s2 = document.getElementById(siteIds.addr2);
+            if (s1) {
+                s1.value = a1;
+                s1.classList.add('input-changed');
+            }
+            if (s2) {
+                s2.value = a2;
+                s2.classList.add('input-changed');
+            }
+            // Flash feedback on the filled fields
+            [s1, s2].filter(Boolean).forEach(el => {
+                const prev = el.style.background;
+                el.style.transition = 'background 0.4s';
+                el.style.background = '#fff3cd';
+                setTimeout(() => { el.style.background = prev; }, 500);
+            });
+            franchiseEl.classList.remove('fp-open');
+        };
+    });
+}
+
+// ==========================================================================
+// CORE RIGHT SIDEBAR
+// ==========================================================================
 
 function mountUI() {
     if (document.getElementById('hd-cust-sidebar')) return;
@@ -368,7 +676,7 @@ function mountUI() {
     statusEl = document.getElementById('cs-status');
 
     document.getElementById('cs-tab').onclick = () => {
-        setOpen(!wrapEl.classList.contains('cs-open'));
+        setOpen(!wrapEl.classList.contains('cs-open'), true); // user-initiated
     };
 
     // Initial state: respect localStorage
@@ -384,5 +692,6 @@ export function mountCustomerSidebar(config) {
     }
     currentFieldIds = config;
     mountUI();
+    mountFranchisePopoutUI();
     installHandlers(config);
 }

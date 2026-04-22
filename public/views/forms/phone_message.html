@@ -163,6 +163,12 @@
         
         <div style="width: 50%;">
             <b>JOB LOCATION:</b><br>
+            <div style="margin-bottom:4px;">
+                <button type="button" class="btn-same-as-billing"
+                        onclick="copyBillingToSite({addr1:'cust-addr1',addr2:'cust-addr2'}, {addr1:'site-addr1',addr2:'site-addr2'})">
+                    ⬇️ Same as billing
+                </button>
+            </div>
             <input type="text" id="site-addr1" placeholder="JOB ADDRESS LINE 1"><br>
             <input type="text" id="site-addr2" placeholder="CITY, STATE ZIP"><br>
             <div style="display:flex; margin-top:5px;">
@@ -189,14 +195,16 @@
     import {
         getUrlParam, setVal, setupInputHighlighting,
         setupCustomerAutocomplete, commitCustomerFromForm, renderOriginBreadcrumb,
-        guardAgainstDuplicates, updateRolodexFromFields
+        guardAgainstDuplicates, updateRolodexFromFields, copyBillingToSite
     } from '/js/form-utils.js';
+    window.copyBillingToSite = copyBillingToSite;
     import { mountCustomerSidebar } from '/js/customer-sidebar.js';
 
     // Customer history sidebar — excludes the doc currently open.
     mountCustomerSidebar({
         phoneFieldId: 'cust-phone',
         nameFieldId:  'cust-name',
+        siteFieldIds: { addr1: 'site-addr1', addr2: 'site-addr2' },
         excludeDocId: getUrlParam('id'),
         excludeCollection: 'phone_messages'
     });
