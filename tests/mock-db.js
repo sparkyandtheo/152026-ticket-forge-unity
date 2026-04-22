@@ -57,6 +57,67 @@ const DB = {
     store.set(`customers/${id}`, { ...data });
   },
 
+  async getAll(col, orderByField = null) {
+    const out = [];
+    for (const [k, v] of store.entries()) {
+      if (k.startsWith(col + '/')) out.push({ id: k.split('/')[1], ...v });
+    }
+    if (orderByField) out.sort((a, b) => (a[orderByField] || 0) > (b[orderByField] || 0) ? 1 : -1);
+    return out;
+  },
+
+  async deleteDoc(col, id) { store.delete(col + '/' + id); },
+
+  async getCustomerHistory(identity) {
+    const COLLECTIONS = ['phone_messages', 'sales_leads', 'quotes', 'work_orders', 'service_tickets', 'invoices'];
+    const normPhone = (identity.phone || '').replace(/\D+/g, '');
+    const normName = (identity.name || '').toUpperCase().trim();
+    const result = {};
+    let docs = 0, revenue = 0, open = 0;
+    let firstMs = null, lastMs = null;
+    for (const col of COLLECTIONS) {
+      const all = await DB.getAll(col);
+      const matched = all.filter(d => {
+        const dp = (d.phone || '').replace(/\D+/g, '');
+        const dn = (d.customerName || '').toUpperCase().trim();
+        return (normPhone && dp === normPhone) || (normName && dn === normName);
+      });
+      result[col] = matched;
+      docs += matched.length;
+      if (col === 'invoices') {
+        for (const inv of matched) {
+          const n = parseFloat(String(inv.grandTotal || '').replace(/[\$,\s]/g, ''));
+          if (!isNaN(n)) revenue += n;
+          if (inv.status !== 'Paid' && !isNaN(n)) open += n;
+        }
+      }
+      for (const d of matched) {
+        const ts = new Date(d.lastUpdated || 0).getTime();
+        if (!ts) continue;
+        if (firstMs === null || ts < firstMs) firstMs = ts;
+        if (lastMs === null || ts > lastMs) lastMs = ts;
+      }
+    }
+    return { byCollection: result, totals: { docs, revenue, openBalance: open, firstContactMs: firstMs, lastContactMs: lastMs } };
+  },
+
+  async getCustomerTimeline(identity) {
+    const { byCollection } = await DB.getCustomerHistory(identity);
+    const timeline = [];
+    for (const [col, docs] of Object.entries(byCollection)) {
+      for (const d of docs) {
+        timeline.push({ ...d, _collection: col, _ms: new Date(d.lastUpdated || 0).getTime() });
+      }
+    }
+    timeline.sort((a, b) => b._ms - a._ms);
+    return timeline;
+  },
+
+  async getNewCustomerId() {
+    const n = await DB.getNewId('customer', 1000);
+    return 'CUST-' + n;
+  },
+
   async findRecentDuplicates(col, identity, mins = 5) {
     const cutoff = Date.now() - mins * 60 * 1000;
     const norm = (s) => (s || '').toString().toUpperCase().trim();

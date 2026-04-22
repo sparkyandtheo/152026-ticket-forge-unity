@@ -282,6 +282,7 @@
                     <a href="/views/forms/dashboard.html">👤 Dashboard (Docs)</a>
                     <a href="/views/office/dispatch.html">🗓️ Dispatcher (Board)</a>
                     <a href="/views/mobile/index.html">🛠️ Field Tech (Mobile)</a>
+                    <a href="/views/customers/index.html">👥 Customers</a>
                     <a href="/views/office/admin.html">🛡️ Admin Console</a>
                 </div>
             </div>
@@ -304,6 +305,16 @@
 
     <div class="dashboard" id="dashboard">
         <div id="no-results">No documents found matching your search.</div>
+
+        <div class="doc-stack" data-type="customers" style="border: 1px solid var(--primary); background: white;">
+            <div class="stack-title" style="color: var(--primary); border-bottom-color: var(--primary);">
+                👥 Recent Customers
+                <a href="/views/customers/index.html" style="float:right; font-size:10px; font-weight:400; text-transform:none; letter-spacing:0; color:var(--primary); text-decoration:none;">View all →</a>
+            </div>
+            <div class="doc-list" id="recent-customers-list">
+                <div style="padding:10px; color:#999; font-size:11px;">Loading…</div>
+            </div>
+        </div>
 
         <div class="doc-stack attention empty" data-type="attention">
             <div class="stack-title">⚠️ Requires Attention</div>
@@ -357,6 +368,7 @@
 
     <script type="module">
         import { db, auth } from '/js/firebase-config.js';
+        import { DB } from '/js/db.js';
         import { collection, query, where, orderBy, limit, onSnapshot } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
         import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
@@ -574,6 +586,42 @@
                 renderAttentionStack();
             }, (err) => console.warn('[attention]', col, err));
         }
+
+        // --- RECENT CUSTOMERS FEED ---
+        // Pull last-updated customers (first 10) so the office can jump
+        // straight to a customer they touched recently without going
+        // through /customers. Mirrors the Customer Master flow.
+        (async () => {
+            try {
+                const customers = await DB.getAll('customers');
+                customers.sort((a, b) => {
+                    const at = a.lastUpdated?.toMillis?.() || 0;
+                    const bt = b.lastUpdated?.toMillis?.() || 0;
+                    return bt - at;
+                });
+                const recent = customers.slice(0, 8);
+                const container = document.getElementById('recent-customers-list');
+                if (recent.length === 0) {
+                    container.innerHTML = '<div style="padding:10px; color:#999; font-size:11px;">None yet. Start a ticket and the customer is auto-saved.</div>';
+                    return;
+                }
+                container.innerHTML = recent.map(c => {
+                    const sites = Array.isArray(c.jobSites) ? c.jobSites.length : 0;
+                    const badge = sites >= 2 ? '<span style="background:#fff3cd; color:#b06000; font-size:9px; padding:1px 6px; border-radius:8px; margin-left:6px; font-weight:700;">🏢</span>' : '';
+                    return `
+                        <div class="doc-item" data-href="/views/customers/detail.html?id=${encodeURIComponent(c.id)}">
+                            <span class="name">${(c.name || '(UNNAMED)').replace(/</g,'&lt;')} ${badge}</span>
+                            <span class="date">${(c.primaryPhone || c.phone || '').replace(/</g,'&lt;')}</span>
+                        </div>
+                    `;
+                }).join('');
+                container.querySelectorAll('.doc-item').forEach(item => {
+                    item.onclick = () => { window.location.href = item.dataset.href; };
+                });
+            } catch (e) {
+                console.warn('[dashboard] recent customers failed:', e);
+            }
+        })();
 
         // --- 4. INITIALIZE FEEDS ---
         loadLiveDocs('phone_messages', 'intake', '/views/forms/phone_message.html');
