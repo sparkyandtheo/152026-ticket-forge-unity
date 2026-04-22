@@ -232,6 +232,14 @@
         setupCustomerAutocomplete, commitCustomerFromForm, renderOriginBreadcrumb,
         guardAgainstDuplicates, updateRolodexFromFields
     } from '/js/form-utils.js';
+    import { mountCustomerSidebar } from '/js/customer-sidebar.js';
+
+    mountCustomerSidebar({
+        phoneFieldId: 'bill-phone',
+        nameFieldId:  'bill-name',
+        excludeDocId: getUrlParam('id'),
+        excludeCollection: 'work_orders'
+    });
 
     const DOC_ID = getUrlParam('id');
     const autocompleteConfig = {

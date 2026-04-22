@@ -191,6 +191,15 @@
         setupCustomerAutocomplete, commitCustomerFromForm, renderOriginBreadcrumb,
         guardAgainstDuplicates, updateRolodexFromFields
     } from '/js/form-utils.js';
+    import { mountCustomerSidebar } from '/js/customer-sidebar.js';
+
+    // Customer history sidebar — excludes the doc currently open.
+    mountCustomerSidebar({
+        phoneFieldId: 'cust-phone',
+        nameFieldId:  'cust-name',
+        excludeDocId: getUrlParam('id'),
+        excludeCollection: 'phone_messages'
+    });
 
     const DOC_ID = getUrlParam('id');
     const autocompleteConfig = {
