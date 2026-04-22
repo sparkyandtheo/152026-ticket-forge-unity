@@ -314,7 +314,8 @@
                 <input type="text" class="search-box" id="inv-search" placeholder="🔍 Search by category or name...">
                 <div>
                     <button class="btn btn-blue" onclick="openInventoryModal()">+ ADD ITEM</button>
-                    <button class="btn btn-gray btn-sm" onclick="seedInventory()" title="Load starter data">SEED</button>
+                    <button class="btn btn-green btn-sm" onclick="loadHODCatalog()" title="Load Hamburg Overhead Door parts catalog (~85 items)">LOAD HOD CATALOG</button>
+                    <button class="btn btn-gray btn-sm" onclick="seedInventory()" title="Load 3 sample starter items">SEED</button>
                 </div>
             </div>
             <div style="overflow-x: auto;">
@@ -765,6 +766,39 @@
             alert('Seeded ' + seeds.length + ' items.');
         } catch (e) {
             alert('Seed failed: ' + e.message);
+        }
+    };
+
+    // Load the real Hamburg Overhead Door parts catalog (~85 items)
+    // from /assets/data/hod-parts-catalog.json. Items with duplicate
+    // (category, name) are skipped so repeat-clicking is safe.
+    window.loadHODCatalog = async function () {
+        if (!confirm('Load the full HOD parts catalog (≈85 items)?\n\nExisting items with matching category + name will be skipped.')) return;
+        let loaded = 0, skipped = 0, failed = 0;
+        try {
+            const res = await fetch('/assets/data/hod-parts-catalog.json', { cache: 'no-store' });
+            if (!res.ok) throw new Error('catalog fetch failed: ' + res.status);
+            const catalog = await res.json();
+            const items = Array.isArray(catalog.items) ? catalog.items : [];
+
+            // Build set of existing (category, name) pairs from allItems cache
+            const existing = new Set(allItems.map(i =>
+                ((i.category || '') + '\u2009\u2009' + (i.name || '')).toUpperCase()));
+
+            for (const item of items) {
+                const key = ((item.category || '') + '\u2009\u2009' + (item.name || '')).toUpperCase();
+                if (existing.has(key)) { skipped++; continue; }
+                try {
+                    await DB.saveDoc('inventory_items', item);
+                    loaded++;
+                } catch (e) {
+                    console.error('load failed for', item.name, e);
+                    failed++;
+                }
+            }
+            alert(`HOD catalog load complete:\n  • Loaded: ${loaded}\n  • Skipped (duplicates): ${skipped}\n  • Failed: ${failed}`);
+        } catch (e) {
+            alert('Catalog load failed: ' + e.message);
         }
     };
 
