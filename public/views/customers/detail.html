@@ -316,6 +316,7 @@
         <span>HAMBURG <span class="accent">OVERHEAD</span> DOOR</span>
         <span style="opacity:.6; font-weight:300; margin-left:6px;">CUSTOMER</span>
     </div>
+    <div id="cust-universal-search-slot" style="display:flex; flex:1; align-items:center;"></div>
     <div style="display:flex; gap:10px; align-items:center;" id="cust-toolbar-right">
         <div class="dropdown">
             <button class="btn btn-ghost">🧭 NAVIGATE ▼</button>
@@ -475,7 +476,7 @@
         m.mountNotificationBell(document.getElementById('cust-toolbar-right'));
     }).catch(e => console.warn('[bell]', e));
     import('/js/universal-search.js').then(m => {
-        m.mountUniversalSearch(document.getElementById('cust-toolbar-right'));
+        m.mountUniversalSearch(document.getElementById('cust-universal-search-slot'), { variant: 'bar' });
     }).catch(e => console.warn('[search]', e));
 
     // ----- State -----

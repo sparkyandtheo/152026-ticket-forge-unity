@@ -692,16 +692,127 @@ function installShortcut() {
     });
 }
 
-export function mountUniversalSearch(slot) {
-    if (installed) {
-        // Allow re-mounting just the icon into different toolbars
-        mountIcon(slot);
-        return;
+export function mountUniversalSearch(slot, opts = {}) {
+    if (!installed) {
+        installed = true;
+        ensurePaletteMounted();
+        installShortcut();
     }
-    installed = true;
-    ensurePaletteMounted();
-    installShortcut();
-    mountIcon(slot);
+    // If no slot was provided (or the given element was null), create
+    // a floating top-right slot so the icon still appears. Handy for
+    // pages that don't have a dedicated toolbar container.
+    if (!slot) {
+        if (!document.getElementById('hd-sp-floating-slot')) {
+            const floatWrap = document.createElement('div');
+            floatWrap.id = 'hd-sp-floating-slot';
+            floatWrap.style.cssText =
+                'position: fixed; top: 12px; right: 12px; z-index: 2000;' +
+                'background: #202124; padding: 4px; border-radius: 8px;' +
+                'box-shadow: 0 4px 12px rgba(0,0,0,.3);';
+            document.body.appendChild(floatWrap);
+        }
+        slot = document.getElementById('hd-sp-floating-slot');
+    }
+    if (opts.variant === 'bar') {
+        mountSearchBar(slot);
+    } else {
+        mountIcon(slot);
+    }
+}
+
+function mountSearchBar(slot) {
+    if (!slot) return;
+    if (slot.querySelector('.hd-sp-bar')) return;
+
+    const bar = document.createElement('div');
+    bar.className = 'hd-sp-bar';
+    bar.innerHTML = `
+        <style>
+            .hd-sp-bar {
+                flex: 1;
+                max-width: 620px;
+                min-width: 220px;
+                margin: 0 24px;
+                position: relative;
+                display: flex; align-items: center;
+            }
+            .hd-sp-bar-icon {
+                position: absolute; left: 14px; top: 50%;
+                transform: translateY(-50%);
+                font-size: 15px; opacity: 0.7; pointer-events: none;
+            }
+            .hd-sp-bar-input {
+                width: 100%;
+                padding: 10px 70px 10px 40px;
+                border: 1px solid rgba(255,255,255,0.2);
+                background: rgba(255,255,255,0.08);
+                color: white;
+                border-radius: 8px;
+                font-family: 'Inter', -apple-system, sans-serif;
+                font-size: 13px;
+                font-weight: 500;
+                transition: background 0.15s, border-color 0.15s;
+            }
+            .hd-sp-bar-input::placeholder {
+                color: rgba(255,255,255,0.55);
+            }
+            .hd-sp-bar-input:hover {
+                background: rgba(255,255,255,0.13);
+                border-color: rgba(255,255,255,0.35);
+            }
+            .hd-sp-bar-input:focus {
+                outline: none;
+                background: white;
+                color: #202124;
+                border-color: #EF3340;
+            }
+            .hd-sp-bar-input:focus + .hd-sp-bar-icon,
+            .hd-sp-bar-input:focus ~ .hd-sp-bar-icon { opacity: 0.9; }
+            .hd-sp-bar-kbd {
+                position: absolute; right: 12px; top: 50%;
+                transform: translateY(-50%);
+                font-size: 10px; font-weight: 700;
+                color: rgba(255,255,255,0.55);
+                background: rgba(0,0,0,0.25);
+                padding: 2px 7px; border-radius: 3px;
+                pointer-events: none;
+            }
+            .hd-sp-bar-input:focus ~ .hd-sp-bar-kbd {
+                color: #80868b; background: #f1f3f4;
+            }
+            @media (max-width: 900px) {
+                .hd-sp-bar { margin: 0 10px; min-width: 140px; }
+                .hd-sp-bar-kbd { display: none; }
+                .hd-sp-bar-input { padding-right: 14px; }
+            }
+        </style>
+        <input type="text" class="hd-sp-bar-input"
+               placeholder="Search customers, tickets, staff, parts, zips…"
+               autocomplete="off" spellcheck="false">
+        <span class="hd-sp-bar-icon">🔍</span>
+        <span class="hd-sp-bar-kbd">⌘K</span>
+    `;
+    slot.appendChild(bar);
+
+    const input = bar.querySelector('.hd-sp-bar-input');
+
+    // Focus or click on the bar -> open the palette with any typed text carried over.
+    const openWithValue = () => {
+        open();
+        if (inputEl) {
+            if (input.value) {
+                inputEl.value = input.value;
+                // Trigger the palette to render results for the seeded value
+                inputEl.dispatchEvent(new Event('input'));
+            }
+            inputEl.focus();
+        }
+        // Clear the bar so it's ready for next use
+        input.value = '';
+        input.blur();
+    };
+    input.addEventListener('focus', openWithValue);
+    input.addEventListener('click', openWithValue);
 }
 
 function mountIcon(slot) {

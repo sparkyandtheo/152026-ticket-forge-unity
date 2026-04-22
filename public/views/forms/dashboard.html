@@ -271,9 +271,7 @@
                 <span style="font-weight: 300; opacity: 0.7; margin-left:8px;">DOCS</span>
             </div>
         </div>
-        <div class="search-container">
-            <input type="text" class="search-input" id="mainSearch" placeholder="Search name, phone, address, or email..." oninput="window.filterDocs()">
-        </div>
+        <div class="search-container" id="dash-universal-search-slot" style="display:flex; align-items:center;"></div>
         <div style="display: flex; gap: 10px; align-items: center;" id="dash-toolbar-right">
 
             <div class="dropdown">
@@ -517,12 +515,13 @@
             });
         }
 
-        // --- MOUNT NOTIFICATION BELL + UNIVERSAL SEARCH ---
+        // --- MOUNT NOTIFICATION BELL + UNIVERSAL SEARCH BAR ---
         import('/js/notification-bell.js').then(m => {
             m.mountNotificationBell(document.getElementById('dash-toolbar-right'));
         }).catch(e => console.warn('[bell] mount failed:', e));
         import('/js/universal-search.js').then(m => {
-            m.mountUniversalSearch(document.getElementById('dash-toolbar-right'));
+            // Wide centered bar (Google-Cloud-style)
+            m.mountUniversalSearch(document.getElementById('dash-universal-search-slot'), { variant: 'bar' });
         }).catch(e => console.warn('[search] mount failed:', e));
 
         // --- 3. ATTENTION FEED ---
