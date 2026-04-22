@@ -34,8 +34,24 @@ async function loadTechsFromFirestore() {
 // Service view uses abstract 'slots' instead of hard hours — a slot is
 // 'Mario's 3rd call of the day', not 'the 10am appointment'. Avoids false
 // precision (traffic, job length, etc).
-const SERVICE_SLOTS = ["SLOT 1", "SLOT 2", "SLOT 3", "SLOT 4", "SLOT 5"];
+// Slots are dynamic: we show (max used + 1) slots, minimum 3, unlimited
+// growth. This means an empty day shows 3 slots and tomorrow's 12-call day
+// will show 13 without any config change.
+const MIN_SLOTS = 3;
 const DAYS = ["MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY"];
+
+// Track the highest slot number currently in use (for dynamic growth)
+let highestSlotInUse = 0;
+
+function getServiceSlots() {
+    const count = Math.max(MIN_SLOTS, highestSlotInUse + 1);
+    return Array.from({ length: count }, (_, i) => `SLOT ${i + 1}`);
+}
+
+function slotNumber(slotName) {
+    const m = /^SLOT\s+(\d+)$/i.exec(slotName || '');
+    return m ? parseInt(m[1], 10) : 0;
+}
 
 let currentView = 'service'; // 'service', 'install', 'sales'
 let currentDate = new Date(); // Default to today
@@ -43,12 +59,11 @@ let currentDate = new Date(); // Default to today
 // --- 1. INITIALIZATION ---
 window.switchView = (viewName) => {
     currentView = viewName;
-    
-    // Update Buttons
+    highestSlotInUse = 0; // reset so a new view doesn't inherit stale slot count
+
     document.querySelectorAll('.view-switcher button').forEach(b => b.classList.remove('active'));
     document.getElementById(`btn-${viewName}`).classList.add('active');
-    
-    // Re-render
+
     renderBoard();
     subscribeToUnscheduled();
     subscribeToScheduled();
@@ -61,112 +76,161 @@ window.onload = async () => {
 };
 
 // --- 2. RENDER THE GRID ---
+// Service view:  VERTICAL AGENDA — techs are columns (top headers),
+//                slots are rows. Each tech's day scrolls down.
+// Install/sales: HORIZONTAL WEEK — techs are rows (left labels),
+//                days (M–F) are columns.
 function renderBoard() {
     const container = document.getElementById('calendar-mount');
-    container.innerHTML = ''; // Clear
+    container.innerHTML = '';
 
     const table = document.createElement('div');
     table.className = 'schedule-grid';
+    if (currentView === 'service') table.classList.add('vertical');
 
-    // SETUP COLUMNS & ROWS
-    let colHeaders = currentView === 'service' ? SERVICE_SLOTS : DAYS;
-    let rowHeaders = TECHS[currentView];
+    const techs = TECHS[currentView] || [];
 
-    // CSS Grid Template
-    // First column is 150px (Tech Name), rest are auto
-    table.style.gridTemplateColumns = `150px repeat(${colHeaders.length}, 1fr)`;
+    if (currentView === 'service') {
+        // VERTICAL: techs = columns, slots = rows
+        const slots = getServiceSlots();
+        table.style.gridTemplateColumns = `110px repeat(${techs.length}, minmax(180px, 1fr))`;
 
-    // A. Header Row
-    const corner = document.createElement('div');
-    corner.className = 'grid-header-cell';
-    corner.innerText = "TECH / TIME";
-    table.appendChild(corner);
-
-    colHeaders.forEach(header => {
-        const div = document.createElement('div');
-        div.className = 'grid-header-cell';
-        div.innerText = header;
-        table.appendChild(div);
-    });
-
-    // B. Rows (Techs)
-    rowHeaders.forEach(tech => {
-        // Tech Name Label
-        const label = document.createElement('div');
-        label.className = 'grid-row-header';
-        label.innerText = tech;
-        table.appendChild(label);
-
-        // Cells
-        colHeaders.forEach((col, index) => {
-            const cell = document.createElement('div');
-            cell.className = 'grid-cell';
-            
-            // Set Data Attributes for Drop
-            cell.dataset.tech = tech;
-            cell.dataset.slot = col; // Either "9:00" or "MONDAY"
-            
-            // Drag Events
-            cell.ondragover = (e) => { e.preventDefault(); cell.classList.add('drag-over'); };
-            cell.ondragleave = () => cell.classList.remove('drag-over');
-            cell.ondrop = (e) => handleDrop(e, cell);
-            
-            // ID for rendering scheduled cards later
-            // Format: "Mario_9:00" or "William_MONDAY"
-            cell.id = `cell_${tech.replace(/\s/g, '')}_${col}`;
-            
-            table.appendChild(cell);
+        // Header row: corner + tech names
+        const corner = document.createElement('div');
+        corner.className = 'grid-header-cell';
+        corner.innerText = "SLOT \u2193";
+        table.appendChild(corner);
+        techs.forEach(tech => {
+            const div = document.createElement('div');
+            div.className = 'grid-header-cell';
+            div.innerText = tech;
+            table.appendChild(div);
         });
-    });
+
+        // Body rows: slot label on the left, then one cell per tech
+        slots.forEach(slot => {
+            const label = document.createElement('div');
+            label.className = 'grid-row-header';
+            label.innerText = slot;
+            table.appendChild(label);
+
+            techs.forEach(tech => {
+                const cell = buildCell(tech, slot);
+                table.appendChild(cell);
+            });
+        });
+    } else {
+        // HORIZONTAL: techs = rows, days = columns
+        const colHeaders = DAYS;
+        table.style.gridTemplateColumns = `150px repeat(${colHeaders.length}, 1fr)`;
+
+        const corner = document.createElement('div');
+        corner.className = 'grid-header-cell';
+        corner.innerText = "TECH / DAY";
+        table.appendChild(corner);
+        colHeaders.forEach(header => {
+            const div = document.createElement('div');
+            div.className = 'grid-header-cell';
+            div.innerText = header;
+            table.appendChild(div);
+        });
+
+        techs.forEach(tech => {
+            const label = document.createElement('div');
+            label.className = 'grid-row-header';
+            label.innerText = tech;
+            table.appendChild(label);
+
+            colHeaders.forEach(col => {
+                const cell = buildCell(tech, col);
+                table.appendChild(cell);
+            });
+        });
+    }
 
     container.appendChild(table);
+}
+
+// Helper to build a single drop cell.
+function buildCell(tech, slot) {
+    const cell = document.createElement('div');
+    cell.className = 'grid-cell';
+    cell.dataset.tech = tech;
+    cell.dataset.slot = slot;
+    cell.id = `cell_${tech.replace(/\s/g, '')}_${slot}`;
+
+    cell.ondragover = (e) => { e.preventDefault(); cell.classList.add('drag-over'); };
+    cell.ondragleave = () => cell.classList.remove('drag-over');
+    cell.ondrop = (e) => handleDrop(e, cell);
+    return cell;
 }
 
 // --- 3. FIRESTORE LISTENERS ---
 
 // A. UNSCHEDULED ("Parking Lot")
 function subscribeToUnscheduled() {
-    // Logic: If Service view, show Service tickets. If Install, show Work Orders.
-    const collectionName = currentView === 'sales' ? 'sales_leads' : 
+    const collectionName = currentView === 'sales' ? 'sales_leads' :
                           (currentView === 'install' ? 'work_orders' : 'service_tickets');
 
     const q = query(collection(db, collectionName), where("status", "==", "Open"));
 
+    const container = document.getElementById('parking-lot');
+
+    // Parking lot is now a drop target too — dropping a SCHEDULED card
+    // here unschedules it (clears assignedTech + scheduledSlot, flips
+    // status back to 'Open').
+    container.ondragover  = (e) => { e.preventDefault(); container.classList.add('drag-over'); };
+    container.ondragleave = () => container.classList.remove('drag-over');
+    container.ondrop      = (e) => handleUnschedule(e, container);
+
     onSnapshot(q, (snapshot) => {
-        const container = document.getElementById('parking-lot');
         container.innerHTML = '';
-        
+
         snapshot.forEach(doc => {
             const data = doc.data();
             const card = createCardDOM(doc.id, data, collectionName);
             container.appendChild(card);
         });
 
-        if(snapshot.empty) container.innerHTML = '<div style="padding:10px;color:#999;text-align:center;">All Clear!</div>';
+        if (snapshot.empty) {
+            container.innerHTML = '<div style="padding:10px;color:#999;text-align:center;">All Clear!</div>';
+        }
     });
 }
 
 // B. SCHEDULED (The Board)
 function subscribeToScheduled() {
-    const collectionName = currentView === 'sales' ? 'sales_leads' : 
+    const collectionName = currentView === 'sales' ? 'sales_leads' :
                           (currentView === 'install' ? 'work_orders' : 'service_tickets');
-    
-    // In production, query by Date Range. For now, just get "Scheduled" status.
+
     const q = query(collection(db, collectionName), where("status", "==", "Scheduled"));
 
     onSnapshot(q, (snapshot) => {
-        // Clear all cells first (simplistic approach)
+        // For service view: find the highest slot in use and grow the board
+        // if we're about to render a ticket into a slot we don't have.
+        if (currentView === 'service') {
+            let max = 0;
+            snapshot.forEach(doc => {
+                const data = doc.data();
+                const n = slotNumber(data.scheduledSlot);
+                if (n > max) max = n;
+            });
+            if (max !== highestSlotInUse) {
+                highestSlotInUse = max;
+                renderBoard(); // adds/removes slot rows as needed
+            }
+        }
+
+        // Clear all cells, re-render scheduled cards
         document.querySelectorAll('.grid-cell').forEach(c => c.innerHTML = '');
 
         snapshot.forEach(doc => {
             const data = doc.data();
-            // Find the cell this belongs to
-            // Note: data.tech and data.slot must match our Grid IDs
             if (data.assignedTech && data.scheduledSlot) {
                 const safeTech = data.assignedTech.replace(/\s/g, '');
                 const cellId = `cell_${safeTech}_${data.scheduledSlot}`;
                 const cell = document.getElementById(cellId);
-                
+
                 if (cell) {
                     const card = createCardDOM(doc.id, data, collectionName, true);
                     cell.appendChild(card);
@@ -198,6 +262,17 @@ function createCardDOM(id, data, type, isScheduled = false) {
     div.ondragstart = (e) => {
         e.dataTransfer.setData("text/id", id);
         e.dataTransfer.setData("text/collection", type);
+        e.dataTransfer.setData("text/source", isScheduled ? 'scheduled' : 'unscheduled');
+        e.dataTransfer.effectAllowed = 'move';
+        // Visual: "pick up" the card so it looks lifted.
+        div.classList.add('lifted');
+        // Also mark the body so drop zones can reveal themselves.
+        document.body.classList.add('dragging-card');
+        if (isScheduled) document.body.classList.add('dragging-scheduled');
+    };
+    div.ondragend = () => {
+        div.classList.remove('lifted');
+        document.body.classList.remove('dragging-card', 'dragging-scheduled');
     };
 
     // Double Click to Open
@@ -353,7 +428,6 @@ async function handleDrop(e, cell) {
 
     if (!docId || !colName) return;
 
-    // UPDATE FIRESTORE
     try {
         const docRef = doc(db, colName, docId);
         await updateDoc(docRef, {
@@ -362,9 +436,35 @@ async function handleDrop(e, cell) {
             scheduledSlot: slot,
             lastUpdated: serverTimestamp()
         });
-        // Snapshot listener will automatically move the card visually
     } catch (err) {
         console.error("Drop failed:", err);
         alert("Failed to schedule: " + err.message);
+    }
+}
+
+// Drop onto the parking lot = UNSCHEDULE. Only acts on cards whose
+// source is 'scheduled' (dropping an already-unscheduled card back into
+// the lot is a no-op).
+async function handleUnschedule(e, lot) {
+    e.preventDefault();
+    lot.classList.remove('drag-over');
+
+    const source = e.dataTransfer.getData("text/source");
+    if (source !== 'scheduled') return;
+
+    const docId = e.dataTransfer.getData("text/id");
+    const colName = e.dataTransfer.getData("text/collection");
+    if (!docId || !colName) return;
+
+    try {
+        await updateDoc(doc(db, colName, docId), {
+            status: "Open",
+            assignedTech: null,
+            scheduledSlot: null,
+            lastUpdated: serverTimestamp()
+        });
+    } catch (err) {
+        console.error("Unschedule failed:", err);
+        alert("Failed to unschedule: " + err.message);
     }
 }
