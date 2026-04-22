@@ -261,7 +261,7 @@
         <div class="toolbar-logo"><img src="/assets/img/icon-192.png" alt="">HAMBURG DOOR</div>
         <div class="toolbar-title">🛡️ Admin Console</div>
     </div>
-    <div style="display: flex; gap: 10px; align-items: center;">
+    <div style="display: flex; gap: 10px; align-items: center;" id="admin-toolbar-right">
         <div class="dropdown">
             <button class="btn btn-gray">🛡️ ADMIN ▼</button>
             <div class="dropdown-content">
@@ -548,6 +548,11 @@
         if (!user) window.location.href = '/index.html';
     });
     window.handleLogout = () => signOut(auth).then(() => window.location.href = '/index.html');
+
+    // Mount notification bell
+    import('/js/notification-bell.js').then(m => {
+        m.mountNotificationBell(document.getElementById('admin-toolbar-right'));
+    }).catch(e => console.warn('[bell] mount failed:', e));
 
     // ----- TAB SWITCHING -----
     const TABS = ['staff', 'inventory', 'zips', 'settings'];
