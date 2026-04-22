@@ -261,6 +261,7 @@
         <div class="toolbar-logo"><img src="/assets/img/icon-192.png" alt="">HAMBURG DOOR</div>
         <div class="toolbar-title">🛡️ Admin Console</div>
     </div>
+    <div id="admin-universal-search-slot" style="display:flex; flex:1; align-items:center;"></div>
     <div style="display: flex; gap: 10px; align-items: center;" id="admin-toolbar-right">
         <div class="dropdown">
             <button class="btn btn-gray">🛡️ ADMIN ▼</button>
@@ -585,7 +586,7 @@
         m.mountNotificationBell(document.getElementById('admin-toolbar-right'));
     }).catch(e => console.warn('[bell] mount failed:', e));
     import('/js/universal-search.js').then(m => {
-        m.mountUniversalSearch(document.getElementById('admin-toolbar-right'));
+        m.mountUniversalSearch(document.getElementById('admin-universal-search-slot'), { variant: 'bar' });
     }).catch(e => console.warn('[search] mount failed:', e));
 
     // ----- TAB SWITCHING -----

@@ -160,6 +160,7 @@
             <img src="/assets/img/icon-192.png" alt="">
             <span style="font-weight:900;">HAMBURG DISPATCH</span>
         </div>
+        <div id="dispatch-universal-search-slot" style="display:flex; flex:1; align-items:center; max-width:520px;"></div>
         <div class="view-switcher">
             <button onclick="switchView('service')" id="btn-service" class="active">SERVICE (Daily)</button>
             <button onclick="switchView('install')" id="btn-install">INSTALL (Weekly)</button>
@@ -201,7 +202,7 @@
             m.mountNotificationBell(document.getElementById('dispatch-toolbar-right'));
         }).catch(e => console.warn('[bell] mount failed:', e));
         import('/js/universal-search.js').then(m => {
-            m.mountUniversalSearch(document.getElementById('dispatch-toolbar-right'));
+            m.mountUniversalSearch(document.getElementById('dispatch-universal-search-slot'), { variant: 'bar' });
         }).catch(e => console.warn('[search] mount failed:', e));
     </script>
 </body>

@@ -228,6 +228,7 @@
     } from '/js/form-utils.js';
     window.copyBillingToSite = copyBillingToSite;
     import { mountCustomerSidebar } from '/js/customer-sidebar.js';
+    import('/js/universal-search.js').then(m => m.mountUniversalSearch(null)).catch(e => console.warn('[search]', e));
 
     mountCustomerSidebar({
         phoneFieldId: 'bill-phone',
