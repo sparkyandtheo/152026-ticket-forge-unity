@@ -342,7 +342,10 @@
             <h2>Service Area Zips</h2>
             <div class="sheet-toolbar">
                 <input type="text" class="search-box" id="zip-search" placeholder="🔍 Search by zip or city...">
-                <button class="btn btn-blue" onclick="openZipModal()">+ ADD ZIP</button>
+                <div>
+                    <button class="btn btn-blue" onclick="openZipModal()">+ ADD ZIP</button>
+                    <button class="btn btn-green btn-sm" onclick="loadHODZips()" title="Load Hamburg Overhead Door service-area ZIPs (~60 entries)">LOAD HOD ZIPS</button>
+                </div>
             </div>
             <div style="overflow-x: auto;">
                 <table class="tbl">
@@ -799,6 +802,38 @@
             alert(`HOD catalog load complete:\n  • Loaded: ${loaded}\n  • Skipped (duplicates): ${skipped}\n  • Failed: ${failed}`);
         } catch (e) {
             alert('Catalog load failed: ' + e.message);
+        }
+    };
+
+    // Load HOD service-area ZIPs from /assets/data/hod-service-zips.json.
+    // Overwrites existing ZIPs with matching doc IDs (zip code is the ID),
+    // so re-running this updates any price changes from source.
+    window.loadHODZips = async function () {
+        if (!confirm('Load the HOD service-area ZIPs (~60 entries)?\n\nThis will overwrite any existing ZIPs with the same zip code. City names and prices will be updated from the source file.')) return;
+        let loaded = 0, failed = 0;
+        try {
+            const res = await fetch('/assets/data/hod-service-zips.json', { cache: 'no-store' });
+            if (!res.ok) throw new Error('ZIP file fetch failed: ' + res.status);
+            const data = await res.json();
+            const entries = Array.isArray(data.entries) ? data.entries : [];
+            // Ensure the zips tab is subscribed so the table refreshes live
+            if (!zipsSubscribed) subscribeZips();
+
+            for (const entry of entries) {
+                if (!entry.zip) continue;
+                try {
+                    // Use the zip code itself as the Firestore doc ID so
+                    // duplicates merge cleanly on re-run.
+                    await DB.saveDoc('service_area_zips', entry, entry.zip);
+                    loaded++;
+                } catch (e) {
+                    console.error('zip save failed', entry.zip, e);
+                    failed++;
+                }
+            }
+            alert(`HOD ZIP load complete:\n  • Loaded / updated: ${loaded}\n  • Failed: ${failed}`);
+        } catch (e) {
+            alert('ZIP load failed: ' + e.message);
         }
     };
 
