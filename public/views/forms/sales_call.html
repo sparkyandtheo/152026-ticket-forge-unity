@@ -226,6 +226,7 @@
 
         document.querySelectorAll("textarea").forEach(autoGrow);
         setupCustomerAutocomplete(autocompleteConfig);
+        await populateSalesRepDropdown();
 
         if (DOC_ID) {
             console.log("Loading Sales Lead...", DOC_ID);
@@ -294,6 +295,53 @@
         setVal('cust-date', data.custDate);
         
         setTimeout(() => document.querySelectorAll('.input-changed').forEach(el => el.classList.remove('input-changed')), 100);
+    }
+
+    // Populate the REP dropdown from employees where role='sales'
+    // (outside sales reps only). Silent no-op if the collection is empty
+    // or rules block reading it.
+    async function populateSalesRepDropdown() {
+        const sel = document.getElementById('sales-rep');
+        if (!sel) return;
+        try {
+            const all = await DB.getAll('employees');
+            const reps = all.filter(e => e.role === 'sales');
+            reps.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+            const currentVal = sel.value;
+            const listed = new Set(reps.map(r => r.name));
+            let html = '<option value="">— choose —</option>';
+            for (const r of reps) {
+                html += `<option value="${r.name}">${r.name}</option>`;
+            }
+            // Preserve any loaded value that isn't in the current staff list
+            if (currentVal && !listed.has(currentVal)) {
+                html += `<option value="${currentVal}" selected>${currentVal} (not in staff list)</option>`;
+            }
+            sel.innerHTML = html;
+            if (currentVal && listed.has(currentVal)) sel.value = currentVal;
+        } catch (e) {
+            console.warn('[sales] could not load rep list:', e);
+        }
+    }
+
+    // Parse a meet-date string (e.g. '4/25/2026' or '2026-04-25') to
+    // the weekly dispatch-board slot name (MONDAY..FRIDAY). Returns '' if
+    // unparseable or if the date falls on a weekend.
+    function meetDateToDispatchSlot(str) {
+        if (!str) return '';
+        let d = new Date(str);
+        if (isNaN(d.getTime())) {
+            // Try US-style 'M/D/YYYY' manually
+            const m = /^(\d{1,2})\/(\d{1,2})\/(\d{2,4})$/.exec(String(str).trim());
+            if (m) {
+                const yr = +m[3] < 100 ? 2000 + +m[3] : +m[3];
+                d = new Date(yr, +m[1] - 1, +m[2]);
+            }
+        }
+        if (isNaN(d.getTime())) return '';
+        const DAYS = ['SUNDAY','MONDAY','TUESDAY','WEDNESDAY','THURSDAY','FRIDAY','SATURDAY'];
+        const day = DAYS[d.getDay()];
+        return (day === 'SATURDAY' || day === 'SUNDAY') ? '' : day;
     }
 
     function gatherPayload() {
