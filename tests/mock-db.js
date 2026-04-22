@@ -57,6 +57,55 @@ const DB = {
     store.set(`customers/${id}`, { ...data });
   },
 
+  getAllCustomers() {
+    const out = [];
+    for (const [k, v] of store.entries()) {
+      if (k.startsWith('customers/')) out.push({ id: k.split('/')[1], ...v });
+    }
+    return out;
+  },
+
+  async upsertCustomer(payload, opts = {}) {
+    const data = {
+      name: payload.name || '',
+      primaryPhone: payload.primaryPhone || payload.phone || '',
+      billingAddress1: payload.billingAddress1 || payload.address1 || '',
+      billingAddress2: payload.billingAddress2 || payload.address2 || '',
+      jobSites: Array.isArray(payload.jobSites) ? payload.jobSites : []
+    };
+    if (opts.customerId) {
+      const key = 'customers/' + opts.customerId;
+      const existing = store.get(key) || {};
+      const merged = { ...existing, ...data };
+      if (opts.addJobSite?.address1) {
+        const sites = merged.jobSites || [];
+        const norm = s => (s||'').toUpperCase().trim();
+        if (!sites.find(s => norm(s.address1) === norm(opts.addJobSite.address1))) {
+          sites.push(opts.addJobSite);
+        }
+        merged.jobSites = sites;
+      }
+      store.set(key, merged);
+      return { id: opts.customerId, created: false };
+    }
+    // Check by phone/name
+    const pd = (data.primaryPhone || '').replace(/\D+/g, '');
+    const nn = (data.name || '').toUpperCase().trim();
+    for (const [k, v] of store.entries()) {
+      if (!k.startsWith('customers/')) continue;
+      const vpd = (v.primaryPhone || v.phone || '').replace(/\D+/g, '');
+      const vnn = (v.name || '').toUpperCase().trim();
+      if ((pd && vpd === pd) || (nn && vnn === nn)) {
+        const id = k.split('/')[1];
+        store.set(k, { ...v, ...data });
+        return { id, created: false };
+      }
+    }
+    const id = freshId();
+    store.set('customers/' + id, data);
+    return { id, created: true };
+  },
+
   async getAll(col, orderByField = null) {
     const out = [];
     for (const [k, v] of store.entries()) {
