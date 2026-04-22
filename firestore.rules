@@ -29,6 +29,7 @@ service cloud.firestore {
 
     // Admin-console collections
     match /employees/{doc}         { allow read, write: if isStaff(); }
+    match /org_contacts/{doc}      { allow read, write: if isStaff(); }
     match /inventory_items/{doc}   { allow read, write: if isStaff(); }
     match /gl_accounts/{doc}       { allow read, write: if isStaff(); }
     match /service_area_zips/{doc} { allow read, write: if isStaff(); }

@@ -20,6 +20,7 @@ same Firestore collections.
 | **Admin — Docs Dashboard** | `/dashboard` | Office staff (default) |
 | **Dispatcher — Board** | `/dispatch` | Whoever schedules techs |
 | **Field Tech — Mobile** | `/mobile` | Service/install techs on phones |
+| **👥 Customers** | `/customers` | Office — browse, open any customer to see their full history & edit record |
 | **🛡️ Admin Console** | `/admin` | Office — staff directory, inventory, service zips, company settings |
 | **🎞️ Interactive Demo** | `/demo` | Anyone (no login needed) — 90-second walkthrough |
 
