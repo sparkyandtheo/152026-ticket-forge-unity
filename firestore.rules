@@ -3,41 +3,41 @@ rules_version = '2';
 // =====================================================================
 // Hamburg Door staff portal — Firestore security rules
 //
-// Policy: any signed-in user can read/write the business collections.
-// This matches the current app: every staff member has a Google account
-// in the hamburg-door-ops Firebase project, and there's no per-user RBAC
-// wired yet. When we're ready to add roles, switch the `isAuthenticated()`
-// calls to `isOffice()` / `isTechnician()` and issue custom claims.
+// Policy: only @hamburgdoor.com Google accounts can read/write.
+// There's no per-user role gating below that; any @hamburgdoor.com
+// email has full access. When roles matter later, switch isStaff()
+// to isOffice() / isTechnician() calls and issue custom claims.
 // =====================================================================
 
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // --- helpers ---
-    function isAuthenticated() {
-      return request.auth != null;
+    function isStaff() {
+      return request.auth != null
+          && request.auth.token.email != null
+          && request.auth.token.email.matches('.*@hamburgdoor[.]com');
     }
 
-    // --- business collections ---
-    match /customers/{doc}        { allow read, write: if isAuthenticated(); }
-    match /phone_messages/{doc}   { allow read, write: if isAuthenticated(); }
-    match /sales_leads/{doc}      { allow read, write: if isAuthenticated(); }
-    match /quotes/{doc}           { allow read, write: if isAuthenticated(); }
-    match /work_orders/{doc}      { allow read, write: if isAuthenticated(); }
-    match /service_tickets/{doc}  { allow read, write: if isAuthenticated(); }
-    match /invoices/{doc}         { allow read, write: if isAuthenticated(); }
+    // Business collections
+    match /customers/{doc}         { allow read, write: if isStaff(); }
+    match /phone_messages/{doc}    { allow read, write: if isStaff(); }
+    match /sales_leads/{doc}       { allow read, write: if isStaff(); }
+    match /quotes/{doc}            { allow read, write: if isStaff(); }
+    match /work_orders/{doc}       { allow read, write: if isStaff(); }
+    match /service_tickets/{doc}   { allow read, write: if isStaff(); }
+    match /invoices/{doc}          { allow read, write: if isStaff(); }
 
-    // --- admin-console collections ---
-    match /employees/{doc}         { allow read, write: if isAuthenticated(); }
-    match /inventory_items/{doc}   { allow read, write: if isAuthenticated(); }
-    match /gl_accounts/{doc}       { allow read, write: if isAuthenticated(); }
-    match /service_area_zips/{doc} { allow read, write: if isAuthenticated(); }
-    match /settings/{doc}          { allow read, write: if isAuthenticated(); }
+    // Admin-console collections
+    match /employees/{doc}         { allow read, write: if isStaff(); }
+    match /inventory_items/{doc}   { allow read, write: if isStaff(); }
+    match /gl_accounts/{doc}       { allow read, write: if isStaff(); }
+    match /service_area_zips/{doc} { allow read, write: if isStaff(); }
+    match /settings/{doc}          { allow read, write: if isStaff(); }
 
-    // --- id-generator counters ---
-    match /counters/{doc}         { allow read, write: if isAuthenticated(); }
+    // ID-generator counters
+    match /counters/{doc}          { allow read, write: if isStaff(); }
 
-    // --- everything else: deny by default ---
+    // Everything else: deny by default
     match /{document=**} { allow read, write: if false; }
   }
 }
