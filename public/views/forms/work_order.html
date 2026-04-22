@@ -227,9 +227,19 @@
 
 <script type="module">
     import { DB } from '/js/db.js';
-    import { getUrlParam, setVal, setChk, autoGrow, setupInputHighlighting, setupRolodex, updateRolodexFromFields } from '/js/form-utils.js';
+    import {
+        getUrlParam, setVal, setChk, autoGrow, setupInputHighlighting,
+        setupCustomerAutocomplete, commitCustomerFromForm, renderOriginBreadcrumb, renderOriginBreadcrumb,
+        updateRolodexFromFields
+    } from '/js/form-utils.js';
 
     const DOC_ID = getUrlParam('id');
+    const autocompleteConfig = {
+        suggestionsBox: 'suggestions',
+        billing: { phone: 'bill-phone', name: 'bill-name', addr1: 'bill-addr1', addr2: 'bill-addr2' },
+        jobSite: { addr1: 'site-addr1', addr2: 'site-addr2' },
+        accountIdField: 'site-acct'
+    };
 
     window.onload = async () => {
         setupInputHighlighting();
@@ -238,17 +248,11 @@
         setVal('wo-date', dateStr);
         setVal('work-date', dateStr);
 
-        setupRolodex('bill-phone', 'suggestions', (client) => {
-            setVal('bill-name', client.name);
-            setVal('bill-addr1', client.address1);
-            setVal('bill-addr2', client.address2);
-            setVal('bill-phone', client.phone);
-            setVal('site-acct', client.id);
-        });
+        setupCustomerAutocomplete(autocompleteConfig);
 
         if (DOC_ID) {
             const data = await DB.getDoc('work_orders', DOC_ID);
-            if (data) loadForm(data);
+            if (data) { loadForm(data); renderOriginBreadcrumb(data); }
         } else {
             setVal('wo-number', await DB.getNewId('work_order', 500000));
             addRow();
@@ -301,7 +305,20 @@
         return items;
     }
 
+    async function commitCustomer() {
+        await commitCustomerFromForm(autocompleteConfig, {
+            name: document.getElementById('bill-name').value,
+            phone: document.getElementById('bill-phone').value,
+            billingAddr1: document.getElementById('bill-addr1').value,
+            billingAddr2: document.getElementById('bill-addr2').value,
+            siteAddr1: document.getElementById('site-addr1').value,
+            siteAddr2: document.getElementById('site-addr2').value,
+            accountId: document.getElementById('site-acct').value
+        });
+    }
+
     window.saveTicket = async function(statusOverride = null) {
+        const isNew = !DOC_ID;
         const isComplete = document.getElementById('chk-yes').checked;
         const payload = {
             ticketNumber: document.getElementById('wo-number').value,
@@ -328,24 +345,38 @@
             status: statusOverride || (isComplete ? 'Complete' : 'Open')
         };
         try {
+            await commitCustomer();
             const id = await DB.saveDoc('work_orders', payload, DOC_ID);
-            if (!DOC_ID) window.history.pushState({}, '', `?id=${id}`);
-            alert("Work Order Saved!");
+            // Silent save when called from sendToDispatch (statusOverride set)
+            // — caller handles the redirect/alert.
+            if (!statusOverride) {
+                if (isNew) {
+                    window.location.href = '/views/forms/dashboard.html';
+                } else {
+                    alert("Work order saved.");
+                }
+            }
             return id;
         } catch (e) { alert("Error saving: " + e.message); return null; }
     };
 
     window.sendToDispatch = async function() {
         if(!confirm("Send to Dispatch Board?")) return;
-        // Setting status to 'Scheduled' ensures it shows on the tech board
-        await saveTicket('Scheduled');
-        alert("Sent to Dispatch!");
+        // Setting status to 'Open' ensures it shows in the parking lot.
+        const id = await saveTicket('Open');
+        if (id) window.location.href = '/views/office/dispatch.html';
     };
 
     window.convertToInvoice = async function() {
-        if(!confirm("Create Invoice?")) return;
+        if(!confirm("Forward this work order into an Invoice?")) return;
+        await commitCustomer();
+        // Save the WO with Complete status so it leaves the active queue.
+        const woId = DOC_ID || await DB.saveDoc('work_orders', { status: 'Complete' }, DOC_ID);
+        if (DOC_ID) await DB.saveDoc('work_orders', { status: 'Complete' }, DOC_ID);
         const invId = await DB.getNewId('invoice', 600000);
         const payload = {
+            originDocType: 'work_order',
+            originDocId: DOC_ID || woId,
             ticketNumber: invId,
             date: new Date().toLocaleDateString(),
             customerName: document.getElementById('bill-name').value,
@@ -363,8 +394,11 @@
 
     window.convertToQuote = async function() {
         if(!confirm("Backtrack to Quote?")) return;
+        await commitCustomer();
         const qId = await DB.getNewId('quote', 300000);
         const payload = {
+            originDocType: 'work_order',
+            originDocId: DOC_ID,
             ticketNumber: qId,
             date: new Date().toLocaleDateString(),
             customerName: document.getElementById('bill-name').value,

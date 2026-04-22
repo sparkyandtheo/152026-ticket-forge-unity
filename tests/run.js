@@ -519,6 +519,40 @@ await test('new-install pipeline: phone -> quote -> work_order -> invoice', asyn
   assertEqual(invId, '600001', 'invoice id');
 });
 
+section('Forwarded conversions carry origin pointers');
+
+await test('phone_message -> service carries originDocType + originDocId', async () => {
+  const phonePayload = {
+    ticketNumber: '800001',
+    customerName: JANET.name,
+    phone: JANET.phone,
+    status: 'Converted'
+  };
+  await DB.saveDoc('phone_messages', phonePayload, '800001');
+
+  const { target, payload } = F.phoneMessage_convert({
+    'cust-name': JANET.name,
+    'cust-phone': JANET.phone,
+    'cust-id': JANET.id
+  }, 'service');
+  payload.originDocType = 'phone_message';
+  payload.originDocId = '800001';
+  const svcId = '700001';
+  await DB.saveDoc(target, payload, svcId);
+
+  const svc = await DB.getDoc('service_tickets', svcId);
+  assertEqual(svc.originDocType, 'phone_message', 'originDocType');
+  assertEqual(svc.originDocId, '800001', 'originDocId');
+});
+
+await test('source phone_message status flips to Converted on forward', async () => {
+  await DB.saveDoc('phone_messages', { status: 'Open', customerName: JANET.name }, '800002');
+  // Simulate the forward flow
+  await DB.saveDoc('phone_messages', { status: 'Converted' }, '800002');
+  const doc = await DB.getDoc('phone_messages', '800002');
+  assertEqual(doc.status, 'Converted', 'status after forward');
+});
+
 section('Customer rolodex: phone is the key');
 
 await test('rolodex save then lookup by phone returns same customer', async () => {

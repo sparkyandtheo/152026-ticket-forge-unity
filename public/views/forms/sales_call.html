@@ -197,15 +197,22 @@
 
 <script type="module">
     import { DB } from '/js/db.js';
-    import { getUrlParam, setVal, setChk, autoGrow, setupInputHighlighting, setupRolodex, updateRolodexFromFields } from '/js/form-utils.js';
+    import {
+        getUrlParam, setVal, setChk, autoGrow, setupInputHighlighting,
+        setupCustomerAutocomplete, commitCustomerFromForm, renderOriginBreadcrumb
+    } from '/js/form-utils.js';
 
-    // Expose autoGrow globally for inline oninput="autoGrow(this)" handlers.
     window.autoGrow = autoGrow;
 
     setupInputHighlighting();
 
-    const urlParams = new URLSearchParams(window.location.search);
-    const DOC_ID = urlParams.get('id');
+    const DOC_ID = getUrlParam('id');
+    const autocompleteConfig = {
+        suggestionsBox: 'suggestions',
+        billing: { phone: 'bill-phone', name: 'bill-name', addr1: 'bill-addr1', addr2: 'bill-addr2' },
+        jobSite: { addr1: 'site-addr1', addr2: 'site-addr2' },
+        accountIdField: 'site-acct'
+    };
 
     window.onload = async () => {
         // Set Default Date
@@ -213,12 +220,13 @@
         document.getElementById('sales-date').value = (today.getMonth()+1)+'/'+today.getDate()+'/'+today.getFullYear();
 
         document.querySelectorAll("textarea").forEach(autoGrow);
+        setupCustomerAutocomplete(autocompleteConfig);
 
         if (DOC_ID) {
             console.log("Loading Sales Lead...", DOC_ID);
             const data = await DB.getDoc('sales_leads', DOC_ID);
             
-            if (data) loadForm(data);
+            if (data) { loadForm(data); renderOriginBreadcrumb(data); }
         } else {
             clearForm();
             // Assign a stable sequential lead number (was hard-coded 'S-NEW',
@@ -283,122 +291,70 @@
         setTimeout(() => document.querySelectorAll('.input-changed').forEach(el => el.classList.remove('input-changed')), 100);
     }
 
-    window.saveTicket = async function() {
-        const payload = {
+    function gatherPayload() {
+        return {
             ticketNumber: document.getElementById('sales-no').value,
             date: document.getElementById('sales-date').value,
             poNumber: document.getElementById('sales-po').value,
             rep: document.getElementById('sales-rep').value,
-            
             customerName: document.getElementById('bill-name').value,
             address1: document.getElementById('bill-addr1').value,
             address2: document.getElementById('bill-addr2').value,
             phone: document.getElementById('bill-phone').value,
-            
             siteAddress1: document.getElementById('site-addr1').value,
             siteAddress2: document.getElementById('site-addr2').value,
             accountId: document.getElementById('site-acct').value,
             siteType: document.getElementById('site-type').value,
-            
             description: document.getElementById('sales-notes').value,
-
-            // Tech Section
             techStart: document.getElementById('time-start').value,
             techFinish: document.getElementById('time-finish').value,
             meetingDate: document.getElementById('meet-date').value,
-            visitComplete: document.getElementById('chk-yes').checked ? 'yes' : (document.getElementById('chk-no').checked ? 'no' : ''),
+            visitComplete: document.getElementById('chk-yes').checked ? 'yes'
+                : (document.getElementById('chk-no').checked ? 'no' : ''),
             accLadder: document.getElementById('acc-ladder').checked,
-            accKey: document.getElementById('acc-key').checked,
-            repSig: document.getElementById('rep-sig').value,
-            
-            custSig: document.getElementById('cust-sig').value,
-            custDate: document.getElementById('cust-date').value,
-
-            // Status for Dispatch Board
+            accKey:    document.getElementById('acc-key').checked,
+            repSig:    document.getElementById('rep-sig').value,
+            custSig:   document.getElementById('cust-sig').value,
+            custDate:  document.getElementById('cust-date').value,
             status: document.getElementById('chk-yes').checked ? 'Complete' : 'Open'
         };
+    }
 
+    async function commitCustomer() {
+        await commitCustomerFromForm(autocompleteConfig, {
+            name: document.getElementById('bill-name').value,
+            phone: document.getElementById('bill-phone').value,
+            billingAddr1: document.getElementById('bill-addr1').value,
+            billingAddr2: document.getElementById('bill-addr2').value,
+            siteAddr1: document.getElementById('site-addr1').value,
+            siteAddr2: document.getElementById('site-addr2').value,
+            accountId: document.getElementById('site-acct').value
+        });
+    }
+
+    window.saveTicket = async function() {
+        const isNew = !DOC_ID;
         try {
-            const id = await DB.saveDoc('sales_leads', payload, DOC_ID);
-            alert("Saved! ID: " + id);
-            if (!DOC_ID) {
-                window.history.pushState({}, '', `?id=${id}`);
+            await commitCustomer();
+            await DB.saveDoc('sales_leads', gatherPayload(), DOC_ID);
+            if (isNew) {
+                window.location.href = '/views/forms/dashboard.html';
+            } else {
+                alert("Sales lead saved.");
             }
         } catch (e) {
             alert("Error saving: " + e.message);
         }
     };
 
-    // UI Helpers
-    // setVal and setChk are imported from /js/form-utils.js
-    
+    // setVal, setChk, autoGrow imported from /js/form-utils.js. Rolodex
+    // autocomplete is handled by setupCustomerAutocomplete (configured above).
     window.toggleChk = function(chk, group) {
-        if(group === 'complete') {
+        if (group === 'complete') {
             const other = chk.id === 'chk-yes' ? 'chk-no' : 'chk-yes';
-            if(chk.checked) document.getElementById(other).checked = false;
+            if (chk.checked) document.getElementById(other).checked = false;
         }
     };
-
-    window.autoGrow = function(element) {
-        element.style.height = "5px";
-        element.style.height = (element.scrollHeight) + "px";
-    };
-
-    // --- ROLODEX LOGIC ---
-    let searchTimeout;
-    window.lookupCustomer = function(input) {
-        clearTimeout(searchTimeout);
-        const box = document.getElementById('suggestions');
-        const val = input.value.trim();
-        
-        if (val.length < 3) { 
-            box.style.display = 'none'; 
-            return; 
-        }
-
-        searchTimeout = setTimeout(async () => {
-            const client = await DB.findCustomerByPhone(val);
-            if (client) {
-                box.innerHTML = `<div class="suggestion-item" onclick="fillCustomer('${client.name}', '${client.address1}', '${client.address2}', '${client.phone}', '${client.id || ''}')">
-                    <strong>${client.name}</strong><br>${client.address1}
-                </div>`;
-                box.style.display = 'block';
-            } else {
-                box.style.display = 'none';
-            }
-        }, 500);
-    }
-
-    window.fillCustomer = function(name, addr1, addr2, phone, id) {
-        document.getElementById('bill-name').value = name;
-        document.getElementById('bill-addr1').value = addr1;
-        document.getElementById('bill-addr2').value = addr2;
-        document.getElementById('bill-phone').value = phone;
-        document.getElementById('site-acct').value = id;
-        document.getElementById('suggestions').style.display = 'none';
-    }
-    
-    document.addEventListener('click', function(e) {
-        if (!e.target.closest('.input-group')) {
-            document.getElementById('suggestions').style.display = 'none';
-        }
-    });
-
-    window.updateRolodex = function() {
-        const data = {
-            name: document.getElementById('bill-name').value,
-            phone: document.getElementById('bill-phone').value,
-            address1: document.getElementById('bill-addr1').value,
-            address2: document.getElementById('bill-addr2').value,
-            id: document.getElementById('site-acct').value
-        };
-        if(data.phone) {
-            DB.saveCustomer(data);
-            alert("Rolodex Updated for: " + data.name);
-        } else {
-            alert("Phone number required to update Rolodex.");
-        }
-    }
 </script>
 </body>
 </html>

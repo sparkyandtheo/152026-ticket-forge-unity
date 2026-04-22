@@ -202,26 +202,30 @@
 
 <script type="module">
     import { DB } from '/js/db.js';
-    import { getUrlParam, setVal, autoGrow, setupInputHighlighting, setupRolodex, updateRolodexFromFields } from '/js/form-utils.js';
+    import {
+        getUrlParam, setVal, autoGrow, setupInputHighlighting,
+        setupCustomerAutocomplete, commitCustomerFromForm, renderOriginBreadcrumb, renderOriginBreadcrumb,
+        updateRolodexFromFields
+    } from '/js/form-utils.js';
 
     const DOC_ID = getUrlParam('id');
+    const autocompleteConfig = {
+        suggestionsBox: 'suggestions',
+        billing: { phone: 'bill-phone', name: 'bill-name', addr1: 'bill-addr1', addr2: 'bill-addr2' },
+        jobSite: { addr1: 'site-addr1', addr2: 'site-addr2' },
+        accountIdField: 'acct-id'
+    };
 
     window.onload = async () => {
         setupInputHighlighting();
         const d = new Date();
         setVal('quote-date', (d.getMonth()+1)+'/'+d.getDate()+'/'+d.getFullYear());
 
-        setupRolodex('bill-phone', 'suggestions', (client) => {
-            setVal('bill-name', client.name);
-            setVal('bill-addr1', client.address1);
-            setVal('bill-addr2', client.address2);
-            setVal('bill-phone', client.phone);
-            setVal('acct-id', client.id);
-        });
+        setupCustomerAutocomplete(autocompleteConfig);
 
         if (DOC_ID) {
             const data = await DB.getDoc('quotes', DOC_ID);
-            if (data) loadForm(data);
+            if (data) { loadForm(data); renderOriginBreadcrumb(data); }
         } else {
             document.getElementById('quote-no').value = await DB.getNewId('quote', 300000);
             addRow(); 
@@ -270,7 +274,20 @@
         return items;
     }
 
+    async function commitCustomer() {
+        await commitCustomerFromForm(autocompleteConfig, {
+            name: document.getElementById('bill-name').value,
+            phone: document.getElementById('bill-phone').value,
+            billingAddr1: document.getElementById('bill-addr1').value,
+            billingAddr2: document.getElementById('bill-addr2').value,
+            siteAddr1: document.getElementById('site-addr1').value,
+            siteAddr2: document.getElementById('site-addr2').value,
+            accountId: document.getElementById('acct-id').value
+        });
+    }
+
     window.saveTicket = async function() {
+        const isNew = !DOC_ID;
         const items = scrapeItems();
         const payload = {
             ticketNumber: document.getElementById('quote-no').value,
@@ -291,14 +308,23 @@
         };
 
         try {
+            await commitCustomer();
             const id = await DB.saveDoc('quotes', payload, DOC_ID);
-            if (!DOC_ID) window.history.pushState({}, '', `?id=${id}`);
-            alert("Saved! ID: " + id);
+            if (isNew) {
+                window.location.href = '/views/forms/dashboard.html';
+            } else {
+                alert("Quote saved.");
+            }
+            return id;
         } catch(e) { alert("Error: " + e.message); }
     };
 
     window.convertToWorkOrder = async function() {
-        if(!confirm("Create a Work Order from this Quote?")) return;
+        if(!confirm("Forward this quote into a Work Order?")) return;
+        await commitCustomer();
+        // Save current quote first so we have a stable id, then mark Converted.
+        const quoteId = await DB.saveDoc('quotes',
+            { ...scrapeItemsIntoPayload(), status: 'Converted' }, DOC_ID);
         const newId = await DB.getNewId('work_order', 500000);
         const items = scrapeItems();
         const payload = {
@@ -317,16 +343,35 @@
             originQuoteId: DOC_ID || 'new'
         };
 
+        payload.originDocType = 'quote';
+        payload.originDocId   = quoteId;
         try {
             await DB.saveDoc('work_orders', payload, newId);
-            if (DOC_ID) await DB.saveDoc('quotes', { status: 'Converted' }, DOC_ID);
-            if(confirm("Work Order Created! Open it now?")) {
-                window.location.href = `work_order.html?id=${newId}`;
-            }
+            window.location.href = `work_order.html?id=${newId}`;
         } catch (e) {
             alert("Error converting: " + e.message);
         }
     };
+
+    // Helper used by convertToWorkOrder to persist the current quote's edits.
+    function scrapeItemsIntoPayload() {
+        return {
+            ticketNumber: document.getElementById('quote-no').value,
+            date: document.getElementById('quote-date').value,
+            poNumber: document.getElementById('quote-po').value,
+            rep: document.getElementById('quote-rep').value,
+            customerName: document.getElementById('bill-name').value,
+            address1: document.getElementById('bill-addr1').value,
+            address2: document.getElementById('bill-addr2').value,
+            phone: document.getElementById('bill-phone').value,
+            siteAddress1: document.getElementById('site-addr1').value,
+            siteAddress2: (document.getElementById('site-addr2') || {}).value || '',
+            accountId: document.getElementById('acct-id').value,
+            proposalText: document.getElementById('prop-text').value,
+            items: scrapeItems(),
+            grandTotal: document.getElementById('grand-total').value
+        };
+    }
 
     window.addRow = function(data = null) {
         const container = document.getElementById('items-list');
