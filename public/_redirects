@@ -6,3 +6,4 @@
 /dashboard  /views/forms/dashboard.html  200
 /dispatch   /views/office/dispatch.html   200
 /mobile     /views/mobile/index.html      200
+/demo       /demo/index.html               200
