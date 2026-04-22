@@ -1,5 +1,5 @@
 // public/js/db.js
-import { db } from '/js/firebase-config.js';
+import { db, auth } from '/js/firebase-config.js';
 import {
     collection,
     doc,
@@ -45,6 +45,15 @@ export const DB = {
     // ============================================================
     async saveDoc(collectionName, data, id = null) {
         const payload = clean({ ...data, lastUpdated: serverTimestamp() });
+
+        // Stamp authorship on first create (doesn't overwrite on updates).
+        // `createdByEmail` is used by the notification bell to route
+        // 'Attention' alerts back to whoever opened the ticket.
+        if (!id && auth && auth.currentUser && auth.currentUser.email) {
+            if (!payload.createdByEmail) payload.createdByEmail = auth.currentUser.email;
+            if (!payload.createdAt) payload.createdAt = serverTimestamp();
+        }
+
         if (id) {
             await setDoc(doc(db, collectionName, id), payload, { merge: true });
             return id;

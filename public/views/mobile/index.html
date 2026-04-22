@@ -81,7 +81,7 @@
         <div id="viewas-banner" class="viewas-banner" style="display:none;"></div>
         <div class="app-header">
             <div class="tech-name" style="display:flex; align-items:center;"><img src="/assets/img/icon-192.png" alt="" class="brand-mark"><span id="header-user">LOADING...</span></div>
-            <div style="display:flex; gap:8px; align-items:center; flex-wrap: wrap; justify-content: flex-end;">
+            <div style="display:flex; gap:8px; align-items:center; flex-wrap: wrap; justify-content: flex-end;" id="mobile-toolbar-right">
                 <div class="role-dropdown" id="viewas-dd">
                     <button class="viewas-pill" onclick="document.getElementById('viewas-dd').classList.toggle('open')">👁️ View as ▼</button>
                     <div class="role-dropdown-content" id="viewas-list" style="min-width: 220px;">
@@ -216,6 +216,11 @@
         }
 
         window.logout = () => signOut(auth);
+
+        // Mount notification bell in the mobile toolbar
+        import('/js/notification-bell.js').then(m => {
+            m.mountNotificationBell(document.getElementById('mobile-toolbar-right'));
+        }).catch(e => console.warn('[bell] mount failed:', e));
 
         // 2. LOAD JOBS
         function loadJobs(techName) {

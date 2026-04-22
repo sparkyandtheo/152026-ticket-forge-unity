@@ -31,7 +31,10 @@ async function loadTechsFromFirestore() {
     }
 }
 
-const HOURS = ["8:00", "9:00", "10:00", "11:00", "12:00", "1:00", "2:00", "3:00", "4:00"];
+// Service view uses abstract 'slots' instead of hard hours — a slot is
+// 'Mario's 3rd call of the day', not 'the 10am appointment'. Avoids false
+// precision (traffic, job length, etc).
+const SERVICE_SLOTS = ["SLOT 1", "SLOT 2", "SLOT 3", "SLOT 4", "SLOT 5"];
 const DAYS = ["MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY"];
 
 let currentView = 'service'; // 'service', 'install', 'sales'
@@ -66,7 +69,7 @@ function renderBoard() {
     table.className = 'schedule-grid';
 
     // SETUP COLUMNS & ROWS
-    let colHeaders = currentView === 'service' ? HOURS : DAYS;
+    let colHeaders = currentView === 'service' ? SERVICE_SLOTS : DAYS;
     let rowHeaders = TECHS[currentView];
 
     // CSS Grid Template
@@ -178,14 +181,20 @@ function createCardDOM(id, data, type, isScheduled = false) {
     const div = document.createElement('div');
     div.className = `job-card type-${currentView}`; // service, install, or sales
     div.draggable = true;
-    
-    div.innerHTML = `
-        <div class="card-id">#${data.ticketNumber || id.substring(0,4)}</div>
-        <div class="card-title">${data.customerName || 'Unknown'}</div>
-        <div class="card-loc">${data.address || data.siteAddress || ''}</div>
+
+    // Unscheduled cards get a ⛔ REJECT button; scheduled cards don't
+    // (rejecting an already-dispatched ticket is a different workflow).
+    const rejectBtn = isScheduled ? '' : `
+        <button class="card-reject-btn" title="Reject this ticket with a reason">⛔ REJECT</button>
     `;
 
-    // Drag Start: Store ID and Collection in the event
+    div.innerHTML = `
+        <div class="card-id">#${escapeAttr(data.ticketNumber || id.substring(0,4))}</div>
+        <div class="card-title">${escapeAttr(data.customerName || 'Unknown')}</div>
+        <div class="card-loc">${escapeAttr(data.address || data.siteAddress1 || data.siteAddress || '')}</div>
+        ${rejectBtn}
+    `;
+
     div.ondragstart = (e) => {
         e.dataTransfer.setData("text/id", id);
         e.dataTransfer.setData("text/collection", type);
@@ -193,12 +202,143 @@ function createCardDOM(id, data, type, isScheduled = false) {
 
     // Double Click to Open
     div.ondblclick = () => {
-        let page = type === 'service_tickets' ? 'service.html' : 
+        let page = type === 'service_tickets' ? 'service.html' :
                    (type === 'work_orders' ? 'work_order.html' : 'sales_call.html');
-        window.open(`../forms/${page}?id=${id}`, '_blank');
+        window.open(`/views/forms/${page}?id=${id}`, '_blank');
     };
 
+    // Wire reject button (stop propagation so it doesn't trigger drag)
+    const btn = div.querySelector('.card-reject-btn');
+    if (btn) {
+        btn.onmousedown = (e) => e.stopPropagation();
+        btn.onclick = (e) => {
+            e.stopPropagation();
+            openRejectModal(id, type, data);
+        };
+    }
+
     return div;
+}
+
+function escapeAttr(s) {
+    return String(s == null ? '' : s)
+        .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;').replace(/'/g, '&#039;');
+}
+
+// ============================================================
+// REJECT MODAL — mandatory comment, marks ticket status=Attention
+// ============================================================
+function openRejectModal(id, collectionName, data) {
+    ensureRejectModalMounted();
+    const wrap = document.getElementById('reject-modal');
+    document.getElementById('reject-modal-doc').innerHTML =
+        `<b>${escapeAttr(data.customerName || 'Unknown')}</b> · #${escapeAttr(data.ticketNumber || id.substring(0,4))}` +
+        (data.address || data.siteAddress1 ? `<br><span style="font-size:12px; color:#666;">📍 ${escapeAttr(data.address || data.siteAddress1)}</span>` : '');
+    document.getElementById('reject-modal-reason').value = '';
+    document.getElementById('reject-modal-submit').onclick = async () => {
+        const reason = document.getElementById('reject-modal-reason').value.trim();
+        if (!reason) {
+            const err = document.getElementById('reject-modal-err');
+            err.textContent = 'A reason is required.';
+            err.style.display = 'block';
+            return;
+        }
+        try {
+            const me = (await import('/js/firebase-config.js')).auth.currentUser;
+            await updateDoc(doc(db, collectionName, id), {
+                previousStatus: data.status || 'Open',
+                status: 'Attention',
+                attentionReason: reason,
+                rejectedBy: me ? me.email : null,
+                rejectedAt: serverTimestamp(),
+                // Who should see this in the notification bell. Prefer the
+                // ticket's creator, falling back to null (everyone sees).
+                attentionTargetEmail: data.createdByEmail || null
+            });
+            wrap.classList.remove('open');
+        } catch (e) {
+            console.error('reject failed', e);
+            const err = document.getElementById('reject-modal-err');
+            err.textContent = 'Save failed: ' + e.message;
+            err.style.display = 'block';
+        }
+    };
+    document.getElementById('reject-modal-cancel').onclick = () => wrap.classList.remove('open');
+    wrap.classList.add('open');
+    setTimeout(() => document.getElementById('reject-modal-reason').focus(), 100);
+}
+
+function ensureRejectModalMounted() {
+    if (document.getElementById('reject-modal')) return;
+    const el = document.createElement('div');
+    el.id = 'reject-modal';
+    el.innerHTML = `
+        <style>
+            #reject-modal {
+                position: fixed; inset: 0; background: rgba(0,0,0,0.65);
+                display: none; align-items: center; justify-content: center;
+                z-index: 5000; padding: 20px;
+                font-family: 'Inter', sans-serif;
+            }
+            #reject-modal.open { display: flex; }
+            #reject-modal .rj-card {
+                background: white; color: #202124; border-radius: 10px;
+                padding: 26px 28px; width: 100%; max-width: 480px;
+                box-shadow: 0 20px 60px rgba(0,0,0,0.4);
+                animation: rj-pop 0.18s ease-out;
+            }
+            @keyframes rj-pop { from { opacity:0; transform:scale(0.96); } to { opacity:1; transform:scale(1); } }
+            #reject-modal h3 {
+                margin: 0 0 14px 0; font-weight: 900; font-size: 18px;
+                border-bottom: 3px solid #EF3340; padding-bottom: 10px;
+                display: flex; align-items: center; gap: 8px;
+            }
+            #reject-modal .rj-doc {
+                background: #f8f9fa; padding: 10px 14px; border-radius: 6px;
+                margin-bottom: 14px; font-size: 14px;
+                border-left: 3px solid #5f6368;
+            }
+            #reject-modal label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #5f6368; display: block; margin-bottom: 4px; }
+            #reject-modal textarea {
+                width: 100%; min-height: 120px; padding: 10px; border: 2px solid #dadce0;
+                border-radius: 6px; font-family: inherit; font-size: 14px; box-sizing: border-box;
+                resize: vertical;
+            }
+            #reject-modal textarea:focus { outline: none; border-color: #EF3340; }
+            #reject-modal .rj-err {
+                display: none; color: #d93025; font-size: 12px; margin-top: 6px;
+                font-weight: 600;
+            }
+            #reject-modal .rj-actions {
+                display: flex; justify-content: flex-end; gap: 10px; margin-top: 18px;
+            }
+            #reject-modal button {
+                padding: 10px 18px; border: none; border-radius: 6px;
+                font-family: inherit; font-weight: 700; font-size: 13px;
+                cursor: pointer; text-transform: uppercase; letter-spacing: 0.03em;
+            }
+            #reject-modal .rj-cancel { background: #f1f3f4; color: #5f6368; }
+            #reject-modal .rj-submit { background: #EF3340; color: white; }
+            #reject-modal .rj-submit:hover { filter: brightness(1.1); }
+        </style>
+        <div class="rj-card">
+            <h3>⛔ Reject Ticket</h3>
+            <div class="rj-doc" id="reject-modal-doc"></div>
+            <label for="reject-modal-reason">Why is this being rejected? (required)</label>
+            <textarea id="reject-modal-reason" placeholder="e.g. Missing address, customer unreachable, wrong ticket type…"></textarea>
+            <div class="rj-err" id="reject-modal-err"></div>
+            <div class="rj-actions">
+                <button class="rj-cancel" id="reject-modal-cancel">Cancel</button>
+                <button class="rj-submit" id="reject-modal-submit">Reject Ticket</button>
+            </div>
+        </div>
+    `;
+    document.body.appendChild(el);
+    el.addEventListener('click', (e) => { if (e.target === el) el.classList.remove('open'); });
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && el.classList.contains('open')) el.classList.remove('open');
+    });
 }
 
 // --- 5. DRAG & DROP LOGIC ---

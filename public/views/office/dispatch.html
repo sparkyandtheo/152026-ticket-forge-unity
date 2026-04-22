@@ -46,6 +46,23 @@
         .card-title { font-weight: bold; font-size: 13px; margin: 4px 0; }
         .card-loc { font-size: 11px; color: #666; }
 
+        .card-reject-btn {
+            margin-top: 8px;
+            padding: 4px 8px;
+            background: transparent;
+            border: 1px solid #d93025;
+            color: #d93025;
+            border-radius: 4px;
+            font-family: 'Inter', sans-serif;
+            font-size: 10px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+        .card-reject-btn:hover { background: #d93025; color: white; }
+
         /* CALENDAR AREA */
         .calendar-view { flex: 1; overflow: auto; padding: 20px; background: white; position: relative; }
         
@@ -90,7 +107,7 @@
             <button onclick="switchView('install')" id="btn-install">INSTALL (Weekly)</button>
             <button onclick="switchView('sales')" id="btn-sales">SALES (Weekly)</button>
         </div>
-        <div style="display:flex; align-items:center; gap:10px;">
+        <div style="display:flex; align-items:center; gap:10px;" id="dispatch-toolbar-right">
             <button onclick="window.print()" style="background:transparent; border:1px solid #5f6368; color:white; padding:5px 10px; cursor:pointer;">🖨️ PRINT</button>
 
             <div class="role-dropdown">
@@ -120,5 +137,10 @@
     </div>
 
     <script type="module" src="/js/controllers/dispatch.js"></script>
+    <script type="module">
+        import('/js/notification-bell.js').then(m => {
+            m.mountNotificationBell(document.getElementById('dispatch-toolbar-right'));
+        }).catch(e => console.warn('[bell] mount failed:', e));
+    </script>
 </body>
 </html>

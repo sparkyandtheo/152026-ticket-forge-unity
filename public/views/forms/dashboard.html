@@ -92,6 +92,32 @@
             box-shadow: 0 8px 24px rgba(0,0,0,0.1);
         }
 
+        /* ⚠️ 'Requires Attention' stack — subtle amber glow, paused pulse */
+        .doc-stack.attention {
+            border: 2px solid #f9ab00;
+            background: #fffdf5;
+            animation: attention-glow 2.8s ease-in-out infinite;
+        }
+        .doc-stack.attention .stack-title { color: #b06000; border-bottom-color: #f9ab00; }
+        .doc-stack.attention::before,
+        .doc-stack.attention::after { border-color: #f9ab00; }
+        .doc-stack.attention.empty {
+            animation: none;
+            border-color: #dadce0;
+            background: white;
+            opacity: 0.6;
+        }
+        .doc-stack.attention.empty .stack-title { color: var(--primary); border-bottom-color: var(--primary); }
+        @keyframes attention-glow {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(249,171,0,0.0), 0 4px 12px rgba(0,0,0,.05); }
+            50%      { box-shadow: 0 0 0 6px rgba(249,171,0,0.15), 0 4px 12px rgba(249,171,0,.2); }
+        }
+        .doc-stack.attention .attn-reason {
+            font-size: 11px; color: #b06000; font-style: italic;
+            margin-top: 2px; white-space: nowrap; overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
         /* Visual Stack Effect */
         .doc-stack::before, .doc-stack::after {
             content: "";
@@ -248,7 +274,7 @@
         <div class="search-container">
             <input type="text" class="search-input" id="mainSearch" placeholder="Search name, phone, address, or email..." oninput="window.filterDocs()">
         </div>
-        <div style="display: flex; gap: 10px; align-items: center;">
+        <div style="display: flex; gap: 10px; align-items: center;" id="dash-toolbar-right">
 
             <div class="dropdown">
                 <button class="btn-new dropbtn" style="background:#3c4043;">👤 ADMIN ▼</button>
@@ -278,6 +304,13 @@
 
     <div class="dashboard" id="dashboard">
         <div id="no-results">No documents found matching your search.</div>
+
+        <div class="doc-stack attention empty" data-type="attention">
+            <div class="stack-title">⚠️ Requires Attention</div>
+            <div class="doc-list">
+                <div style="padding:10px; color:#999; font-size:11px;">None — all clear.</div>
+            </div>
+        </div>
 
         <div class="doc-stack" data-type="intake">
             <div class="stack-title">Intake / Phone Msgs</div>
@@ -472,7 +505,77 @@
             });
         }
 
-        // --- 3. INITIALIZE FEEDS ---
+        // --- MOUNT NOTIFICATION BELL ---
+        import('/js/notification-bell.js').then(m => {
+            m.mountNotificationBell(document.getElementById('dash-toolbar-right'));
+        }).catch(e => console.warn('[bell] mount failed:', e));
+
+        // --- 3. ATTENTION FEED ---
+        // Query every ticket-bearing collection for status=='Attention'
+        // and merge them into one stack on the dashboard.
+        const ATTENTION_COLLECTIONS = {
+            service_tickets: '/views/forms/service.html',
+            work_orders:     '/views/forms/work_order.html',
+            quotes:          '/views/forms/quote.html',
+            phone_messages:  '/views/forms/phone_message.html',
+            sales_leads:     '/views/forms/sales_call.html',
+            invoices:        '/views/forms/invoice.html'
+        };
+        const attentionBuckets = {};
+
+        function renderAttentionStack() {
+            const container = document.querySelector('.doc-stack[data-type="attention"] .doc-list');
+            const stack = document.querySelector('.doc-stack[data-type="attention"]');
+            if (!container || !stack) return;
+
+            // Merge all buckets, newest first
+            const all = Object.values(attentionBuckets).flat()
+                .sort((a, b) => (b._ms || 0) - (a._ms || 0));
+
+            if (all.length === 0) {
+                container.innerHTML = '<div style="padding:10px; color:#999; font-size:11px;">None — all clear.</div>';
+                stack.classList.add('empty');
+                return;
+            }
+            stack.classList.remove('empty');
+            container.innerHTML = '';
+            for (const item of all) {
+                const div = document.createElement('div');
+                div.className = 'doc-item';
+                div.innerHTML = `
+                    <span class="name" style="display:block;">
+                        <span style="font-family:monospace; font-weight:600;">#${escapeHtml(item.ticketNumber || item.id)}</span>
+                        · ${escapeHtml(item.customerName || 'UNKNOWN')}
+                        <span class="attn-reason">${escapeHtml((item.attentionReason || '').slice(0, 80))}${(item.attentionReason || '').length > 80 ? '…' : ''}</span>
+                    </span>
+                `;
+                div.onclick = () => { window.location.href = item.page + '?id=' + item.id; };
+                container.appendChild(div);
+            }
+            // Fire custom event so the bell badge can pick this up
+            window.dispatchEvent(new CustomEvent('attention-items-changed', { detail: all }));
+        }
+
+        function escapeHtml(s) {
+            return String(s == null ? '' : s)
+                .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;').replace(/'/g, '&#039;');
+        }
+
+        for (const [col, page] of Object.entries(ATTENTION_COLLECTIONS)) {
+            const q = query(collection(db, col), where('status', '==', 'Attention'));
+            onSnapshot(q, (snap) => {
+                attentionBuckets[col] = snap.docs.map(d => {
+                    const data = d.data();
+                    const ts = data.rejectedAt || data.lastUpdated;
+                    const ms = ts && typeof ts.toMillis === 'function' ? ts.toMillis() : 0;
+                    return { id: d.id, page, _ms: ms, ...data };
+                });
+                renderAttentionStack();
+            }, (err) => console.warn('[attention]', col, err));
+        }
+
+        // --- 4. INITIALIZE FEEDS ---
         loadLiveDocs('phone_messages', 'intake', '/views/forms/phone_message.html');
         loadLiveDocs('sales_leads', 'sales', '/views/forms/sales_call.html');
         loadLiveDocs('quotes', 'quote', '/views/forms/quote.html');
