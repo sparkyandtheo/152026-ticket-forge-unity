@@ -215,26 +215,30 @@
 
 <script type="module">
     import { DB } from '/js/db.js';
-    import { getUrlParam, setVal, setChk, autoGrow, setupInputHighlighting, setupRolodex, updateRolodexFromFields } from '/js/form-utils.js';
+    import {
+        getUrlParam, setVal, setChk, autoGrow, setupInputHighlighting,
+        setupCustomerAutocomplete, commitCustomerFromForm, renderOriginBreadcrumb, renderOriginBreadcrumb,
+        updateRolodexFromFields
+    } from '/js/form-utils.js';
 
     const DOC_ID = getUrlParam('id');
+    const autocompleteConfig = {
+        suggestionsBox: 'suggestions',
+        billing: { phone: 'bill-phone', name: 'bill-name', addr1: 'bill-addr1', addr2: 'bill-addr2' },
+        jobSite: { addr1: 'site-addr1', addr2: 'site-addr2' },
+        accountIdField: 'site-acct'
+    };
 
     window.onload = async () => {
         setupInputHighlighting();
         const today = new Date();
         document.getElementById('svc-date').value = (today.getMonth()+1)+'/'+today.getDate()+'/'+today.getFullYear();
 
-        setupRolodex('bill-phone', 'suggestions', (client) => {
-            setVal('bill-name', client.name);
-            setVal('bill-addr1', client.address1);
-            setVal('bill-addr2', client.address2);
-            setVal('bill-phone', client.phone);
-            setVal('site-acct', client.id);
-        });
+        setupCustomerAutocomplete(autocompleteConfig);
 
         if (DOC_ID) {
             const data = await DB.getDoc('service_tickets', DOC_ID);
-            if (data) loadForm(data);
+            if (data) { loadForm(data); renderOriginBreadcrumb(data); }
         } else {
             document.getElementById('svc-no').value = await DB.getNewId('service', 700000); 
         }
@@ -284,8 +288,21 @@
         }
     };
 
+    async function commitCustomer() {
+        await commitCustomerFromForm(autocompleteConfig, {
+            name: document.getElementById('bill-name').value,
+            phone: document.getElementById('bill-phone').value,
+            billingAddr1: document.getElementById('bill-addr1').value,
+            billingAddr2: document.getElementById('bill-addr2').value,
+            siteAddr1: document.getElementById('site-addr1').value,
+            siteAddr2: document.getElementById('site-addr2').value,
+            accountId: document.getElementById('site-acct').value
+        });
+    }
+
     // --- SAVE LOGIC ---
     window.saveTicket = async function(statusOverride = null) {
+        const isNew = !DOC_ID;
         const isComplete = document.getElementById('chk-yes').checked;
         
         const payload = {
@@ -318,13 +335,17 @@
         };
 
         try {
+            await commitCustomer();
             const id = await DB.saveDoc('service_tickets', payload, DOC_ID);
-            if (!DOC_ID) window.history.pushState({}, '', `?id=${id}`);
-            
-            // Update UI
             document.getElementById('svc-status').value = payload.status;
-            
-            return id; // Return ID for chaining
+            if (!statusOverride) {
+                if (isNew) {
+                    window.location.href = '/views/forms/dashboard.html';
+                } else {
+                    alert("Service ticket saved.");
+                }
+            }
+            return id;
         } catch (e) {
             alert("Error saving: " + e.message);
             return null;
@@ -334,14 +355,8 @@
     // --- SEND TO DISPATCH ---
     window.sendToDispatch = async function() {
         if(!confirm("Send this ticket to the Dispatch Board?")) return;
-        
-        // Save with Status = 'Open' so it appears in the "Unscheduled" parking lot
-        const id = await saveTicket('Open'); 
-        
-        if(id) {
-            alert("Ticket sent to Dispatch Board!");
-            // Optional: Redirect or just stay here
-        }
+        const id = await saveTicket('Open');
+        if (id) window.location.href = '/views/office/dispatch.html';
     };
 </script>
 </body>

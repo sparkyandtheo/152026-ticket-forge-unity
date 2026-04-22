@@ -186,35 +186,37 @@
 
 <script type="module">
     import { DB } from '/js/db.js';
-    import { getUrlParam, setVal, setupInputHighlighting, setupRolodex, updateRolodexFromFields } from '/js/form-utils.js';
+    import {
+        getUrlParam, setVal, setupInputHighlighting,
+        setupCustomerAutocomplete, commitCustomerFromForm, renderOriginBreadcrumb, renderOriginBreadcrumb,
+        updateRolodexFromFields
+    } from '/js/form-utils.js';
 
     const DOC_ID = getUrlParam('id');
+    const autocompleteConfig = {
+        suggestionsBox: 'suggestions-phone',
+        billing: { phone: 'cust-phone', name: 'cust-name', addr1: 'cust-addr1', addr2: 'cust-addr2' },
+        jobSite: { addr1: 'site-addr1', addr2: 'site-addr2' },
+        accountIdField: 'cust-id'
+    };
 
     window.onload = async () => {
         setupInputHighlighting();
 
         const today = new Date();
         document.getElementById('date-field').value = (today.getMonth()+1)+'/'+today.getDate()+'/'+today.getFullYear();
-        
-        setupRolodex('cust-phone', 'suggestions-phone', (client) => {
-            setVal('cust-name', client.name);
-            setVal('cust-addr1', client.address1);
-            setVal('cust-addr2', client.address2);
-            setVal('cust-phone', client.phone);
-            setVal('cust-id', client.id);
-        });
+
+        setupCustomerAutocomplete(autocompleteConfig);
 
         if(DOC_ID) {
             console.log("Loading Message...", DOC_ID);
             const data = await DB.getDoc('phone_messages', DOC_ID);
-            if(data) loadForm(data);
+            if (data) { loadForm(data); renderOriginBreadcrumb(data); }
         } else {
-            // Assign a stable sequential ticket number so this message shows a
-            // real # on the dashboard instead of a blank field.
             try {
                 const newId = await DB.getNewId('phone_message', 800000);
                 setVal('msg-id', newId);
-            } catch (_) { /* offline / rules-denied — leave blank */ }
+            } catch (_) {}
         }
     };
 
@@ -239,9 +241,8 @@
         }), 100);
     }
 
-    // --- SAVE MESSAGE (NEW) ---
-    window.saveMessage = async function() {
-        const payload = {
+    function gatherPayload(extra = {}) {
+        return {
             ticketNumber: document.getElementById('msg-id').value,
             date: document.getElementById('date-field').value,
             customerName: document.getElementById('cust-name').value,
@@ -252,66 +253,85 @@
             siteAddress2: document.getElementById('site-addr2').value,
             accountId: document.getElementById('cust-id').value,
             notes: document.getElementById('intake-notes').value,
-            status: 'Open'
+            description: document.getElementById('intake-notes').value,
+            status: 'Open',
+            ...extra
         };
+    }
 
+    async function commitCustomer() {
+        await commitCustomerFromForm(autocompleteConfig, {
+            name: document.getElementById('cust-name').value,
+            phone: document.getElementById('cust-phone').value,
+            billingAddr1: document.getElementById('cust-addr1').value,
+            billingAddr2: document.getElementById('cust-addr2').value,
+            siteAddr1: document.getElementById('site-addr1').value,
+            siteAddr2: document.getElementById('site-addr2').value,
+            accountId: document.getElementById('cust-id').value
+        });
+    }
+
+    // --- SAVE (new docs redirect to dashboard; edits stay put) ---
+    window.saveMessage = async function() {
+        const isNew = !DOC_ID;
         try {
-            const id = await DB.saveDoc('phone_messages', payload, DOC_ID);
-            if (!DOC_ID) window.history.pushState({}, '', `?id=${id}`);
-            alert("Message Saved to Dashboard!");
+            await commitCustomer();
+            const id = await DB.saveDoc('phone_messages', gatherPayload(), DOC_ID);
+            if (isNew) {
+                window.location.href = '/views/forms/dashboard.html';
+            } else {
+                alert("Message saved.");
+            }
+            return id;
         } catch (e) {
             console.error(e);
             alert("Error saving: " + e.message);
         }
     };
 
-    // --- CONVERT LOGIC ---
+    // --- FORWARD this message into a sales/service/quote ---
     window.convertToIntake = async function(targetType) {
-        // A. Gather Data
-        const payload = {
-            customerName: document.getElementById('cust-name').value,
-            phone: document.getElementById('cust-phone').value,
-            address1: document.getElementById('cust-addr1').value,
-            address2: document.getElementById('cust-addr2').value,
-            siteAddress1: document.getElementById('site-addr1').value,
-            siteAddress2: document.getElementById('site-addr2').value,
-            accountId: document.getElementById('cust-id').value,
-            description: document.getElementById('intake-notes').value,
-            origin: 'phone_message',
-            status: 'Open'
-        };
-
-        // B. Save Customer
-        if(payload.phone && payload.customerName) {
-            DB.saveCustomer({
-                name: payload.customerName,
-                phone: payload.phone,
-                address1: payload.address1,
-                address2: payload.address2
-            });
-        }
-
-        // C. Create Target
         try {
-            let collection, page;
-            
+            await commitCustomer();
+
+            // 1. Save the current phone message first so the source exists
+            //    with origin/trail preserved, even if we haven't saved yet.
+            const sourceId = await DB.saveDoc('phone_messages',
+                gatherPayload({ status: 'Converted' }), DOC_ID);
+
+            // 2. Build the target payload carrying ALL fields forward
+            const basePayload = {
+                ...gatherPayload({ status: 'Open' }),
+                originDocType: 'phone_message',
+                originDocId:   sourceId,
+                // Target forms use their own ticketNumber namespaces;
+                // drop ours so the target generates a fresh one.
+                ticketNumber: ''
+            };
+
+            let collection, page, counterName, counterStart;
             if (targetType === 'service') {
-                collection = 'service_tickets';
-                page = 'service.html';
+                collection = 'service_tickets'; page = 'service.html';
+                counterName = 'service'; counterStart = 700000;
             } else if (targetType === 'sales') {
-                collection = 'sales_leads';
-                page = 'sales_call.html';
+                collection = 'sales_leads'; page = 'sales_call.html';
+                counterName = 'sales'; counterStart = 400000;
             } else if (targetType === 'quote') {
-                collection = 'quotes';
-                page = 'quote.html';
+                collection = 'quotes'; page = 'quote.html';
+                counterName = 'quote'; counterStart = 300000;
             }
 
-            const newId = await DB.saveDoc(collection, payload);
-            window.location.href = `${page}?id=${newId}`;
-            
+            // 3. Pre-assign the target id so the target form opens showing
+            //    a real ticket number without having to generate one.
+            const targetId = await DB.getNewId(counterName, counterStart);
+            basePayload.ticketNumber = targetId;
+            await DB.saveDoc(collection, basePayload, targetId);
+
+            // 4. Navigate to the forwarded document
+            window.location.href = `${page}?id=${targetId}`;
         } catch (e) {
             console.error(e);
-            alert("Error creating document: " + e.message);
+            alert("Error forwarding: " + e.message);
         }
     };
 </script>

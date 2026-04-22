@@ -219,9 +219,11 @@
 
 <script type="module">
     import { DB } from '/js/db.js';
-    import { setVal, autoGrow, setupInputHighlighting } from '/js/form-utils.js';
+    import {
+        setVal, autoGrow, setupInputHighlighting,
+        setupCustomerAutocomplete, commitCustomerFromForm, renderOriginBreadcrumb
+    } from '/js/form-utils.js';
 
-    // Expose autoGrow globally for inline oninput="autoGrow(this)" handlers.
     window.autoGrow = autoGrow;
 
     setupInputHighlighting();
@@ -229,13 +231,26 @@
     const urlParams = new URLSearchParams(window.location.search);
     const DOC_ID = urlParams.get('id');
 
+    // Invoices don't have a separate site address; they use billing only.
+    // Still hook autocomplete on billing fields so an operator who only
+    // knows a name or phone can recall the whole customer record.
+    const autocompleteConfig = {
+        suggestionsBox: 'suggestions',
+        billing: { phone: 'bill-phone', name: 'bill-name', addr1: 'bill-addr1', addr2: 'bill-addr2' },
+        accountIdField: 'meta-acct'
+    };
+
     window.onload = async () => {
         document.querySelectorAll("textarea").forEach(autoGrow);
+        // Only attach autocomplete if the box exists in this HTML.
+        if (document.getElementById('suggestions')) {
+            setupCustomerAutocomplete(autocompleteConfig);
+        }
 
         if (DOC_ID) {
             console.log("Loading Invoice...", DOC_ID);
             const data = await DB.getDoc('invoices', DOC_ID);
-            if (data) loadForm(data);
+            if (data) { loadForm(data); renderOriginBreadcrumb(data); }
         } else {
             clearForm();
             
@@ -318,16 +333,29 @@
         };
 
         try {
+            // Commit customer changes first (rolodex sync)
+            if (document.getElementById('suggestions')) {
+                await commitCustomerFromForm(autocompleteConfig, {
+                    name: document.getElementById('bill-name').value,
+                    phone: document.getElementById('bill-phone').value,
+                    billingAddr1: document.getElementById('bill-addr1').value,
+                    billingAddr2: document.getElementById('bill-addr2').value,
+                    accountId: document.getElementById('meta-acct').value
+                });
+            }
+
             // Use the Invoice Number as the ID if creating new.
-            // Firestore doc IDs cannot contain '/', '.', or be empty. Sanitize
-            // so a user who types 'INV/001' doesn't cause a 400.
             const rawId = document.getElementById('inv-no').value;
             const customId = rawId.replace(/[\/\.\x00-\x1f]/g, '_').trim() || null;
             const idToSave = DOC_ID || customId;
+            const isNew = !DOC_ID;
 
-            const id = await DB.saveDoc('invoices', payload, idToSave);
-            alert("Invoice Saved! ID: " + id);
-            if (!DOC_ID) window.history.pushState({}, '', `?id=${id}`);
+            await DB.saveDoc('invoices', payload, idToSave);
+            if (isNew) {
+                window.location.href = '/views/forms/dashboard.html';
+            } else {
+                alert("Invoice saved.");
+            }
         } catch (e) {
             alert("Error: " + e.message);
         }
