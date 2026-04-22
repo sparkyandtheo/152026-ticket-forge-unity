@@ -20,6 +20,8 @@ same Firestore collections.
 | **Admin — Docs Dashboard** | `/dashboard` | Office staff (default) |
 | **Dispatcher — Board** | `/dispatch` | Whoever schedules techs |
 | **Field Tech — Mobile** | `/mobile` | Service/install techs on phones |
+| **🛡️ Admin Console** | `/admin` | Office — staff directory, inventory, service zips, company settings |
+| **🎞️ Interactive Demo** | `/demo` | Anyone (no login needed) — 90-second walkthrough |
 
 All three pages share the same top-right dropdown to switch roles. A staff
 member can move between views without re-logging-in because auth state is
@@ -124,7 +126,53 @@ UI for prod. See `.env.example`.
 
 ---
 
-## 🧪 Smoke tests after deploy
+## 🧪 Automated tests
+
+Zero-dependency test harness at `tests/run.js`. Run before you push:
+
+```bash
+node tests/run.js
+```
+
+Covers (20 tests, all green as of 2026-04-22):
+- Round-trip save/load for every form (phone message, sales call, quote,
+  work order, service ticket, invoice)
+- Every cross-form conversion preserves customer identity + account #
+- Dispatch board drag-and-drop semantics
+- ID generators (independence, monotonicity, startFrom)
+- Full end-to-end pipelines: repair-call and new-install
+- Customer rolodex phone-key lookup
+- Dashboard search index coverage
+
+The harness uses a pure-JS mock of Firestore (`tests/mock-db.js`) and pure-JS
+translations of every form's save/load logic (`tests/form-adapters.js`). If
+you change a form's schema, update the matching adapter and re-run.
+
+---
+
+## 🎞️ Demo for coworkers
+
+Two modes, pick whichever fits:
+
+**1. Interactive walkthrough (recommended, safe):**
+Send your coworker to `https://<site>/demo`. They click PLAY. 90-second
+narrated tour of the whole system. Fake data, zero side effects, works
+without login. Source: `public/demo/walkthrough.js`.
+
+**2. Live UI cassette (advanced, drives real forms):**
+Used for internal smoke-testing. Load from any page:
+
+```js
+await import('/demo/cassette.js');
+HamburgDemo.play();
+```
+
+Requires being signed in; writes tagged DEMO docs to Firestore. Source:
+`public/demo/cassette.js`.
+
+---
+
+## 🔍 Smoke tests after deploy
 
 1. `/` → Google sign-in card appears.
 2. Sign in → redirect to `/views/forms/dashboard.html`.

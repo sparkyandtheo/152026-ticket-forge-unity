@@ -6,9 +6,11 @@ import {
     setDoc, 
     getDoc, 
     addDoc, 
+    deleteDoc as fsDeleteDoc,
     serverTimestamp, 
     query, 
     where, 
+    orderBy,
     getDocs,
     runTransaction 
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
@@ -49,6 +51,20 @@ export const DB = {
         } else {
             await addDoc(collection(db, "customers"), clean(data));
         }
+    },
+
+    // --- DELETE ---
+    async deleteDoc(collectionName, id) {
+        await fsDeleteDoc(doc(db, collectionName, id));
+    },
+
+    // --- LIST ALL (optionally ordered by a field) ---
+    async getAll(collectionName, orderByField = null) {
+        const q = orderByField
+            ? query(collection(db, collectionName), orderBy(orderByField))
+            : collection(db, collectionName);
+        const snap = await getDocs(q);
+        return snap.docs.map(d => ({ id: d.id, ...d.data() }));
     },
 
     // --- SEQUENTIAL ID GENERATOR ---

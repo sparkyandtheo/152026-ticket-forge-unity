@@ -1,12 +1,35 @@
 import { db } from '/js/firebase-config.js';
-import { collection, query, where, onSnapshot, doc, updateDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+import { collection, query, where, onSnapshot, doc, updateDoc, serverTimestamp, getDocs } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
 // --- CONFIGURATION ---
-const TECHS = {
+// Fallback tech list used when the 'employees' Firestore collection is empty.
+// As soon as staff is added via the Admin Console, that list takes over.
+const FALLBACK_TECHS = {
     service: ["Mario", "Don Fike", "Dustin B"],
     install: ["William", "Bob", "Team A"],
     sales:   ["Jim", "Kathy"]
 };
+let TECHS = { ...FALLBACK_TECHS };
+
+// Load techs from 'employees' Firestore collection. If it's empty or blocked,
+// keep the fallback so an unconfigured shop still has a working board.
+async function loadTechsFromFirestore() {
+    try {
+        const snap = await getDocs(collection(db, 'employees'));
+        if (snap.empty) return; // keep fallback
+        const grouped = { service: [], install: [], sales: [] };
+        snap.forEach(d => {
+            const e = d.data();
+            if (e && e.name && grouped[e.role]) grouped[e.role].push(e.name);
+        });
+        // Only overwrite a role if we actually found staff for it.
+        for (const r of Object.keys(grouped)) {
+            if (grouped[r].length) TECHS[r] = grouped[r];
+        }
+    } catch (err) {
+        console.warn('[dispatch] Could not load employees from Firestore, using fallback:', err.message);
+    }
+}
 
 const HOURS = ["8:00", "9:00", "10:00", "11:00", "12:00", "1:00", "2:00", "3:00", "4:00"];
 const DAYS = ["MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY"];
@@ -28,8 +51,11 @@ window.switchView = (viewName) => {
     subscribeToScheduled();
 };
 
-// Start
-window.onload = () => switchView('service');
+// Start — load staff from Firestore first, then render.
+window.onload = async () => {
+    await loadTechsFromFirestore();
+    switchView('service');
+};
 
 // --- 2. RENDER THE GRID ---
 function renderBoard() {

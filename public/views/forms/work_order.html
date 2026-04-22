@@ -171,7 +171,8 @@
         
         <div style="width: 48%;">
             <b>JOB SITE:</b><br>
-            <input type="text" id="site-addr" placeholder="JOB SITE ADDRESS"><br>
+            <input type="text" id="site-addr1" placeholder="JOB SITE ADDRESS"><br>
+            <input type="text" id="site-addr2" placeholder="CITY, STATE ZIP"><br>
             <div style="display:flex;">ACCT: <input type="text" id="site-acct" placeholder="ID"></div>
             <div style="display:flex;">SITE: <input type="text" id="site-type" value="RESIDENTIAL"></div>
         </div>
@@ -265,8 +266,9 @@
         setVal('bill-addr1', data.address1);
         setVal('bill-addr2', data.address2);
         setVal('bill-phone', data.phone);
-        setVal('site-addr', data.siteAddress);
-        setVal('site-acct', data.accountNumber);
+        setVal('site-addr1', data.siteAddress1 || data.siteAddress); // tolerate legacy single-line
+        setVal('site-addr2', data.siteAddress2);
+        setVal('site-acct', data.accountId || data.accountNumber);
         setVal('site-type', data.siteType);
         setVal('scope-text', data.description);
         setVal('time-start', data.techStart);
@@ -310,8 +312,9 @@
             address1: document.getElementById('bill-addr1').value,
             address2: document.getElementById('bill-addr2').value,
             phone: document.getElementById('bill-phone').value,
-            siteAddress: document.getElementById('site-addr').value,
-            accountNumber: document.getElementById('site-acct').value,
+            siteAddress1: document.getElementById('site-addr1').value,
+            siteAddress2: document.getElementById('site-addr2').value,
+            accountId: document.getElementById('site-acct').value,
             siteType: document.getElementById('site-type').value,
             description: document.getElementById('scope-text').value,
             items: scrapeItems(),
@@ -349,6 +352,7 @@
             address1: document.getElementById('bill-addr1').value,
             address2: document.getElementById('bill-addr2').value,
             phone: document.getElementById('bill-phone').value,
+            accountId: document.getElementById('site-acct').value,
             items: scrapeItems().map(i => ({...i, unit: 'EACH'})),
             originDocId: DOC_ID || 'new',
             status: 'Draft'
@@ -367,6 +371,9 @@
             address1: document.getElementById('bill-addr1').value,
             address2: document.getElementById('bill-addr2').value,
             phone: document.getElementById('bill-phone').value,
+            siteAddress1: document.getElementById('site-addr1').value,
+            siteAddress2: document.getElementById('site-addr2').value,
+            accountId: document.getElementById('site-acct').value,
             proposalText: document.getElementById('scope-text').value,
             items: scrapeItems(),
             status: 'Open'

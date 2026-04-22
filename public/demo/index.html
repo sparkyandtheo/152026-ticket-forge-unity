@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Hamburg Door — Demo</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;900&display=swap" rel="stylesheet">
+  <style>
+    body {
+      font-family: 'Inter', -apple-system, sans-serif;
+      background: radial-gradient(circle at top, #1a73e8, #0d3a7a);
+      color: white; margin: 0; min-height: 100vh;
+      display: flex; align-items: center; justify-content: center;
+      padding: 20px; box-sizing: border-box;
+    }
+    .card {
+      background: rgba(255,255,255,.07);
+      backdrop-filter: blur(20px);
+      border: 1px solid rgba(255,255,255,.2);
+      border-radius: 20px; max-width: 540px; padding: 40px;
+      text-align: center;
+      box-shadow: 0 20px 60px rgba(0,0,0,.4);
+    }
+    .emoji { font-size: 64px; margin-bottom: 16px; }
+    h1 { font-size: 28px; font-weight: 900; margin: 0 0 10px 0; letter-spacing: -0.5px; }
+    .tagline { opacity: .85; font-size: 15px; margin-bottom: 32px; line-height: 1.5; }
+    .btn {
+      display: inline-block; background: #f9ab00; color: black;
+      padding: 14px 36px; border-radius: 30px; font-weight: 900;
+      text-decoration: none; font-size: 16px; cursor: pointer;
+      transition: transform .2s, box-shadow .2s;
+      border: none; font-family: inherit;
+    }
+    .btn:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(249,171,0,.4); }
+    .opts {
+      margin-top: 24px; display: flex; gap: 10px; justify-content: center;
+      font-size: 13px;
+    }
+    .opts button {
+      background: transparent; border: 1px solid rgba(255,255,255,.3);
+      color: white; padding: 8px 16px; border-radius: 20px;
+      cursor: pointer; font-family: inherit;
+    }
+    .opts button:hover { background: rgba(255,255,255,.1); }
+    .hint {
+      margin-top: 30px; font-size: 12px; opacity: .6; line-height: 1.6;
+    }
+    .hint code {
+      background: rgba(0,0,0,.3); padding: 2px 8px; border-radius: 4px;
+      font-family: 'IBM Plex Mono', monospace;
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="emoji">🎞️</div>
+    <h1>Ticket Forge Unity — Walkthrough</h1>
+    <p class="tagline">
+      A 90-second interactive tour of the whole system.<br>
+      No login required. No real data touched.
+    </p>
+
+    <button class="btn" onclick="playNormal()">▶ PLAY DEMO</button>
+
+    <div class="opts">
+      <button onclick="playSpeed(0.5)">🐢 Slow (0.5×)</button>
+      <button onclick="playSpeed(2)">⚡ Fast (2×)</button>
+    </div>
+
+    <p class="hint">
+      You can also run this from any page in the app:<br>
+      Open F12 console, then <code>HamburgWalkthrough.play()</code>
+    </p>
+  </div>
+
+  <script src="/demo/walkthrough.js"></script>
+  <script>
+    function playNormal() { window.HamburgWalkthrough.play({ speed: 1 }); }
+    function playSpeed(s) { window.HamburgWalkthrough.play({ speed: s }); }
+  </script>
+</body>
+</html>

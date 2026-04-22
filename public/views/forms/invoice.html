@@ -318,8 +318,11 @@
         };
 
         try {
-            // Use the Invoice Number as the ID if creating new
-            const customId = document.getElementById('inv-no').value;
+            // Use the Invoice Number as the ID if creating new.
+            // Firestore doc IDs cannot contain '/', '.', or be empty. Sanitize
+            // so a user who types 'INV/001' doesn't cause a 400.
+            const rawId = document.getElementById('inv-no').value;
+            const customId = rawId.replace(/[\/\.\x00-\x1f]/g, '_').trim() || null;
             const idToSave = DOC_ID || customId;
 
             const id = await DB.saveDoc('invoices', payload, idToSave);
