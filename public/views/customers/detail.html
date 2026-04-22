@@ -122,6 +122,58 @@
         }
         .tab:hover { color: var(--primary); }
         .tab.active { color: var(--primary); border-bottom-color: var(--primary); }
+        .tab-count {
+            display: inline-block;
+            background: var(--border);
+            color: var(--muted);
+            font-size: 10px; font-weight: 700;
+            padding: 1px 7px; border-radius: 10px;
+            margin-left: 4px;
+            min-width: 18px; text-align: center;
+        }
+        .tab.active .tab-count { background: var(--primary); color: white; }
+
+        /* Narrative entries */
+        .narr-entry {
+            background: white;
+            border: 1px solid var(--border);
+            border-left: 4px solid var(--primary);
+            border-radius: 6px;
+            padding: 12px 14px;
+            margin-bottom: 10px;
+        }
+        .narr-entry.type-call   { border-left-color: #1a73e8; }
+        .narr-entry.type-visit  { border-left-color: #f9ab00; }
+        .narr-entry.type-sales  { border-left-color: #1e8e3e; }
+        .narr-entry.type-issue  { border-left-color: #d93025; }
+        .narr-entry.type-email  { border-left-color: #9c27b0; }
+        .narr-head {
+            display: flex; justify-content: space-between; align-items: baseline;
+            gap: 10px; flex-wrap: wrap;
+            font-size: 11px; color: var(--muted);
+            margin-bottom: 6px;
+        }
+        .narr-type-badge {
+            font-size: 10px; font-weight: 700; text-transform: uppercase;
+            letter-spacing: 0.05em; padding: 2px 8px; border-radius: 10px;
+            background: #e8f0fe; color: var(--primary);
+        }
+        .narr-author { font-weight: 600; color: var(--dark); }
+        .narr-body {
+            font-size: 13px; line-height: 1.45; white-space: pre-wrap;
+            color: var(--dark);
+        }
+        .narr-actions {
+            margin-top: 6px; font-size: 11px;
+        }
+        .narr-action-btn {
+            background: transparent; border: none;
+            color: var(--muted); cursor: pointer;
+            font-family: inherit; font-size: 11px;
+            padding: 2px 6px;
+        }
+        .narr-action-btn:hover { color: var(--primary); text-decoration: underline; }
+        .narr-action-btn.danger:hover { color: #d93025; }
 
         .tab-content {
             background: white; border: 1px solid var(--border);
@@ -309,10 +361,10 @@
 
     <div class="tabs">
         <button class="tab active" data-tab="overview">Overview</button>
-        <button class="tab" data-tab="timeline">Timeline</button>
-        <button class="tab" data-tab="documents">Documents</button>
-        <button class="tab" data-tab="sites" id="tab-sites">Sites</button>
-        <button class="tab" data-tab="notes">Notes</button>
+        <button class="tab" data-tab="documents">📄 Documents <span class="tab-count" id="tab-count-docs"></span></button>
+        <button class="tab" data-tab="narrative">💭 Narrative <span class="tab-count" id="tab-count-narr"></span></button>
+        <button class="tab" data-tab="sites" id="tab-sites">📍 Sites</button>
+        <button class="tab" data-tab="notes">📌 Notes</button>
     </div>
 
     <div class="tab-content">
@@ -333,16 +385,48 @@
             </div>
         </div>
 
-        <!-- TIMELINE -->
-        <div id="tab-timeline" class="tab-panel hidden">
-            <div class="section-title">Full History</div>
-            <div id="timeline-container"><div class="empty">Loading…</div></div>
-        </div>
-
-        <!-- DOCUMENTS -->
+        <!-- DOCUMENTS (was: Timeline + Documents merged) -->
         <div id="tab-documents" class="tab-panel hidden">
             <div class="section-title">Documents</div>
-            <div class="doc-stacks" id="doc-stacks"></div>
+            <p style="color: var(--muted); font-size: 13px; margin-top: -4px;">
+                Every ticket, invoice, and intake record for this customer. Grouped by type, newest first inside each group.
+            </p>
+            <div id="doc-loading" class="empty">Loading…</div>
+            <div class="doc-stacks" id="doc-stacks" style="display:none;"></div>
+        </div>
+
+        <!-- NARRATIVE -->
+        <div id="tab-narrative" class="tab-panel hidden">
+            <div class="section-title">Relationship Narrative</div>
+            <p style="color: var(--muted); font-size: 13px; margin-top: -4px;">
+                A running story of interactions with this customer — phone calls, visits, sales conversations, issues. Appended by each staff member, audited, not deleted.
+            </p>
+
+            <!-- Compose new entry -->
+            <div style="margin-top: 16px; padding: 14px; background: #f8f9fa; border: 1px solid var(--border); border-radius: 8px;">
+                <div style="display:flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-bottom: 8px;">
+                    <label style="font-size: 10px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em;">New entry · Type</label>
+                    <select id="narr-type" style="font-family: inherit; font-size: 12px; padding: 4px 8px; border: 1px solid var(--border); border-radius: 4px; background: white;">
+                        <option value="general">💬 General</option>
+                        <option value="call">📞 Phone conversation</option>
+                        <option value="visit">👁️ Visit / site walk</option>
+                        <option value="sales">💰 Sales discussion</option>
+                        <option value="issue">⚠️ Issue / complaint</option>
+                        <option value="email">📧 Email / correspondence</option>
+                    </select>
+                </div>
+                <textarea id="narr-body" placeholder="What happened? What's the customer's mood, timeline, decision status, etc."
+                    style="width: 100%; min-height: 80px; padding: 10px 12px; border: 1px solid var(--border); border-radius: 4px; font-family: inherit; font-size: 13px; line-height: 1.4; resize: vertical;"></textarea>
+                <div style="display:flex; gap: 10px; margin-top: 8px; align-items: center;">
+                    <button class="btn btn-primary btn-sm" onclick="addNarrativeEntry()">+ APPEND ENTRY</button>
+                    <span id="narr-hint" style="font-size: 11px; color: var(--muted); font-style: italic;">
+                        Entries are append-only. You can edit or delete your own within 15 minutes of posting.
+                    </span>
+                </div>
+            </div>
+
+            <div class="section-title" style="margin-top: 28px;">History</div>
+            <div id="narrative-list"><div class="empty">No narrative entries yet.</div></div>
         </div>
 
         <!-- SITES -->
@@ -411,8 +495,8 @@
     // ----- Tabs -----
     const TAB_PANELS = {
         overview: 'tab-overview',
-        timeline: 'tab-timeline',
         documents: 'tab-documents',
+        narrative: 'tab-narrative',
         sites: 'tab-sites-panel',
         notes: 'tab-notes'
     };
@@ -423,9 +507,6 @@
             for (const [k, id] of Object.entries(TAB_PANELS)) {
                 document.getElementById(id).classList.toggle('hidden', k !== btn.dataset.tab);
             }
-            // Load lazy tabs on first activation
-            if (btn.dataset.tab === 'timeline' && !historyData) { loadHistory().then(renderTimeline); }
-            if (btn.dataset.tab === 'documents' && !historyData) { loadHistory().then(renderDocs); }
         };
     });
 
@@ -438,7 +519,7 @@
                 id: customerId, name: '', primaryPhone: '',
                 billingAddress1: '', billingAddress2: '',
                 accountId: customerId,
-                jobSites: [], notes: []
+                jobSites: [], notes: [], narrative: []
             };
             document.getElementById('head-name').textContent = 'New Customer';
             document.getElementById('head-id').textContent = `(${customerId})`;
@@ -446,6 +527,7 @@
             fillOverviewFields();
             renderSites();
             renderNotes();
+            renderNarrative();
             return;
         }
         if (!customerId) {
@@ -464,8 +546,25 @@
         fillOverviewFields();
         renderSites();
         renderNotes();
-        // Eagerly load history for the stat counters and lazy tabs.
-        loadHistory();
+        renderNarrative();
+        // Eagerly load history so the Documents tab is instant.
+        loadHistory().then(() => {
+            renderDocs();
+            updateTabCounts();
+        });
+    }
+
+    function updateTabCounts() {
+        const docsEl = document.getElementById('tab-count-docs');
+        const narrEl = document.getElementById('tab-count-narr');
+        if (docsEl) {
+            const n = historyData?.totals?.docs || 0;
+            docsEl.textContent = n > 0 ? n : '';
+        }
+        if (narrEl) {
+            const n = (customer?.narrative || []).length;
+            narrEl.textContent = n > 0 ? n : '';
+        }
     }
 
     function renderHeader() {
@@ -532,7 +631,8 @@
             billingAddress1:  document.getElementById('f-bill-addr1').value.toUpperCase().trim(),
             billingAddress2:  document.getElementById('f-bill-addr2').value.toUpperCase().trim(),
             jobSites:         scrapeSites(),
-            notes:            Array.isArray(customer.notes) ? customer.notes : []
+            notes:            Array.isArray(customer.notes) ? customer.notes : [],
+            narrative:        Array.isArray(customer.narrative) ? customer.narrative : []
         };
         if (!payload.name) { alert('Customer name is required.'); return; }
         try {
@@ -643,89 +743,55 @@
     };
 
     // ----- Timeline tab -----
-    function renderTimeline() {
-        const container = document.getElementById('timeline-container');
-        const typeLabel = {
-            phone_messages: '📥 Phone Message',
-            sales_leads:    '💼 Sales Lead',
-            quotes:         '📝 Quote',
-            work_orders:    '🛠️ Work Order',
-            service_tickets:'🖥️ Service Ticket',
-            invoices:       '💰 Invoice'
-        };
-        const pagePath = {
-            phone_messages: '/views/forms/phone_message.html',
-            sales_leads:    '/views/forms/sales_call.html',
-            quotes:         '/views/forms/quote.html',
-            work_orders:    '/views/forms/work_order.html',
-            service_tickets:'/views/forms/service.html',
-            invoices:       '/views/forms/invoice.html'
-        };
-
-        DB.getCustomerTimeline({
-            phone: customer.primaryPhone || customer.phone,
-            name:  customer.name
-        }).then(timeline => {
-            if (timeline.length === 0) {
-                container.innerHTML = '<div class="empty">No history yet.</div>';
-                return;
-            }
-            container.innerHTML = `<div class="timeline">${timeline.map(d => {
-                const date = d._ms ? new Date(d._ms).toLocaleDateString() : '';
-                const statusBadge = d.status ? `<span class="cs-status cs-status-${(d.status||'').toLowerCase()}">${escapeHtml(d.status)}</span>` : '';
-                const desc = (d.description || d.notes || d.proposalText || '').slice(0, 160);
-                return `
-                    <div class="tl-item" data-col="${d._collection}" data-id="${escapeHtml(d.id)}">
-                        <div class="tl-head">
-                            <span class="tl-id">#${escapeHtml(d.ticketNumber || d.id)}</span>
-                            <span class="tl-type">${typeLabel[d._collection] || d._collection}</span>
-                            ${statusBadge}
-                            <span class="tl-date">${date}</span>
-                        </div>
-                        ${desc ? `<div class="tl-body">${escapeHtml(desc)}</div>` : ''}
-                    </div>
-                `;
-            }).join('')}</div>`;
-            container.querySelectorAll('.tl-item').forEach(item => {
-                item.onclick = () => {
-                    window.location.href = pagePath[item.dataset.col] + '?id=' + encodeURIComponent(item.dataset.id);
-                };
-            });
-        });
-    }
-
-    // ----- Documents tab -----
+    // ----- Documents tab (grouped by type, newest first within each) -----
     function renderDocs() {
+        const loading = document.getElementById('doc-loading');
         const container = document.getElementById('doc-stacks');
         const labels = {
-            phone_messages:  { title: 'Phone Messages', page: '/views/forms/phone_message.html' },
-            sales_leads:     { title: 'Sales Leads',    page: '/views/forms/sales_call.html' },
-            quotes:          { title: 'Quotes',         page: '/views/forms/quote.html' },
-            work_orders:     { title: 'Work Orders',    page: '/views/forms/work_order.html' },
-            service_tickets: { title: 'Service Tickets',page: '/views/forms/service.html' },
-            invoices:        { title: 'Invoices',       page: '/views/forms/invoice.html' }
+            phone_messages:  { title: 'Phone Messages', emoji: '📥', page: '/views/forms/phone_message.html' },
+            sales_leads:     { title: 'Sales Leads',    emoji: '💼', page: '/views/forms/sales_call.html' },
+            quotes:          { title: 'Quotes',         emoji: '📝', page: '/views/forms/quote.html' },
+            work_orders:     { title: 'Work Orders',    emoji: '🛠️', page: '/views/forms/work_order.html' },
+            service_tickets: { title: 'Service Tickets',emoji: '🖥️', page: '/views/forms/service.html' },
+            invoices:        { title: 'Invoices',       emoji: '💰', page: '/views/forms/invoice.html' }
         };
 
         const by = historyData?.byCollection || {};
+        const totalDocs = Object.values(by).reduce((n, arr) => n + (arr?.length || 0), 0);
+
+        if (totalDocs === 0) {
+            if (loading) loading.style.display = 'none';
+            container.style.display = 'block';
+            container.innerHTML = '<div class="empty" style="padding:40px 20px;">No documents yet. Create a ticket from the <b>+ NEW TICKET FOR THIS CUSTOMER</b> dropdown above.</div>';
+            return;
+        }
+
+        if (loading) loading.style.display = 'none';
+        container.style.display = 'grid';
         container.innerHTML = Object.entries(labels).map(([col, meta]) => {
             const docs = (by[col] || []).slice().sort((a, b) =>
                 (b.lastUpdated?.toMillis?.() || 0) - (a.lastUpdated?.toMillis?.() || 0));
             return `
                 <div class="doc-stack">
                     <div class="stack-title">
-                        <span>${meta.title}</span>
+                        <span>${meta.emoji} ${meta.title}</span>
                         <span>${docs.length}</span>
                     </div>
                     ${docs.length === 0
-                        ? '<div class="empty" style="padding:20px 0; font-size:12px;">None</div>'
-                        : docs.slice(0, 10).map(d => `
-                            <div class="doc-item" data-href="${meta.page}?id=${encodeURIComponent(d.id)}">
-                                <span class="n">#${escapeHtml(d.ticketNumber || d.id)} · ${escapeHtml(d.status || '')}</span>
-                                <span class="d">${d.lastUpdated?.toDate ? d.lastUpdated.toDate().toLocaleDateString() : ''}</span>
-                            </div>
-                        `).join('')
+                        ? '<div class="empty" style="padding:16px 0; font-size:11px; color:#999;">None</div>'
+                        : docs.slice(0, 20).map(d => {
+                            const date = d.lastUpdated?.toDate ? d.lastUpdated.toDate().toLocaleDateString() : '';
+                            const status = d.status || '';
+                            const statusBadge = status ? `<span class="cs-status cs-status-${status.toLowerCase()}" style="margin-left:6px;">${escapeHtml(status)}</span>` : '';
+                            return `
+                                <div class="doc-item" data-href="${meta.page}?id=${encodeURIComponent(d.id)}">
+                                    <span class="n">#${escapeHtml(d.ticketNumber || d.id)}${statusBadge}</span>
+                                    <span class="d">${date}</span>
+                                </div>
+                            `;
+                        }).join('')
                     }
-                    ${docs.length > 10 ? `<div class="empty" style="padding:8px 0; font-size:11px;">+ ${docs.length - 10} more…</div>` : ''}
+                    ${docs.length > 20 ? `<div class="empty" style="padding:6px 0; font-size:11px;">+ ${docs.length - 20} older…</div>` : ''}
                 </div>
             `;
         }).join('');
@@ -733,6 +799,121 @@
             item.onclick = () => { window.location.href = item.dataset.href; };
         });
     }
+
+    // ----- Narrative tab -----
+    const NARRATIVE_TYPES = {
+        general: { emoji: '💬', label: 'General' },
+        call:    { emoji: '📞', label: 'Phone' },
+        visit:   { emoji: '👁️', label: 'Visit' },
+        sales:   { emoji: '💰', label: 'Sales' },
+        issue:   { emoji: '⚠️', label: 'Issue' },
+        email:   { emoji: '📧', label: 'Email' }
+    };
+    const NARRATIVE_EDIT_WINDOW_MS = 15 * 60 * 1000; // 15 minutes
+
+    function renderNarrative() {
+        const container = document.getElementById('narrative-list');
+        const entries = Array.isArray(customer?.narrative) ? customer.narrative : [];
+        updateTabCounts();
+        if (entries.length === 0) {
+            container.innerHTML = '<div class="empty">No narrative entries yet. Append the first one above.</div>';
+            return;
+        }
+        const meEmail = auth.currentUser?.email || '';
+        const now = Date.now();
+        // newest first
+        const sorted = entries.slice().sort((a, b) => (b.ts || 0) - (a.ts || 0));
+        container.innerHTML = sorted.map((e, i) => {
+            const typeMeta = NARRATIVE_TYPES[e.type] || NARRATIVE_TYPES.general;
+            const dateStr = e.ts ? new Date(e.ts).toLocaleString() : '';
+            const isMine = meEmail && e.author === meEmail;
+            const within = e.ts && (now - e.ts < NARRATIVE_EDIT_WINDOW_MS);
+            const canEdit = isMine && within;
+            const editedBadge = e.editedAt ? ` <span style="color:#b06000;">(edited)</span>` : '';
+            return `
+                <div class="narr-entry type-${e.type || 'general'}" data-idx="${entries.indexOf(e)}">
+                    <div class="narr-head">
+                        <div>
+                            <span class="narr-type-badge">${typeMeta.emoji} ${typeMeta.label}</span>
+                            <span style="margin-left:8px;" class="narr-author">${escapeHtml(e.author || 'unknown')}</span>
+                        </div>
+                        <div>${escapeHtml(dateStr)}${editedBadge}</div>
+                    </div>
+                    <div class="narr-body">${escapeHtml(e.body || '')}</div>
+                    ${canEdit ? `
+                        <div class="narr-actions">
+                            <button class="narr-action-btn" onclick="editNarrativeEntry(${entries.indexOf(e)})">✏️ Edit</button>
+                            <button class="narr-action-btn danger" onclick="deleteNarrativeEntry(${entries.indexOf(e)})">🗑️ Delete</button>
+                        </div>
+                    ` : ''}
+                </div>
+            `;
+        }).join('');
+    }
+
+    window.addNarrativeEntry = async function () {
+        const body = document.getElementById('narr-body').value.trim();
+        if (!body) return;
+        const type = document.getElementById('narr-type').value || 'general';
+        const me = auth.currentUser?.email || 'anonymous';
+        if (!Array.isArray(customer.narrative)) customer.narrative = [];
+        customer.narrative.push({
+            author: me,
+            ts: Date.now(),
+            type,
+            body
+        });
+        document.getElementById('narr-body').value = '';
+        document.getElementById('narr-type').value = 'general';
+        renderNarrative();
+        try {
+            await DB.saveDoc('customers', { narrative: customer.narrative }, customerId);
+            document.getElementById('save-status').textContent = '✅ Entry added';
+            setTimeout(() => document.getElementById('save-status').textContent = '', 2000);
+        } catch (e) {
+            alert('Save failed: ' + e.message);
+        }
+    };
+
+    window.editNarrativeEntry = async function (idx) {
+        const entry = customer.narrative?.[idx];
+        if (!entry) return;
+        const me = auth.currentUser?.email || '';
+        if (entry.author !== me) { alert('You can only edit your own entries.'); return; }
+        if (!entry.ts || Date.now() - entry.ts > NARRATIVE_EDIT_WINDOW_MS) {
+            alert('Edit window has closed (15 minutes after posting).'); return;
+        }
+        const next = prompt('Edit your narrative entry:', entry.body);
+        if (next == null) return;
+        const trimmed = next.trim();
+        if (!trimmed) return;
+        entry.body = trimmed;
+        entry.editedAt = Date.now();
+        renderNarrative();
+        try {
+            await DB.saveDoc('customers', { narrative: customer.narrative }, customerId);
+        } catch (e) {
+            alert('Save failed: ' + e.message);
+        }
+    };
+
+    window.deleteNarrativeEntry = async function (idx) {
+        const entry = customer.narrative?.[idx];
+        if (!entry) return;
+        const me = auth.currentUser?.email || '';
+        if (entry.author !== me) { alert('You can only delete your own entries.'); return; }
+        if (!entry.ts || Date.now() - entry.ts > NARRATIVE_EDIT_WINDOW_MS) {
+            alert('Delete window has closed (15 minutes after posting).'); return;
+        }
+        if (!confirm('Delete this narrative entry?')) return;
+        customer.narrative.splice(idx, 1);
+        renderNarrative();
+        try {
+            await DB.saveDoc('customers', { narrative: customer.narrative }, customerId);
+        } catch (e) {
+            alert('Save failed: ' + e.message);
+        }
+    };
 
     // ----- "New ticket for this customer" shortcut -----
     // Open the target form with ?seed=<customerId>. The form itself
