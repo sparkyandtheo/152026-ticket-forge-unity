@@ -216,6 +216,9 @@
     import('/js/notification-bell.js').then(m => {
         m.mountNotificationBell(document.getElementById('cust-toolbar-right'));
     }).catch(e => console.warn('[bell]', e));
+    import('/js/universal-search.js').then(m => {
+        m.mountUniversalSearch(document.getElementById('cust-toolbar-right'));
+    }).catch(e => console.warn('[search]', e));
 
     // ---------- State ----------
     let allCustomers = [];

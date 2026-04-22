@@ -200,6 +200,9 @@
         import('/js/notification-bell.js').then(m => {
             m.mountNotificationBell(document.getElementById('dispatch-toolbar-right'));
         }).catch(e => console.warn('[bell] mount failed:', e));
+        import('/js/universal-search.js').then(m => {
+            m.mountUniversalSearch(document.getElementById('dispatch-toolbar-right'));
+        }).catch(e => console.warn('[search] mount failed:', e));
     </script>
 </body>
 </html>
