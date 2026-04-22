@@ -5,14 +5,16 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin Console — Hamburg Door</title>
     <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=Inter:wght@400;700;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/assets/css/brand.css">
     <style>
         /* --- Base: paper-on-glass --- */
         :root {
             --glass: #525659;
             --page: #ffffff;
-            --ink: #202124;
+            --ink: #231F20;
             --line: #000000;
-            --accent: #1a73e8;
+            --accent: #0047BB;    /* brand blue for primary actions */
+            --brand:  #EF3340;    /* brand red for chrome/title bars */
             --green: #1e8e3e;
             --red: #d93025;
             --yellow: #f9ab00;
@@ -31,7 +33,9 @@
             background: var(--ink); display: flex; align-items: center;
             justify-content: space-between; padding: 0 20px; z-index: 1000;
             box-shadow: 0 2px 8px rgba(0,0,0,0.4);
+            border-bottom: 3px solid var(--brand);
         }
+        .toolbar-logo img { width: 32px; height: 32px; border-radius: 6px; vertical-align: middle; margin-right: 10px; }
         .toolbar-left { display: flex; align-items: center; gap: 14px; }
         .toolbar-logo { font-weight: 900; letter-spacing: -0.5px; font-size: 16px; }
         .toolbar-title { font-size: 12px; opacity: 0.7; text-transform: uppercase; letter-spacing: 0.1em; }
@@ -254,7 +258,7 @@
 <!-- Toolbar -->
 <div class="toolbar">
     <div class="toolbar-left">
-        <div class="toolbar-logo">HAMBURG DOOR</div>
+        <div class="toolbar-logo"><img src="/assets/img/icon-192.png" alt="">HAMBURG DOOR</div>
         <div class="toolbar-title">🛡️ Admin Console</div>
     </div>
     <div style="display: flex; gap: 10px; align-items: center;">

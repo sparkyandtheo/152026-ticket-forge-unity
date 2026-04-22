@@ -5,12 +5,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>TechView | Job List</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&family=IBM+Plex+Mono:wght@500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/assets/css/brand.css">
     <style>
-        :root { --dark: #202124; --light: #f8f9fa; --blue: #1a73e8; --green: #1e8e3e; --red: #d93025; --yellow: #f9ab00; }
+        :root { --dark: #231F20; --light: #f8f9fa; --blue: #0047BB; --brand: #EF3340; --green: #1e8e3e; --red: #d93025; --yellow: #f9ab00; }
         body { font-family: 'Inter', sans-serif; background-color: var(--dark); color: white; margin: 0; padding-bottom: 40px; -webkit-tap-highlight-color: transparent; }
 
         /* HEADER */
-        .app-header { padding: 20px; background: #3c4043; border-bottom: 1px solid #5f6368; display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+        .app-header { padding: 16px 20px; background: #3c4043; border-bottom: 3px solid var(--brand); display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+        .app-header .brand-mark { width: 28px; height: 28px; border-radius: 6px; margin-right: 8px; vertical-align: middle; }
         .tech-name { font-weight: 900; font-size: 18px; text-transform: uppercase; }
         .logout-btn { background: transparent; border: 1px solid #9aa0a6; color: #9aa0a6; padding: 5px 10px; border-radius: 4px; font-size: 11px; }
 
@@ -61,7 +63,7 @@
 
     <div id="list-view">
         <div class="app-header">
-            <div class="tech-name" id="header-user">LOADING...</div>
+            <div class="tech-name" style="display:flex; align-items:center;"><img src="/assets/img/icon-192.png" alt="" class="brand-mark"><span id="header-user">LOADING...</span></div>
             <div style="display:flex; gap:8px; align-items:center;">
                 <div class="role-dropdown" id="role-dd">
                     <button onclick="document.getElementById('role-dd').classList.toggle('open')">🛠️ TECH ▼</button>

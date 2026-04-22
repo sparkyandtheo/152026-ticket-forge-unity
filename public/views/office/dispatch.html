@@ -4,12 +4,15 @@
     <meta charset="UTF-8">
     <title>Dispatch Board - Hamburg Door</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&family=IBM+Plex+Mono:wght@500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/assets/css/brand.css">
     <style>
-        :root { --dark: #202124; --light: #f8f9fa; --blue: #1a73e8; --border: #dadce0; }
+        :root { --dark: #231F20; --light: #f8f9fa; --blue: #0047BB; --brand: #EF3340; --border: #dadce0; }
         body { margin: 0; display: flex; flex-direction: column; height: 100vh; font-family: 'Inter', sans-serif; overflow: hidden; }
 
         /* HEADER */
-        .toolbar { height: 60px; background: var(--dark); color: white; display: flex; align-items: center; padding: 0 20px; gap: 20px; justify-content: space-between; }
+        .toolbar { height: 60px; background: var(--dark); color: white; display: flex; align-items: center; padding: 0 20px; gap: 20px; justify-content: space-between; border-bottom: 3px solid var(--brand); }
+        .brand-title { display: flex; align-items: center; gap: 10px; }
+        .brand-title img { width: 32px; height: 32px; border-radius: 6px; }
         .view-switcher button { background: #3c4043; border: none; color: #9aa0a6; padding: 8px 16px; border-radius: 4px; font-weight: bold; cursor: pointer; }
         .view-switcher button.active { background: var(--blue); color: white; }
 
@@ -78,7 +81,10 @@
 <body>
 
     <div class="toolbar">
-        <div style="font-weight:900;">HAMBURG DISPATCH</div>
+        <div class="brand-title">
+            <img src="/assets/img/icon-192.png" alt="">
+            <span style="font-weight:900;">HAMBURG DISPATCH</span>
+        </div>
         <div class="view-switcher">
             <button onclick="switchView('service')" id="btn-service" class="active">SERVICE (Daily)</button>
             <button onclick="switchView('install')" id="btn-install">INSTALL (Weekly)</button>
