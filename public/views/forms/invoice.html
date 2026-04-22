@@ -223,12 +223,20 @@
         setVal, autoGrow, setupInputHighlighting,
         setupCustomerAutocomplete, commitCustomerFromForm, renderOriginBreadcrumb
     } from '/js/form-utils.js';
+    import { mountCustomerSidebar } from '/js/customer-sidebar.js';
 
     window.autoGrow = autoGrow;
 
     setupInputHighlighting();
 
     const urlParams = new URLSearchParams(window.location.search);
+
+    mountCustomerSidebar({
+        phoneFieldId: 'bill-phone',
+        nameFieldId:  'bill-name',
+        excludeDocId: urlParams.get('id'),
+        excludeCollection: 'invoices'
+    });
     const DOC_ID = urlParams.get('id');
 
     // Invoices don't have a separate site address; they use billing only.
