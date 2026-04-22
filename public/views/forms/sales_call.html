@@ -136,6 +136,12 @@
         </div>
         <div style="width: 48%;">
             <b>JOB SITE:</b><br>
+            <div style="margin-bottom:4px;">
+                <button type="button" class="btn-same-as-billing"
+                        onclick="copyBillingToSite({addr1:'bill-addr1',addr2:'bill-addr2'}, {addr1:'site-addr1',addr2:'site-addr2'})">
+                    ⬇️ Same as billing
+                </button>
+            </div>
             <input type="text" id="site-addr1" placeholder="JOB ADDRESS"><br>
             <input type="text" id="site-addr2" placeholder="CITY, STATE ZIP"><br>
             <div style="display:flex;">ACCT: <input type="text" id="site-acct" placeholder="ACCOUNT ID"></div>
@@ -204,13 +210,15 @@
     import {
         getUrlParam, setVal, setChk, autoGrow, setupInputHighlighting,
         setupCustomerAutocomplete, commitCustomerFromForm, renderOriginBreadcrumb,
-        guardAgainstDuplicates
+        guardAgainstDuplicates, copyBillingToSite
     } from '/js/form-utils.js';
+    window.copyBillingToSite = copyBillingToSite;
     import { mountCustomerSidebar } from '/js/customer-sidebar.js';
 
     mountCustomerSidebar({
         phoneFieldId: 'bill-phone',
         nameFieldId:  'bill-name',
+        siteFieldIds: { addr1: 'site-addr1', addr2: 'site-addr2' },
         excludeDocId: getUrlParam('id'),
         excludeCollection: 'sales_leads'
     });

@@ -583,6 +583,61 @@ export function setupRolodex(inputId, boxId, callback) {
 }
 
 // ==========================================================================
+// SAME-AS-BILLING — exposes window.copyBillingToSite() that every form
+// calls from an inline button on the job-site row. Copies whatever's
+// in the billing address fields over to the job-site address fields.
+// ==========================================================================
+
+let _sabStylesInjected = false;
+function injectSameAsBillingStyles() {
+    if (_sabStylesInjected) return;
+    _sabStylesInjected = true;
+    const style = document.createElement('style');
+    style.textContent = `
+        .btn-same-as-billing {
+            display: inline-flex; align-items: center; gap: 5px;
+            padding: 4px 10px; border-radius: 4px;
+            background: #e8f0fe; border: 1px solid #1a73e8;
+            color: #1a73e8; font-family: 'Inter', sans-serif;
+            font-size: 10px; font-weight: 700; letter-spacing: 0.05em;
+            text-transform: uppercase; cursor: pointer;
+            transition: all 0.15s;
+        }
+        .btn-same-as-billing:hover {
+            background: #1a73e8; color: white;
+            transform: translateY(-1px);
+        }
+        @media print { .btn-same-as-billing { display: none !important; } }
+    `;
+    document.head.appendChild(style);
+}
+
+export function copyBillingToSite(billingIds, siteIds) {
+    const b1 = document.getElementById(billingIds.addr1);
+    const b2 = document.getElementById(billingIds.addr2);
+    const s1 = document.getElementById(siteIds.addr1);
+    const s2 = document.getElementById(siteIds.addr2);
+    if (!b1 || !s1) return;
+    s1.value = b1.value || '';
+    if (b2 && s2) s2.value = b2.value || '';
+    // Flash a brief success indicator on the target fields
+    [s1, s2].filter(Boolean).forEach(el => {
+        el.classList.add('input-changed');
+        el.style.transition = 'background 0.4s';
+        const prev = el.style.background;
+        el.style.background = '#e6f4ea';
+        setTimeout(() => { el.style.background = prev; }, 500);
+    });
+}
+
+// Inject button styles as soon as this module loads.
+if (typeof document !== 'undefined' && document.head) {
+    injectSameAsBillingStyles();
+} else if (typeof document !== 'undefined') {
+    document.addEventListener('DOMContentLoaded', injectSameAsBillingStyles);
+}
+
+// ==========================================================================
 // FORWARD-BREADCRUMB — shows "← Forwarded from Phone Message #800001"
 // on any doc that has originDocType + originDocId set. Renders once per
 // page and clicks navigate to the source.
