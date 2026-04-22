@@ -79,9 +79,27 @@
         </button>
 
         <div id="error-msg" class="error">Login Failed</div>
+        <div id="reject-msg" style="display:none; margin-top:16px; font-size:12px; color:#ffbfbf; background:rgba(239,51,64,0.1); border-left:3px solid #EF3340; padding:10px 12px; text-align:left; border-radius:4px;"></div>
 
         <div class="footer">Over Delivering. All over Western New York.</div>
     </div>
+
+    <script>
+        // Show domain-rejection message if a previous sign-in attempt was blocked.
+        (function () {
+            const rejectedEmail = sessionStorage.getItem('hd-auth-rejected-email');
+            const reason = sessionStorage.getItem('hd-auth-rejected-reason');
+            if (rejectedEmail && reason === 'domain') {
+                const el = document.getElementById('reject-msg');
+                if (el) {
+                    el.innerHTML = '🔒 <b>Access restricted.</b> The staff portal is only for <b>@hamburgdoor.com</b> accounts.<br><br>You signed in as <code style="background:rgba(0,0,0,0.3); padding:1px 5px; border-radius:3px;">' + rejectedEmail + '</code>.<br><br>Sign in with your work email.';
+                    el.style.display = 'block';
+                }
+                sessionStorage.removeItem('hd-auth-rejected-email');
+                sessionStorage.removeItem('hd-auth-rejected-reason');
+            }
+        })();
+    </script>
 
     <script type="module">
         import { AuthService } from '/js/auth.js';

@@ -24,6 +24,22 @@
         .role-dropdown-content a:active, .role-dropdown-content a:hover { background-color: var(--blue); color: white; }
         .role-dropdown.open .role-dropdown-content { display: block; }
 
+        /* Impersonation pill */
+        .viewas-pill {
+            display: inline-flex; align-items: center; gap: 6px;
+            background: rgba(239,51,64,0.15); border: 1px solid var(--brand);
+            color: #ff9ea6; padding: 4px 10px; border-radius: 20px;
+            font-size: 10px; font-weight: 700; text-transform: uppercase;
+            letter-spacing: 0.05em; cursor: pointer; font-family: inherit;
+        }
+        .viewas-pill:hover { background: rgba(239,51,64,0.25); color: white; }
+        .viewas-banner {
+            background: var(--brand); color: white;
+            padding: 8px 14px; font-size: 11px; text-align: center;
+            font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em;
+            font-family: 'Inter', sans-serif;
+        }
+
         /* JOB LIST VIEW */
         .job-list { padding: 15px; }
         .job-card { background: #303134; border-radius: 12px; padding: 20px; margin-bottom: 15px; border-left: 5px solid var(--blue); cursor: pointer; transition: transform 0.1s; }
@@ -62,9 +78,16 @@
 <body>
 
     <div id="list-view">
+        <div id="viewas-banner" class="viewas-banner" style="display:none;"></div>
         <div class="app-header">
             <div class="tech-name" style="display:flex; align-items:center;"><img src="/assets/img/icon-192.png" alt="" class="brand-mark"><span id="header-user">LOADING...</span></div>
-            <div style="display:flex; gap:8px; align-items:center;">
+            <div style="display:flex; gap:8px; align-items:center; flex-wrap: wrap; justify-content: flex-end;">
+                <div class="role-dropdown" id="viewas-dd">
+                    <button class="viewas-pill" onclick="document.getElementById('viewas-dd').classList.toggle('open')">👁️ View as ▼</button>
+                    <div class="role-dropdown-content" id="viewas-list" style="min-width: 220px;">
+                        <div style="padding:14px 16px; color:#9aa0a6; font-size:11px;">Loading techs…</div>
+                    </div>
+                </div>
                 <div class="role-dropdown" id="role-dd">
                     <button onclick="document.getElementById('role-dd').classList.toggle('open')">🛠️ TECH ▼</button>
                     <div class="role-dropdown-content">
@@ -118,26 +141,79 @@
 
     <script type="module">
         import { db, auth } from '/js/firebase-config.js';
+        import { DB } from '/js/db.js';
         import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
         import { collection, query, where, onSnapshot, doc, updateDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-        let currentTechName = "Guest";
+        let currentTechName = "Guest";   // the tech whose jobs are displayed
+        let realUser = null;             // the actual signed-in Firebase user (for audit)
+        let impersonating = false;       // true if currentTechName !== real user's email prefix
         let openJobId = null;
         let openCollection = null;
+        let activeListeners = [];
 
         // 1. AUTH CHECK
-        onAuthStateChanged(auth, (user) => {
-            if (user) {
-                // In a real app, you'd fetch the user's profile to get their name
-                // For now, we use the email part
-                currentTechName = user.email.split('@')[0];
-                document.getElementById('header-user').innerText = currentTechName.toUpperCase();
-                loadJobs(currentTechName);
-            } else {
-                // Logged out — send back to the real login page.
+        onAuthStateChanged(auth, async (user) => {
+            if (!user) {
                 window.location.href = '/index.html';
+                return;
             }
+            realUser = user;
+
+            // Default: view as yourself. Override via ?as=<name> URL param.
+            const params = new URLSearchParams(window.location.search);
+            const override = params.get('as');
+            const selfName = (user.email || '').split('@')[0];
+            currentTechName = override || selfName;
+            impersonating = !!override && override.toLowerCase() !== selfName.toLowerCase();
+
+            updateHeader();
+            await populateViewAsList();
+            loadJobs(currentTechName);
         });
+
+        function updateHeader() {
+            document.getElementById('header-user').innerText = currentTechName.toUpperCase();
+            const banner = document.getElementById('viewas-banner');
+            if (impersonating) {
+                banner.style.display = 'block';
+                banner.innerHTML = `👁️ Viewing as <b>${currentTechName.toUpperCase()}</b> — signed in as ${realUser.email}`;
+            } else {
+                banner.style.display = 'none';
+            }
+        }
+
+        // Populate "View as" dropdown from employees collection.
+        async function populateViewAsList() {
+            const list = document.getElementById('viewas-list');
+            try {
+                const employees = (await DB.getAll('employees'))
+                    .filter(e => ['service','install','sales'].includes(e.role))
+                    .sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+
+                const selfName = (realUser.email || '').split('@')[0];
+                let html = `<a href="?" style="border-left: 4px solid transparent;">👤 Myself (${selfName})</a>`;
+                if (employees.length === 0) {
+                    html += `<div style="padding:14px 16px; color:#9aa0a6; font-size:11px;">No techs yet. Add them in <a href="/admin" style="color:#1a73e8;">Admin</a>.</div>`;
+                } else {
+                    for (const emp of employees) {
+                        const isActive = emp.name === currentTechName;
+                        const color =
+                            emp.role === 'service' ? '#1a73e8' :
+                            emp.role === 'install' ? '#9c27b0' :
+                            '#f9ab00';
+                        html += `<a href="?as=${encodeURIComponent(emp.name)}"
+                            style="border-left: 4px solid ${color}; ${isActive ? 'background:#1a73e8; color:white;' : ''}">
+                            ${emp.name} <span style="font-size:10px; opacity:.7;">(${emp.role})</span>
+                        </a>`;
+                    }
+                }
+                list.innerHTML = html;
+            } catch (e) {
+                console.warn('[viewas] could not load employees:', e);
+                list.innerHTML = `<div style="padding:14px 16px; color:#9aa0a6; font-size:11px;">Could not load tech list.</div>`;
+            }
+        }
 
         window.logout = () => signOut(auth);
 
@@ -234,16 +310,22 @@
 
             if(!sig) { alert("Please sign (type) your name."); return; }
 
+            const payload = {
+                status: "Complete",
+                techNotes: notes,
+                techSig: sig,
+                completedAt: serverTimestamp(),
+                // Audit: record WHO actually signed off on this, regardless of
+                // which tech the UI is "viewing as".
+                completedByEmail: realUser ? realUser.email : null,
+                viewingAs: currentTechName
+            };
+            if (impersonating) payload.impersonated = true;
+
             try {
-                await updateDoc(doc(db, openCollection, openJobId), {
-                    status: "Complete",
-                    techNotes: notes,
-                    techSig: sig,
-                    completedAt: serverTimestamp()
-                });
+                await updateDoc(doc(db, openCollection, openJobId), payload);
                 alert("Good job! Synced to office.");
                 closeJob();
-                // Card will disappear automatically due to onSnapshot listener
             } catch (e) {
                 alert("Error: " + e.message);
             }
