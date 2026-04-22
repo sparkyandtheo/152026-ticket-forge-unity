@@ -221,6 +221,12 @@
             if (data) loadForm(data);
         } else {
             clearForm();
+            // Assign a stable sequential lead number (was hard-coded 'S-NEW',
+            // which caused all unsaved leads to collide on the dashboard).
+            try {
+                const newId = await DB.getNewId('sales', 400000);
+                document.getElementById('sales-no').value = newId;
+            } catch (_) { /* offline / rules-denied — leave default */ }
         }
     };
 
@@ -254,7 +260,7 @@
         // Job Site
         setVal('site-addr1', data.siteAddress1);
         setVal('site-addr2', data.siteAddress2);
-        setVal('site-acct', data.accountNumber);
+        setVal('site-acct', data.accountId || data.accountNumber);
         setVal('site-type', data.siteType);
 
         // Notes
@@ -291,7 +297,7 @@
             
             siteAddress1: document.getElementById('site-addr1').value,
             siteAddress2: document.getElementById('site-addr2').value,
-            accountNumber: document.getElementById('site-acct').value,
+            accountId: document.getElementById('site-acct').value,
             siteType: document.getElementById('site-type').value,
             
             description: document.getElementById('sales-notes').value,

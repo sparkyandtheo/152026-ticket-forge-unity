@@ -258,7 +258,7 @@
 
         setVal('site-addr1', data.siteAddress1);
         setVal('site-addr2', data.siteAddress2);
-        setVal('site-acct', data.accountNumber);
+        setVal('site-acct', data.accountId || data.accountNumber);
         setVal('site-type', data.siteType);
         setVal('svc-scope', data.description);
 
@@ -299,7 +299,7 @@
             phone: document.getElementById('bill-phone').value,
             siteAddress1: document.getElementById('site-addr1').value,
             siteAddress2: document.getElementById('site-addr2').value,
-            accountNumber: document.getElementById('site-acct').value,
+            accountId: document.getElementById('site-acct').value,
             siteType: document.getElementById('site-type').value,
             description: document.getElementById('svc-scope').value,
             techStart: document.getElementById('time-start').value,

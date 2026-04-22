@@ -208,6 +208,13 @@
             console.log("Loading Message...", DOC_ID);
             const data = await DB.getDoc('phone_messages', DOC_ID);
             if(data) loadForm(data);
+        } else {
+            // Assign a stable sequential ticket number so this message shows a
+            // real # on the dashboard instead of a blank field.
+            try {
+                const newId = await DB.getNewId('phone_message', 800000);
+                setVal('msg-id', newId);
+            } catch (_) { /* offline / rules-denied — leave blank */ }
         }
     };
 

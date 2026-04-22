@@ -158,6 +158,7 @@
         <div style="width: 48%;">
             <b>JOB SITE:</b><br>
             <input type="text" id="site-addr1" placeholder="JOB ADDRESS"><br>
+            <input type="text" id="site-addr2" placeholder="CITY, STATE ZIP"><br>
             <div style="display:flex;">ACCT: <input type="text" id="acct-id" placeholder="ID"></div>
             <div style="display:flex;">SITE: <input type="text" value="RESIDENTIAL"></div>
         </div>
@@ -238,8 +239,9 @@
         setVal('bill-addr1', data.address1);
         setVal('bill-addr2', data.address2);
         setVal('bill-phone', data.phone);
-        setVal('site-addr1', data.siteAddress);
-        setVal('acct-id', data.accountId);
+        setVal('site-addr1', data.siteAddress1 || data.siteAddress); // tolerate legacy single-line
+        setVal('site-addr2', data.siteAddress2);
+        setVal('acct-id', data.accountId || data.accountNumber);
         setVal('prop-text', data.proposalText);
 
         const list = document.getElementById('items-list');
@@ -279,7 +281,8 @@
             address1: document.getElementById('bill-addr1').value,
             address2: document.getElementById('bill-addr2').value,
             phone: document.getElementById('bill-phone').value,
-            siteAddress: document.getElementById('site-addr1').value,
+            siteAddress1: document.getElementById('site-addr1').value,
+            siteAddress2: (document.getElementById('site-addr2') || {}).value || '',
             accountId: document.getElementById('acct-id').value,
             proposalText: document.getElementById('prop-text').value,
             items: items,
@@ -305,7 +308,9 @@
             address1: document.getElementById('bill-addr1').value,
             address2: document.getElementById('bill-addr2').value,
             phone: document.getElementById('bill-phone').value,
-            siteAddress: document.getElementById('site-addr1').value,
+            siteAddress1: document.getElementById('site-addr1').value,
+            siteAddress2: (document.getElementById('site-addr2') || {}).value || '',
+            accountId: document.getElementById('acct-id').value,
             description: "INSTALLED PER QUOTE #" + document.getElementById('quote-no').value + "\n" + document.getElementById('prop-text').value,
             items: items,
             status: 'Open', 

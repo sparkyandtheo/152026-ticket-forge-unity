@@ -405,8 +405,14 @@
                     `;
 
                     // Search Index
+                    // Fields saved by the 6 forms — kept intentionally wide so
+                    // office staff can find a ticket by any memorable fragment
+                    // (notes, rep name, line-item description, signature, etc).
+                    const itemsText = Array.isArray(data.items)
+                        ? data.items.map(i => [i.id, i.desc].filter(Boolean).join(' ')).join(' ')
+                        : '';
                     const searchTerms = [
-                        displayId, 
+                        displayId,
                         displayName,
                         data.phone || '',
                         data.email || '',
@@ -416,7 +422,13 @@
                         data.siteAddress1 || '',
                         data.siteAddress2 || '',
                         data.jobNumber || '',
-                        data.poNumber || ''
+                        data.poNumber || '',
+                        data.accountId || data.accountNumber || '',
+                        data.rep || '',
+                        data.description || data.notes || data.proposalText || '',
+                        data.techSig || '',
+                        data.custSig || '',
+                        itemsText
                     ].join(' ').toUpperCase();
 
                     div.dataset.search = searchTerms; 
