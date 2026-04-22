@@ -1,0 +1,38 @@
+/* ================================================================
+ * Hamburg Overhead Door — Brand CSS variables
+ *
+ * Source: Brand Guidelines doc, Rev0 04.2026
+ * Scope:  Chrome surfaces only (login, dashboard header, admin
+ *         console, dispatch toolbar, mobile top bar). Paper-on-glass
+ *         forms keep their own interior palette on purpose.
+ * ================================================================ */
+
+:root {
+  /* Primary brand palette */
+  --hod-red:        #EF3340;  /* PMS 032 C  — primary accent */
+  --hod-black:      #231F20;  /* Brand "100% Black" for text */
+  --hod-gray:       #939598;  /* PMS 032 C 50% — secondary text, dividers */
+
+  /* Secondary brand palette */
+  --hod-blue:       #0047BB;  /* PMS 2728C — secondary accent (primary action) */
+  --hod-blue-dark:  #003585;  /* hover state derived from brand blue */
+  --hod-blue-ink:   #253F8E;  /* italicized super in the brand kit */
+
+  /* Neutrals / surfaces */
+  --hod-bg-dark:    #231F20;  /* matches manifest background_color */
+  --hod-bg-light:   #f8f9fa;
+  --hod-border:     #dadce0;
+
+  /* Functional colors (carried over from existing UI, not overridden) */
+  --hod-green:      #1e8e3e;
+  --hod-yellow:     #f9ab00;
+  --hod-danger:     #d93025;
+}
+
+/* Utility classes for chrome surfaces to use directly without
+ * rewriting their local styles. Used sparingly. */
+.hod-brand-bg   { background-color: var(--hod-red); color: white; }
+.hod-brand-text { color: var(--hod-red); }
+.hod-brand-border { border-color: var(--hod-red); }
+.hod-ink        { color: var(--hod-black); }
+.hod-muted      { color: var(--hod-gray); }

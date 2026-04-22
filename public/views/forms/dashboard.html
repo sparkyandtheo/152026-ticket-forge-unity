@@ -4,12 +4,14 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Document Manager - Hamburg Overhead Door</title>
-    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=Inter:wght@400;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=Inter:wght@400;700;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/assets/css/brand.css">
     <style>
         :root {
-            --primary: #1a73e8;
+            --primary: #0047BB;   /* brand blue for primary action */
+            --accent:  #EF3340;   /* brand red for headers/logo */
             --bg: #f8f9fa;
-            --dark: #202124;
+            --dark: #231F20;
             --border: #dadce0;
         }
 
@@ -31,7 +33,12 @@
             justify-content: space-between;
             align-items: center;
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            border-bottom: 4px solid var(--accent);
         }
+        .brand-title { display: flex; align-items: center; gap: 12px; }
+        .brand-title img { width: 36px; height: 36px; border-radius: 8px; }
+        .brand-title .primary { font-weight: 900; color: white; }
+        .brand-title .accent  { color: var(--accent); font-weight: 900; }
 
         .search-container {
             flex-grow: 1;
@@ -229,7 +236,15 @@
 <body>
 
     <div class="header">
-        <div style="font-weight: 800; font-size: 20px;">HAMBURG DOOR <span style="font-weight: 300; opacity: 0.7;">DOCS</span></div>
+        <div class="brand-title">
+            <img src="/assets/img/icon-192.png" alt="">
+            <div style="font-size: 20px; letter-spacing: -0.3px;">
+                <span class="primary">HAMBURG</span>
+                <span class="accent">OVERHEAD</span>
+                <span class="primary">DOOR</span>
+                <span style="font-weight: 300; opacity: 0.7; margin-left:8px;">DOCS</span>
+            </div>
+        </div>
         <div class="search-container">
             <input type="text" class="search-input" id="mainSearch" placeholder="Search name, phone, address, or email..." oninput="window.filterDocs()">
         </div>

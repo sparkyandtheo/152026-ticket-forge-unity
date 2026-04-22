@@ -1,12 +1,30 @@
 {
   "short_name": "Hamburg Door",
-  "name": "Hamburg Overhead Door Field App",
-  "icons": [],
+  "name": "Hamburg Overhead Door",
+  "icons": [
+    {
+      "src": "/assets/img/icon-192.png",
+      "type": "image/png",
+      "sizes": "192x192",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/assets/img/icon-512.png",
+      "type": "image/png",
+      "sizes": "512x512",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/assets/img/icon.svg",
+      "type": "image/svg+xml",
+      "sizes": "any"
+    }
+  ],
   "start_url": "/index.html",
-  "background_color": "#202124",
+  "background_color": "#231F20",
   "display": "standalone",
   "scope": "/",
-  "theme_color": "#1a73e8",
+  "theme_color": "#EF3340",
   "orientation": "portrait-primary",
-  "description": "Field service management for Hamburg Overhead Door."
+  "description": "Hamburg Overhead Door — staff portal for intake, dispatch, service, and invoicing."
 }

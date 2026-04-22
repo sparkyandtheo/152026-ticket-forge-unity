@@ -3,8 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="theme-color" content="#202124">
+    <meta name="theme-color" content="#EF3340">
     <link rel="manifest" href="/manifest.json">
+    <link rel="icon" href="/assets/img/icon-192.png" type="image/png">
+    <link rel="apple-touch-icon" href="/assets/img/icon-192.png">
+    <link rel="stylesheet" href="/assets/css/brand.css">
     
     <meta http-equiv="Content-Security-Policy" content="
         default-src 'self' 'unsafe-inline' 'unsafe-eval' data: 
@@ -19,33 +22,65 @@
     ">
 
     <title>Hamburg Door | Staff Login</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;900&display=swap" rel="stylesheet">
     <style>
-        body { background: #202124; display: flex; align-items: center; justify-content: center; height: 100vh; font-family: 'Inter', sans-serif; margin: 0; color: white; }
-        .login-card { background: #303134; padding: 40px; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.5); width: 100%; max-width: 350px; text-align: center; }
-        .logo { font-weight: 900; font-size: 24px; margin-bottom: 30px; letter-spacing: -1px; }
-        
+        body {
+            background: linear-gradient(160deg, var(--hod-black) 0%, #3a3234 60%, var(--hod-red) 140%);
+            display: flex; align-items: center; justify-content: center;
+            min-height: 100vh; font-family: 'Inter', sans-serif; margin: 0; color: white;
+        }
+        .login-card {
+            background: rgba(48, 49, 52, 0.92);
+            padding: 40px 36px 32px;
+            border-radius: 14px;
+            box-shadow: 0 18px 50px rgba(0,0,0,0.55);
+            width: 100%; max-width: 360px; text-align: center;
+            border-top: 4px solid var(--hod-red);
+        }
+        .brand-mark {
+            width: 88px; height: 88px; border-radius: 20px;
+            margin: 0 auto 18px; display: block;
+            box-shadow: 0 6px 20px rgba(239, 51, 64, 0.35);
+        }
+        .brand-name {
+            font-weight: 900; font-size: 18px; letter-spacing: -0.3px;
+            color: white; margin-bottom: 4px;
+        }
+        .brand-name .accent { color: var(--hod-red); }
+        .brand-tag {
+            font-size: 11px; color: var(--hod-gray); text-transform: uppercase;
+            letter-spacing: 0.18em; margin-bottom: 28px;
+        }
         .btn-google {
             display: flex; align-items: center; justify-content: center;
-            background: white; color: #5f6368; width: 100%;
-            padding: 12px; border-radius: 4px; border: none;
-            font-weight: 600; font-size: 16px; cursor: pointer;
-            transition: background 0.2s; gap: 10px;
+            background: white; color: #3c4043; width: 100%;
+            padding: 13px; border-radius: 6px; border: none;
+            font-weight: 600; font-size: 15px; cursor: pointer;
+            transition: filter 0.15s, transform 0.1s; gap: 10px;
         }
-        .btn-google:hover { background: #f1f3f4; }
-        .error { color: #d93025; font-size: 14px; margin-top: 15px; display: none; }
+        .btn-google:hover { filter: brightness(1.05); transform: translateY(-1px); }
+        .error { color: #ff9a9a; font-size: 13px; margin-top: 16px; display: none; }
+        .footer {
+            margin-top: 24px; font-size: 10px;
+            color: rgba(255,255,255,0.4);
+            text-transform: uppercase; letter-spacing: 0.15em;
+        }
     </style>
 </head>
 <body>
     <div class="login-card">
-        <div class="logo">HAMBURG DOOR</div>
-        
+        <img src="/assets/img/icon-192.png" alt="" class="brand-mark">
+        <div class="brand-name">HAMBURG <span class="accent">OVERHEAD</span> DOOR</div>
+        <div class="brand-tag">Staff Portal</div>
+
         <button class="btn-google" onclick="handleLogin()">
             <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" width="20">
             Sign in with Google
         </button>
 
         <div id="error-msg" class="error">Login Failed</div>
+
+        <div class="footer">Over Delivering. All over Western New York.</div>
     </div>
 
     <script type="module">
