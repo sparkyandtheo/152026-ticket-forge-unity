@@ -218,10 +218,13 @@
 
         window.logout = () => signOut(auth);
 
-        // Mount notification bell in the mobile toolbar
+        // Mount notification bell + universal search in the mobile toolbar
         import('/js/notification-bell.js').then(m => {
             m.mountNotificationBell(document.getElementById('mobile-toolbar-right'));
         }).catch(e => console.warn('[bell] mount failed:', e));
+        import('/js/universal-search.js').then(m => {
+            m.mountUniversalSearch(document.getElementById('mobile-toolbar-right'));
+        }).catch(e => console.warn('[search] mount failed:', e));
 
         // 2. LOAD JOBS
         function loadJobs(techName) {

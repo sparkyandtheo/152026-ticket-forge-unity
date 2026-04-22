@@ -517,10 +517,13 @@
             });
         }
 
-        // --- MOUNT NOTIFICATION BELL ---
+        // --- MOUNT NOTIFICATION BELL + UNIVERSAL SEARCH ---
         import('/js/notification-bell.js').then(m => {
             m.mountNotificationBell(document.getElementById('dash-toolbar-right'));
         }).catch(e => console.warn('[bell] mount failed:', e));
+        import('/js/universal-search.js').then(m => {
+            m.mountUniversalSearch(document.getElementById('dash-toolbar-right'));
+        }).catch(e => console.warn('[search] mount failed:', e));
 
         // --- 3. ATTENTION FEED ---
         // Query every ticket-bearing collection for status=='Attention'

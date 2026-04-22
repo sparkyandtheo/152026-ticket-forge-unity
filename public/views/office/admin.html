@@ -580,10 +580,13 @@
     });
     window.handleLogout = () => signOut(auth).then(() => window.location.href = '/index.html');
 
-    // Mount notification bell
+    // Mount notification bell + universal search
     import('/js/notification-bell.js').then(m => {
         m.mountNotificationBell(document.getElementById('admin-toolbar-right'));
     }).catch(e => console.warn('[bell] mount failed:', e));
+    import('/js/universal-search.js').then(m => {
+        m.mountUniversalSearch(document.getElementById('admin-toolbar-right'));
+    }).catch(e => console.warn('[search] mount failed:', e));
 
     // ----- TAB SWITCHING -----
     const TABS = ['staff', 'inventory', 'zips', 'settings'];
