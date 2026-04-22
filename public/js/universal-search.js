@@ -698,26 +698,23 @@ export function mountUniversalSearch(slot, opts = {}) {
         ensurePaletteMounted();
         installShortcut();
     }
-    // If no slot was provided (or the given element was null), create
-    // a floating top-right slot so the icon still appears. Handy for
-    // pages that don't have a dedicated toolbar container.
-    if (!slot) {
-        if (!document.getElementById('hd-sp-floating-slot')) {
-            const floatWrap = document.createElement('div');
-            floatWrap.id = 'hd-sp-floating-slot';
-            floatWrap.style.cssText =
-                'position: fixed; top: 12px; right: 12px; z-index: 2000;' +
-                'background: #202124; padding: 4px; border-radius: 8px;' +
-                'box-shadow: 0 4px 12px rgba(0,0,0,.3);';
-            document.body.appendChild(floatWrap);
-        }
-        slot = document.getElementById('hd-sp-floating-slot');
-    }
+    // No slot given → install the keyboard shortcut only. Ctrl/Cmd+K
+    // still works. We deliberately do NOT create a floating icon that
+    // could overlap form buttons.
+    if (!slot) return;
+
     if (opts.variant === 'bar') {
         mountSearchBar(slot);
     } else {
         mountIcon(slot);
     }
+}
+
+// Also remove any previously-mounted floating slot left over from
+// an older version of this module (idempotent cleanup).
+if (typeof document !== 'undefined') {
+    const stale = document.getElementById('hd-sp-floating-slot');
+    if (stale) stale.remove();
 }
 
 function mountSearchBar(slot) {
