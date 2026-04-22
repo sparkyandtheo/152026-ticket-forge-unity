@@ -218,7 +218,7 @@
     import {
         getUrlParam, setVal, setChk, autoGrow, setupInputHighlighting,
         setupCustomerAutocomplete, commitCustomerFromForm, renderOriginBreadcrumb,
-        updateRolodexFromFields
+        guardAgainstDuplicates, updateRolodexFromFields
     } from '/js/form-utils.js';
 
     const DOC_ID = getUrlParam('id');
@@ -303,6 +303,13 @@
     // --- SAVE LOGIC ---
     window.saveTicket = async function(statusOverride = null) {
         const isNew = !DOC_ID;
+        if (isNew && !statusOverride) {
+            const decision = await guardAgainstDuplicates('service_tickets', {
+                name: document.getElementById('bill-name').value,
+                phone: document.getElementById('bill-phone').value
+            });
+            if (decision === 'cancel' || decision === 'open') return null;
+        }
         const isComplete = document.getElementById('chk-yes').checked;
         
         const payload = {

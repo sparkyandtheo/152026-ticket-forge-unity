@@ -624,6 +624,77 @@ export function renderOriginBreadcrumb(data) {
     document.body.appendChild(crumb);
 }
 
+// ==========================================================================
+// DUPLICATE-DETECTION PROMPT — call before save. If recent duplicates
+// exist, shows a modal with "Open Existing" / "Save Anyway" / "Cancel"
+// and returns the user's choice as a Promise<'open'|'save'|'cancel'>.
+// If no duplicates, resolves to 'save' immediately.
+// ==========================================================================
+
+const DEDUPE_WINDOWS = {
+    phone_messages:  1,   // 60 seconds — guards accidental double-click
+    service_tickets: 5,
+    work_orders:     5,
+    quotes:          5,
+    sales_leads:     5,
+    invoices:        5
+};
+
+const DEDUPE_LABELS = {
+    phone_messages:  { noun: 'phone message',  emoji: '📥', page: '/views/forms/phone_message.html' },
+    service_tickets: { noun: 'service ticket', emoji: '🛠️', page: '/views/forms/service.html' },
+    work_orders:     { noun: 'work order',     emoji: '🛠️', page: '/views/forms/work_order.html' },
+    quotes:          { noun: 'quote',          emoji: '📝', page: '/views/forms/quote.html' },
+    sales_leads:     { noun: 'sales lead',     emoji: '💼', page: '/views/forms/sales_call.html' },
+    invoices:        { noun: 'invoice',        emoji: '💰', page: '/views/forms/invoice.html' }
+};
+
+export async function guardAgainstDuplicates(collectionName, identity, opts = {}) {
+    const { DB } = await import('/js/db.js');
+    const window_min = opts.windowMinutes || DEDUPE_WINDOWS[collectionName] || 5;
+    const currentDocId = opts.currentDocId || null;
+
+    const hits = (await DB.findRecentDuplicates(collectionName, identity, window_min))
+        .filter(d => d.id !== currentDocId);
+
+    if (hits.length === 0) return 'save';
+
+    return new Promise((resolve) => {
+        ensureModal();
+        const label = DEDUPE_LABELS[collectionName] || { noun: 'record', emoji: '📋', page: '/' };
+        const mins  = window_min;
+
+        const list = hits.slice(0, 4).map(h => `
+            <button class="rm-btn rm-blue" style="width:100%; margin-bottom:6px; text-align:left; text-transform:none;"
+                    data-action="open-${h.id}">
+                ${label.emoji} #${escapeHtml(h.ticketNumber || h.id)} — ${escapeHtml(h.customerName || 'Unknown')}
+                ${h.phone ? `<span style="font-size:11px; opacity:.8; display:block;">📞 ${escapeHtml(h.phone)}</span>` : ''}
+            </button>
+        `).join('');
+
+        showModal(`
+            <h3>⚠️ A ${label.noun} for this customer was just created</h3>
+            <p style="color:#5f6368; font-size:13px; margin: 0 0 14px 0;">
+                Within the last <b>${mins} minute${mins !== 1 ? 's' : ''}</b>, ${hits.length === 1 ? 'a matching record was' : `${hits.length} matching records were`} saved for
+                <b>${escapeHtml(identity.name || identity.phone || 'this customer')}</b>.
+            </p>
+            <div class="rm-label">Open one of these instead?</div>
+            <div style="margin: 10px 0;">${list}</div>
+            <div class="rm-actions">
+                <button class="rm-btn rm-gray" data-action="cancel">CANCEL</button>
+                <button class="rm-btn rm-green" data-action="save">SAVE ANYWAY</button>
+            </div>
+        `, Object.fromEntries([
+            ...hits.map(h => [`open-${h.id}`, () => {
+                window.location.href = `${label.page}?id=${h.id}`;
+                resolve('open');
+            }]),
+            ['save',   () => resolve('save')],
+            ['cancel', () => resolve('cancel')]
+        ]));
+    });
+}
+
 export function updateRolodexFromFields(ids) {
     const data = {
         name: document.getElementById(ids.name).value,

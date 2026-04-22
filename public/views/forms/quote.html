@@ -205,7 +205,7 @@
     import {
         getUrlParam, setVal, autoGrow, setupInputHighlighting,
         setupCustomerAutocomplete, commitCustomerFromForm, renderOriginBreadcrumb,
-        updateRolodexFromFields
+        guardAgainstDuplicates, updateRolodexFromFields
     } from '/js/form-utils.js';
 
     const DOC_ID = getUrlParam('id');
@@ -288,6 +288,13 @@
 
     window.saveTicket = async function() {
         const isNew = !DOC_ID;
+        if (isNew) {
+            const decision = await guardAgainstDuplicates('quotes', {
+                name: document.getElementById('bill-name').value,
+                phone: document.getElementById('bill-phone').value
+            });
+            if (decision === 'cancel' || decision === 'open') return;
+        }
         const items = scrapeItems();
         const payload = {
             ticketNumber: document.getElementById('quote-no').value,

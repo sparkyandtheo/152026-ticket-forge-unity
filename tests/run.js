@@ -553,6 +553,39 @@ await test('source phone_message status flips to Converted on forward', async ()
   assertEqual(doc.status, 'Converted', 'status after forward');
 });
 
+section('Duplicate detection: warn against same-customer fast re-create');
+
+await test('finds recent open phone_message for same customer', async () => {
+  await DB.saveDoc('phone_messages', {
+    customerName: JANET.name, phone: JANET.phone, status: 'Open'
+  }, '800001');
+  const hits = await DB.findRecentDuplicates('phone_messages',
+    { name: JANET.name, phone: JANET.phone }, 5);
+  assertEqual(hits.length, 1, 'one recent duplicate');
+  assertEqual(hits[0].id, '800001', 'found the right id');
+});
+
+await test('ignores Converted docs (already flowed forward)', async () => {
+  await DB.saveDoc('phone_messages', {
+    customerName: JANET.name, phone: JANET.phone, status: 'Converted'
+  }, '800002');
+  const hits = await DB.findRecentDuplicates('phone_messages',
+    { name: JANET.name, phone: JANET.phone }, 5);
+  assertEqual(hits.length, 0, 'converted doc excluded');
+});
+
+await test('ignores records older than window', async () => {
+  const old = new Date(Date.now() - 10 * 60 * 1000).toISOString();
+  // manually craft old record
+  DB._store.set('service_tickets/700099', {
+    customerName: JANET.name, phone: JANET.phone,
+    status: 'Open', lastUpdated: old
+  });
+  const hits = await DB.findRecentDuplicates('service_tickets',
+    { name: JANET.name, phone: JANET.phone }, 5);
+  assertEqual(hits.length, 0, '10-min-old record excluded from 5-min window');
+});
+
 section('Customer rolodex: phone is the key');
 
 await test('rolodex save then lookup by phone returns same customer', async () => {
