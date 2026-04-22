@@ -74,8 +74,66 @@
         .grid-row-header { background: white; padding: 10px; font-weight: bold; display: flex; align-items: center; justify-content: center; position: sticky; left: 0; z-index: 5; }
         
         /* DROP ZONES */
-        .grid-cell { background: white; min-height: 80px; position: relative; padding: 4px; transition: background 0.2s; }
-        .grid-cell.drag-over { background: #e8f0fe; }
+        .grid-cell {
+            background: white; position: relative; padding: 4px;
+            transition: background 0.15s;
+            min-height: 80px;
+        }
+        .grid-cell.drag-over { background: #e8f0fe; outline: 2px dashed var(--blue); outline-offset: -2px; }
+
+        /* --- VERTICAL AGENDA (service view) --- */
+        .schedule-grid.vertical .grid-header-cell {
+            text-transform: uppercase;
+            font-size: 11px;
+            letter-spacing: 0.08em;
+            background: var(--dark);
+            color: white;
+            border-bottom: 3px solid var(--brand);
+            padding: 14px 8px;
+        }
+        .schedule-grid.vertical .grid-row-header {
+            background: #f1f3f4;
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 11px;
+            letter-spacing: 0.05em;
+            color: #5f6368;
+            border-right: 2px solid #dadce0;
+        }
+        .schedule-grid.vertical .grid-cell {
+            min-height: 96px;
+        }
+
+        /* --- CARD "LIFTED" STATE (during drag) --- */
+        .job-card.lifted {
+            opacity: 0.55;
+            transform: scale(1.02) rotate(-0.8deg);
+            box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+            cursor: grabbing;
+        }
+
+        /* --- PARKING LOT DROP ZONE (when dragging a scheduled card) --- */
+        .sidebar {
+            transition: background 0.15s;
+        }
+        body.dragging-scheduled .sidebar {
+            background: #fff9e6;
+        }
+        body.dragging-scheduled .sidebar-header::after {
+            content: " ← drop here to unschedule";
+            color: #b06000;
+            font-weight: 400;
+            text-transform: none;
+            letter-spacing: normal;
+            font-size: 11px;
+            font-style: italic;
+        }
+        body.dragging-scheduled .sidebar .unscheduled-list.drag-over,
+        .unscheduled-list.drag-over {
+            background: #fff3cd;
+            outline: 2px dashed #f9ab00;
+            outline-offset: -4px;
+            border-radius: 6px;
+        }
 
         /* PRINT SETTINGS */
 /* public/views/office/dispatch.html */
