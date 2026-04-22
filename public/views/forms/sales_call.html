@@ -197,13 +197,12 @@
 
 <script type="module">
     import { DB } from '/js/db.js';
+    import { getUrlParam, setVal, setChk, autoGrow, setupInputHighlighting, setupRolodex, updateRolodexFromFields } from '/js/form-utils.js';
 
-    // AUTO-HIGHLIGHT CHANGED FIELDS
-    document.addEventListener('input', function(e) {
-        if(e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') {
-             e.target.classList.add('input-changed');
-        }
-    });
+    // Expose autoGrow globally for inline oninput="autoGrow(this)" handlers.
+    window.autoGrow = autoGrow;
+
+    setupInputHighlighting();
 
     const urlParams = new URLSearchParams(window.location.search);
     const DOC_ID = urlParams.get('id');
@@ -325,8 +324,7 @@
     };
 
     // UI Helpers
-    function setVal(id, val) { if(val) document.getElementById(id).value = val; }
-    function setChk(id, val) { if(val) document.getElementById(id).checked = true; }
+    // setVal and setChk are imported from /js/form-utils.js
     
     window.toggleChk = function(chk, group) {
         if(group === 'complete') {
