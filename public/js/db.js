@@ -376,11 +376,10 @@ export const DB = {
             accountId: payload.accountId || ''
         });
 
-        // Branch 1: explicit customer id → merge
-        if (opts.customerId) {
-            const existing = await DB.getDoc('customers', opts.customerId) || {};
+        // Helper: merge new data over an existing customer doc,
+        // appending a job site if requested.
+        const mergeOnto = async (existingId, existing) => {
             const merged = { ...existing, ...data, id: undefined };
-            // Add job site if requested and not already present
             if (opts.addJobSite && opts.addJobSite.address1) {
                 const sites = Array.isArray(existing.jobSites) ? [...existing.jobSites] : [];
                 const norm = (s) => (s || '').toUpperCase().replace(/\s+/g, ' ').trim();
@@ -390,13 +389,52 @@ export const DB = {
                 if (!already) sites.push(clean(opts.addJobSite));
                 merged.jobSites = sites;
             }
-            await setDoc(doc(db, 'customers', opts.customerId),
+            await setDoc(doc(db, 'customers', existingId),
                 { ...merged, lastUpdated: serverTimestamp() },
                 { merge: true });
-            return { id: opts.customerId, created: false };
+            return { id: existingId, created: false };
+        };
+
+        // Branch 1: explicit customer id → merge onto that one
+        if (opts.customerId) {
+            const existing = await DB.getDoc('customers', opts.customerId) || {};
+            return mergeOnto(opts.customerId, existing);
         }
 
-        // Branch 2: no id → create fresh (auto id)
+        // Branch 2: no id given → check if a customer already exists with
+        // this phone (or exact name match when no phone). Prevents the
+        // form from silently creating duplicate customers every time
+        // someone types a returning customer's info without clicking an
+        // autocomplete suggestion.
+        const phoneDigits = (data.primaryPhone || '').replace(/\D+/g, '');
+        const nameNorm    = (data.name || '').toUpperCase().trim();
+        let matchId = null;
+        let matchData = null;
+
+        if (phoneDigits.length >= 7 || nameNorm.length >= 3) {
+            // Prefer in-memory cache; it's subscribed and up-to-date.
+            const fromCache = DB.getAllCustomers ? DB.getAllCustomers() : [];
+            const candidates = fromCache.length
+                ? fromCache
+                : (await DB.getAll('customers'));
+            for (const c of candidates) {
+                const phones = [c.primaryPhone, c.phone, ...(c.alternatePhones || [])]
+                    .filter(Boolean).map(p => p.replace(/\D+/g, ''));
+                const phoneMatch = phoneDigits && phones.includes(phoneDigits);
+                const nameMatch  = nameNorm && (c.name || '').toUpperCase().trim() === nameNorm;
+                if (phoneMatch || nameMatch) {
+                    matchId = c.id;
+                    matchData = c;
+                    break;
+                }
+            }
+        }
+
+        if (matchId) {
+            return mergeOnto(matchId, matchData);
+        }
+
+        // Branch 3: no match found → really create a new one.
         const ref = await addDoc(collection(db, 'customers'),
             { ...data, lastUpdated: serverTimestamp() });
         return { id: ref.id, created: true };

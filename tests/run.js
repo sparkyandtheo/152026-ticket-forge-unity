@@ -553,6 +553,40 @@ await test('source phone_message status flips to Converted on forward', async ()
   assertEqual(doc.status, 'Converted', 'status after forward');
 });
 
+section('Customer upsert does not duplicate on repeat form saves');
+
+await test('upsertCustomer reuses existing customer when phone matches', async () => {
+  // Simulate the app: customer created from rolodex once, then a later
+  // ticket is saved WITHOUT pinning the customer id (user typed phone
+  // manually, didn\'t pick the suggestion).
+  const first = await DB.upsertCustomer({
+    name: JANET.name, phone: JANET.phone,
+    billingAddress1: JANET.address1, billingAddress2: JANET.address2
+  });
+  const second = await DB.upsertCustomer({
+    name: JANET.name, phone: JANET.phone,
+    billingAddress1: JANET.address1, billingAddress2: JANET.address2
+  });
+  assertEqual(first.id, second.id, 'second save reuses first customer id');
+  assertEqual(second.created, false, 'second save flagged as not-created');
+  const all = DB.getAllCustomers();
+  assertEqual(all.length, 1, 'only ONE customer exists after two saves');
+});
+
+await test('upsertCustomer reuses customer when name matches (no phone typed)', async () => {
+  await DB.upsertCustomer({ name: 'ACME CORP', phone: '' });
+  await DB.upsertCustomer({ name: 'ACME CORP', billingAddress1: '5 Main St' });
+  const all = DB.getAllCustomers();
+  assertEqual(all.length, 1, 'name-only dedupe worked');
+});
+
+await test('different phones create different customers', async () => {
+  await DB.upsertCustomer({ name: 'JANE A', phone: '716-111-1111' });
+  await DB.upsertCustomer({ name: 'JOHN B', phone: '716-222-2222' });
+  const all = DB.getAllCustomers();
+  assertEqual(all.length, 2, 'two distinct customers');
+});
+
 section('Duplicate detection: warn against same-customer fast re-create');
 
 await test('finds recent open phone_message for same customer', async () => {
