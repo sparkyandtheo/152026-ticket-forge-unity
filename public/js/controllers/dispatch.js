@@ -1,4 +1,4 @@
-import { db } from '../firebase-config.js';
+import { db } from '/js/firebase-config.js';
 import { collection, query, where, onSnapshot, doc, updateDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
 // --- CONFIGURATION ---

@@ -114,7 +114,7 @@
     </div>
 
     <script type="module">
-        import { db, auth } from '../../js/firebase-config.js';
+        import { db, auth } from '/js/firebase-config.js';
         import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
         import { collection, query, where, onSnapshot, doc, updateDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
@@ -131,7 +131,8 @@
                 document.getElementById('header-user').innerText = currentTechName.toUpperCase();
                 loadJobs(currentTechName);
             } else {
-                window.location.href = '../office/index.html';
+                // Logged out — send back to the real login page.
+                window.location.href = '/index.html';
             }
         });
 

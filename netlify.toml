@@ -1,32 +1,31 @@
 # netlify.toml
+# Hamburg Door staff portal — Netlify build config.
+# SPA redirects live in public/_redirects (read from the publish dir).
 
 [build]
   publish = "public"
   functions = "functions"
 
-# The "SPA" Redirect Rule
-# This ensures that if a user reloads the app on /views/mobile, 
-# it doesn't 404, but lets index.html handle the routing.
-[[redirects]]
-  from = "/*"
-  to = "/index.html"
-  status = 200
-
-# Cache Control for static assets (Images/CSS) - 1 year
+# Cache Control for static assets (Images/CSS) — 1 year
 [[headers]]
   for = "/assets/*"
   [headers.values]
     Cache-Control = "public, max-age=31536000, immutable"
 
-# Cache Control for Service Worker - 0 seconds (Always check for updates)
+# Cache Control for Service Worker — always check for updates
 [[headers]]
   for = "/sw.js"
   [headers.values]
     Cache-Control = "no-cache"
 
 # Security Headers (CSP)
+# Note: 'unsafe-inline' / 'unsafe-eval' are required by the current inline
+# scripts + Firebase SDK. Tightening this is a future cleanup — will require
+# moving inline <script> blocks into module files first.
 [[headers]]
   for = "/*"
   [headers.values]
-    # UPDATED: Added https://*.google-analytics.com and data: to the allowed list
     Content-Security-Policy = "default-src 'self' 'unsafe-inline' 'unsafe-eval' data: https://*.googleapis.com https://*.gstatic.com https://*.firebaseapp.com https://*.firebaseio.com https://*.googletagmanager.com https://*.google-analytics.com https://apis.google.com wss://*.firebaseio.com;"
+    X-Frame-Options = "DENY"
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "strict-origin-when-cross-origin"

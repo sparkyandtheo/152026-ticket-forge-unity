@@ -1,4 +1,4 @@
-import { DB } from './db.js';
+import { DB } from '/js/db.js';
 
 // --- 1. HELPERS ---
 export function getUrlParam(param) {
