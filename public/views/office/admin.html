@@ -299,8 +299,11 @@
         <div id="tab-staff" class="tab-panel">
             <h2>Staff Directory</h2>
             <div class="sheet-toolbar">
-                <input type="text" class="search-box" id="staff-search" placeholder="🔍 Search by name...">
-                <button class="btn btn-green" onclick="openEmployeeModal()">+ ADD EMPLOYEE</button>
+                <input type="text" class="search-box" id="staff-search" placeholder="🔍 Search by name, title, location...">
+                <div>
+                    <button class="btn btn-green" onclick="openEmployeeModal()">+ ADD EMPLOYEE</button>
+                    <button class="btn btn-blue btn-sm" onclick="loadHODStaff()" title="Load Hamburg Overhead Door full staff directory (~55 people)">LOAD HOD STAFF</button>
+                </div>
             </div>
             <div id="staff-list">
                 <div class="empty"><div class="loader"></div> Loading staff…</div>
@@ -422,18 +425,35 @@
 <div class="modal-backdrop" id="emp-modal">
     <div class="modal">
         <h3 id="emp-modal-title">👤 Add Employee</h3>
-        <div class="field">
-            <label>Full Name</label>
-            <input type="text" class="paper-input" id="emp-name" placeholder="JANE DOE">
+        <div class="field-row">
+            <div class="field">
+                <label>Full Name</label>
+                <input type="text" class="paper-input" id="emp-name" placeholder="JANE DOE">
+            </div>
+            <div class="field">
+                <label>Title</label>
+                <input type="text" class="paper-input" id="emp-title" placeholder="Installer, Inside Sales, etc.">
+            </div>
         </div>
-        <div class="field">
-            <label>Role</label>
-            <select class="paper-input" id="emp-role" style="text-transform: uppercase; cursor: pointer;">
-                <option value="service">Service Technician</option>
-                <option value="install">Installation Crew</option>
-                <option value="sales">Sales Rep</option>
-                <option value="office">Office Staff</option>
-            </select>
+        <div class="field-row">
+            <div class="field">
+                <label>Role (dispatch bucket)</label>
+                <select class="paper-input" id="emp-role" style="text-transform: uppercase; cursor: pointer;">
+                    <option value="service">Service</option>
+                    <option value="install">Install / Helper</option>
+                    <option value="sales">Outside Sales</option>
+                    <option value="office">Office / Inside</option>
+                </select>
+            </div>
+            <div class="field">
+                <label>Location</label>
+                <select class="paper-input" id="emp-location" style="text-transform: uppercase; cursor: pointer;">
+                    <option value="Hamburg">Hamburg</option>
+                    <option value="Syracuse">Syracuse</option>
+                    <option value="Tonawanda">Tonawanda</option>
+                    <option value="">(Other)</option>
+                </select>
+            </div>
         </div>
         <div class="field-row">
             <div class="field">
@@ -441,8 +461,18 @@
                 <input type="email" class="paper-input" id="emp-email">
             </div>
             <div class="field">
-                <label>Phone</label>
-                <input type="text" class="paper-input" id="emp-phone">
+                <label>Ext.</label>
+                <input type="text" class="paper-input" id="emp-ext" placeholder="e.g. 103">
+            </div>
+        </div>
+        <div class="field-row">
+            <div class="field">
+                <label>Primary Phone</label>
+                <input type="text" class="paper-input" id="emp-phone" placeholder="716-555-0101">
+            </div>
+            <div class="field">
+                <label>Secondary Phone</label>
+                <input type="text" class="paper-input" id="emp-phone2">
             </div>
         </div>
         <div class="modal-actions">
@@ -615,16 +645,22 @@
                     <span class="group-count">${group.length}</span>
                 </div>
                 <div class="card-grid">
-                    ${group.map(e => `
-                        <div class="card ${ROLE_LABELS[role].color}" onclick="openEmployeeModal('${e.id}')">
-                            <div class="card-name">${escapeHtml(e.name || '')}</div>
-                            <div class="card-meta">${e.role}</div>
-                            <div class="card-detail">
-                                ${e.email ? `<span>📧 ${escapeHtml(e.email)}</span>` : ''}
-                                ${e.phone ? `<span>📞 ${escapeHtml(e.phone)}</span>` : ''}
+                    ${group.map(e => {
+                        const primary = e.primaryPhone || e.phone || '';
+                        const title   = e.title || e.role || '';
+                        const extBit  = e.extension ? ` · x${escapeHtml(e.extension)}` : '';
+                        const locBit  = e.location && e.location !== 'Hamburg' ? ` · ${escapeHtml(e.location)}` : '';
+                        return `
+                            <div class="card ${ROLE_LABELS[role].color}" onclick="openEmployeeModal('${e.id}')">
+                                <div class="card-name">${escapeHtml(e.name || '')}</div>
+                                <div class="card-meta">${escapeHtml(title)}${extBit}${locBit}</div>
+                                <div class="card-detail">
+                                    ${e.email   ? `<span>📧 ${escapeHtml(e.email)}</span>` : ''}
+                                    ${primary   ? `<span>📞 ${escapeHtml(primary)}</span>` : ''}
+                                </div>
                             </div>
-                        </div>
-                    `).join('')}
+                        `;
+                    }).join('')}
                 </div>
             `;
         }
@@ -635,30 +671,75 @@
 
     window.openEmployeeModal = function (id = null) {
         editingEmpId = id;
-        const emp = id ? allEmployees.find(e => e.id === id) : { name:'', role:'service', email:'', phone:'' };
+        const emp = id ? allEmployees.find(e => e.id === id) : { name:'', role:'service', title:'', location:'Hamburg', email:'', primaryPhone:'' };
         if (!emp) return;
         document.getElementById('emp-modal-title').textContent = id ? '✏️ Edit Employee' : '👤 Add Employee';
-        document.getElementById('emp-name').value  = emp.name  || '';
-        document.getElementById('emp-role').value  = emp.role  || 'service';
-        document.getElementById('emp-email').value = emp.email || '';
-        document.getElementById('emp-phone').value = emp.phone || '';
+        document.getElementById('emp-name').value     = emp.name     || '';
+        document.getElementById('emp-title').value    = emp.title    || '';
+        document.getElementById('emp-role').value     = emp.role     || 'service';
+        document.getElementById('emp-location').value = emp.location || 'Hamburg';
+        document.getElementById('emp-email').value    = emp.email    || '';
+        document.getElementById('emp-ext').value      = emp.extension|| '';
+        document.getElementById('emp-phone').value    = emp.primaryPhone || emp.phone || '';
+        document.getElementById('emp-phone2').value   = emp.secondaryPhone || '';
         document.getElementById('emp-delete-btn').style.display = id ? 'inline-block' : 'none';
         document.getElementById('emp-modal').classList.add('open');
     };
 
     window.saveEmployee = async function () {
+        const name = document.getElementById('emp-name').value.trim();
+        if (!name) return alert('Name is required.');
         const payload = {
-            name:  document.getElementById('emp-name').value.trim(),
-            role:  document.getElementById('emp-role').value,
-            email: document.getElementById('emp-email').value.trim(),
-            phone: document.getElementById('emp-phone').value.trim()
+            name,
+            title:          document.getElementById('emp-title').value.trim(),
+            role:           document.getElementById('emp-role').value,
+            location:       document.getElementById('emp-location').value,
+            email:          document.getElementById('emp-email').value.trim(),
+            extension:      document.getElementById('emp-ext').value.trim(),
+            primaryPhone:   document.getElementById('emp-phone').value.trim(),
+            secondaryPhone: document.getElementById('emp-phone2').value.trim()
         };
-        if (!payload.name) return alert('Name is required.');
         try {
             await DB.saveDoc('employees', payload, editingEmpId);
             closeModal('emp-modal');
         } catch (e) {
             alert('Save failed: ' + e.message);
+        }
+    };
+
+    // Load the full HOD staff directory (~55 people + 6 org contacts)
+    // from /assets/data/hod-staff.json. Uses the slug-style doc id so
+    // re-running updates rather than duplicates.
+    window.loadHODStaff = async function () {
+        if (!confirm('Load the full HOD staff directory (≈55 people)?\n\nExisting employees with matching slug ids will be updated. Employees added manually with different ids are untouched.')) return;
+        let loaded = 0, failed = 0;
+        try {
+            const res = await fetch('/assets/data/hod-staff.json', { cache: 'no-store' });
+            if (!res.ok) throw new Error('staff file fetch failed: ' + res.status);
+            const data = await res.json();
+            const emps = Array.isArray(data.employees) ? data.employees : [];
+            for (const emp of emps) {
+                try {
+                    const { id, ...fields } = emp;
+                    await DB.saveDoc('employees', fields, id);
+                    loaded++;
+                } catch (e) {
+                    console.error('staff save failed', emp.name, e);
+                    failed++;
+                }
+            }
+            // Org contacts go into a separate collection so they don't
+            // clutter the tech dropdown on the dispatch board.
+            const orgs = Array.isArray(data.orgContacts) ? data.orgContacts : [];
+            for (const oc of orgs) {
+                try {
+                    const { id, ...fields } = oc;
+                    await DB.saveDoc('org_contacts', fields, id);
+                } catch (_) {}
+            }
+            alert(`HOD staff load complete:\n  • Employees loaded/updated: ${loaded}\n  • Org contacts: ${orgs.length}\n  • Failed: ${failed}`);
+        } catch (e) {
+            alert('Staff load failed: ' + e.message);
         }
     };
 
