@@ -72,6 +72,44 @@ export const DB = {
     },
 
     // ============================================================
+    // Duplicate detection
+    //
+    // Returns any docs in `collectionName` saved within the last
+    // `withinMinutes` that match the given customer identity. Used by
+    // forms before save to warn against accidental double-create.
+    //
+    // Matches by normalizedPhone OR normalizedName (whichever exists),
+    // scoped to active docs (ignores Converted / Complete / Closed).
+    // ============================================================
+    async findRecentDuplicates(collectionName, identity, withinMinutes = 5) {
+        const docs = await DB.getAll(collectionName);
+        const cutoffMs = Date.now() - withinMinutes * 60 * 1000;
+        const norm = (s) => (s || '').toString().replace(/\s+/g, ' ').trim().toUpperCase();
+        const wantPhone = norm(identity.phone);
+        const wantName  = norm(identity.name);
+        if (!wantPhone && !wantName) return [];
+
+        return docs.filter(d => {
+            // Must be recent. Firestore serverTimestamp -> {seconds, nanoseconds} or Date.
+            const ts = d.lastUpdated;
+            let ms = null;
+            if (ts && typeof ts.toMillis === 'function') ms = ts.toMillis();
+            else if (ts && typeof ts.seconds === 'number') ms = ts.seconds * 1000;
+            else if (ts instanceof Date) ms = ts.getTime();
+            else if (typeof ts === 'string') { const d2 = new Date(ts); if (!isNaN(d2)) ms = d2.getTime(); }
+            if (ms === null || ms < cutoffMs) return false;
+
+            // Skip records that are already closed out.
+            const inactive = new Set(['Converted', 'Complete', 'Closed', 'Cancelled']);
+            if (inactive.has(d.status)) return false;
+
+            const phoneMatch = wantPhone && norm(d.phone) === wantPhone;
+            const nameMatch  = wantName  && norm(d.customerName) === wantName;
+            return phoneMatch || nameMatch;
+        });
+    },
+
+    // ============================================================
     // Sequential ID generator
     // ============================================================
     async getNewId(counterName, startFrom = 1000) {

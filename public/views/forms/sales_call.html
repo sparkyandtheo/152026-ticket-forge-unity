@@ -107,7 +107,11 @@
             <div style="display:flex; justify-content:flex-end; gap:10px;"><b class="label">NO:</b> <input type="text" id="sales-no" value="S-NEW" style="width: 12ch; text-align:right;"></div>
             <div style="display:flex; justify-content:flex-end; gap:10px;"><span class="label">DATE:</span> <input type="text" id="sales-date" value="" style="width: 12ch; text-align:right;"></div>
             <div style="display:flex; justify-content:flex-end; gap:10px;"><span class="label">PO #:</span> <input type="text" id="sales-po" placeholder="OPTIONAL" style="width: 12ch; text-align:right;"></div>
-            <div style="display:flex; justify-content:flex-end; gap:10px;"><span class="label">REP:</span> <input type="text" id="sales-rep" value="" style="width: 12ch; text-align:right;"></div>
+            <div style="display:flex; justify-content:flex-end; gap:10px; align-items: center;"><span class="label">REP:</span>
+                <select id="sales-rep" style="width: 16ch; text-align:right; font-family:inherit; font-size:inherit; padding: 2px 4px; background: #ffffcc; border: 1px solid #ddd; border-bottom: 2px solid #ccc; text-transform: uppercase;">
+                    <option value="">— choose —</option>
+                </select>
+            </div>
         </div>
     </div>
 
@@ -199,7 +203,8 @@
     import { DB } from '/js/db.js';
     import {
         getUrlParam, setVal, setChk, autoGrow, setupInputHighlighting,
-        setupCustomerAutocomplete, commitCustomerFromForm, renderOriginBreadcrumb
+        setupCustomerAutocomplete, commitCustomerFromForm, renderOriginBreadcrumb,
+        guardAgainstDuplicates
     } from '/js/form-utils.js';
 
     window.autoGrow = autoGrow;
@@ -316,7 +321,20 @@
             repSig:    document.getElementById('rep-sig').value,
             custSig:   document.getElementById('cust-sig').value,
             custDate:  document.getElementById('cust-date').value,
-            status: document.getElementById('chk-yes').checked ? 'Complete' : 'Open'
+            // Status + dispatch assignment.
+            // If the office assigned a rep AND a meet-date during intake,
+            // promote this straight onto the dispatch board as Scheduled.
+            ...((() => {
+                if (document.getElementById('chk-yes').checked) {
+                    return { status: 'Complete' };
+                }
+                const rep = document.getElementById('sales-rep').value.trim();
+                const slot = meetDateToDispatchSlot(document.getElementById('meet-date').value);
+                if (rep && slot) {
+                    return { status: 'Scheduled', assignedTech: rep, scheduledSlot: slot };
+                }
+                return { status: 'Open' };
+            })())
         };
     }
 
@@ -335,6 +353,13 @@
     window.saveTicket = async function() {
         const isNew = !DOC_ID;
         try {
+            if (isNew) {
+                const decision = await guardAgainstDuplicates('sales_leads', {
+                    name: document.getElementById('bill-name').value,
+                    phone: document.getElementById('bill-phone').value
+                });
+                if (decision === 'cancel' || decision === 'open') return;
+            }
             await commitCustomer();
             await DB.saveDoc('sales_leads', gatherPayload(), DOC_ID);
             if (isNew) {

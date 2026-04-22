@@ -57,6 +57,24 @@ const DB = {
     store.set(`customers/${id}`, { ...data });
   },
 
+  async findRecentDuplicates(col, identity, mins = 5) {
+    const cutoff = Date.now() - mins * 60 * 1000;
+    const norm = (s) => (s || '').toString().toUpperCase().trim();
+    const wantPhone = norm(identity.phone), wantName = norm(identity.name);
+    const inactive = new Set(['Converted', 'Complete', 'Closed', 'Cancelled']);
+    const results = [];
+    for (const [k, v] of store.entries()) {
+      if (!k.startsWith(col + '/')) continue;
+      const ms = new Date(v.lastUpdated || 0).getTime();
+      if (!ms || ms < cutoff) continue;
+      if (inactive.has(v.status)) continue;
+      const phoneMatch = wantPhone && norm(v.phone) === wantPhone;
+      const nameMatch  = wantName  && norm(v.customerName) === wantName;
+      if (phoneMatch || nameMatch) results.push({ id: k.split('/')[1], ...v });
+    }
+    return results;
+  },
+
   async getNewId(counterName, startFrom = 1000) {
     let cur = counters.get(counterName);
     if (cur === undefined || cur < startFrom) cur = startFrom;

@@ -189,7 +189,7 @@
     import {
         getUrlParam, setVal, setupInputHighlighting,
         setupCustomerAutocomplete, commitCustomerFromForm, renderOriginBreadcrumb,
-        updateRolodexFromFields
+        guardAgainstDuplicates, updateRolodexFromFields
     } from '/js/form-utils.js';
 
     const DOC_ID = getUrlParam('id');
@@ -275,6 +275,13 @@
     window.saveMessage = async function() {
         const isNew = !DOC_ID;
         try {
+            if (isNew) {
+                const decision = await guardAgainstDuplicates('phone_messages', {
+                    name: document.getElementById('cust-name').value,
+                    phone: document.getElementById('cust-phone').value
+                });
+                if (decision === 'cancel' || decision === 'open') return;
+            }
             await commitCustomer();
             const id = await DB.saveDoc('phone_messages', gatherPayload(), DOC_ID);
             if (isNew) {
@@ -292,6 +299,17 @@
     // --- FORWARD this message into a sales/service/quote ---
     window.convertToIntake = async function(targetType) {
         try {
+            // Before creating a new target doc, warn if we already have a
+            // recent open one for this customer in that target collection.
+            const targetCol =
+                targetType === 'service' ? 'service_tickets' :
+                targetType === 'sales'   ? 'sales_leads' :
+                targetType === 'quote'   ? 'quotes' : null;
+            const decision = await guardAgainstDuplicates(targetCol, {
+                name: document.getElementById('cust-name').value,
+                phone: document.getElementById('cust-phone').value
+            });
+            if (decision === 'cancel' || decision === 'open') return;
             await commitCustomer();
 
             // 1. Save the current phone message first so the source exists
