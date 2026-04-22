@@ -1,0 +1,927 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Console — Hamburg Door</title>
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=Inter:wght@400;700;900&display=swap" rel="stylesheet">
+    <style>
+        /* --- Base: paper-on-glass --- */
+        :root {
+            --glass: #525659;
+            --page: #ffffff;
+            --ink: #202124;
+            --line: #000000;
+            --accent: #1a73e8;
+            --green: #1e8e3e;
+            --red: #d93025;
+            --yellow: #f9ab00;
+            --gray: #5f6368;
+        }
+        * { box-sizing: border-box; }
+        body {
+            background: var(--glass); margin: 0; min-height: 100vh;
+            font-family: 'Inter', sans-serif; color: white;
+            padding: 80px 0 40px 0;
+        }
+
+        /* --- Toolbar (fixed top) --- */
+        .toolbar {
+            position: fixed; top: 0; left: 0; right: 0; height: 60px;
+            background: var(--ink); display: flex; align-items: center;
+            justify-content: space-between; padding: 0 20px; z-index: 1000;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.4);
+        }
+        .toolbar-left { display: flex; align-items: center; gap: 14px; }
+        .toolbar-logo { font-weight: 900; letter-spacing: -0.5px; font-size: 16px; }
+        .toolbar-title { font-size: 12px; opacity: 0.7; text-transform: uppercase; letter-spacing: 0.1em; }
+        .btn {
+            padding: 8px 14px; border-radius: 4px; border: none; cursor: pointer;
+            font-weight: 600; font-size: 11px; text-transform: uppercase;
+            color: white; transition: filter 0.15s, transform 0.15s;
+            font-family: inherit;
+        }
+        .btn:hover { filter: brightness(1.1); transform: translateY(-1px); }
+        .btn-blue  { background: var(--accent); }
+        .btn-green { background: var(--green); }
+        .btn-red   { background: var(--red); }
+        .btn-gray  { background: var(--gray); }
+        .btn-yellow{ background: var(--yellow); color: black; }
+        .btn-sm { padding: 5px 10px; font-size: 10px; }
+
+        /* --- Role dropdown (reuse existing pattern) --- */
+        .dropdown { position: relative; display: inline-block; }
+        .dropdown-content {
+            display: none; position: absolute; right: 0; top: 100%;
+            background: white; color: var(--ink); min-width: 200px;
+            box-shadow: 0 8px 16px rgba(0,0,0,0.3); border-radius: 6px;
+            border: 1px solid #dadce0; overflow: hidden; z-index: 101;
+        }
+        .dropdown-content a {
+            display: block; padding: 12px 16px; color: var(--ink);
+            text-decoration: none; font-size: 13px; border-bottom: 1px solid #f1f3f4;
+        }
+        .dropdown-content a:hover { background: #e8f0fe; color: var(--accent); }
+        .dropdown:hover .dropdown-content { display: block; }
+
+        /* --- Page layout: tabs + content --- */
+        .page-wrap {
+            max-width: 1200px; margin: 0 auto; padding: 0 20px;
+        }
+        .page-header {
+            display: flex; justify-content: space-between; align-items: flex-end;
+            margin-bottom: 20px; padding: 0 4px;
+        }
+        .page-title {
+            font-size: 24px; font-weight: 900; letter-spacing: -0.5px;
+            display: flex; align-items: center; gap: 10px;
+        }
+        .page-subtitle { opacity: 0.7; font-size: 12px; text-transform: uppercase; letter-spacing: 0.1em; }
+
+        .tabs {
+            display: flex; gap: 2px; margin-bottom: 0; padding: 0 4px;
+        }
+        .tab {
+            background: rgba(0,0,0,0.35); color: #bdc1c6;
+            padding: 12px 24px; cursor: pointer; border: none;
+            font-family: inherit; font-weight: 700; font-size: 13px;
+            text-transform: uppercase; letter-spacing: 0.05em;
+            border-radius: 8px 8px 0 0; transition: all 0.15s;
+            display: flex; align-items: center; gap: 8px;
+        }
+        .tab:hover { background: rgba(0,0,0,0.5); color: white; }
+        .tab.active { background: var(--page); color: var(--ink); }
+
+        /* --- Paper sheet (the main canvas for tab content) --- */
+        .sheet {
+            background: var(--page); color: var(--ink);
+            min-height: 600px; padding: 30px 40px;
+            box-shadow: 0 0 15px rgba(0,0,0,0.3);
+            font-family: 'IBM Plex Mono', monospace; font-size: 13px;
+            border-radius: 0 8px 8px 8px;
+        }
+        .sheet h2 {
+            font-family: 'Inter', sans-serif; font-weight: 900;
+            border-bottom: 3px double var(--line); padding-bottom: 8px;
+            margin: 0 0 20px 0; font-size: 18px; letter-spacing: -0.3px;
+        }
+        .sheet h3 {
+            font-family: 'Inter', sans-serif; font-weight: 700;
+            border-bottom: 1px solid var(--line); padding-bottom: 4px;
+            margin: 24px 0 12px 0; font-size: 14px; text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        /* Paper inputs */
+        .paper-input {
+            font-family: 'IBM Plex Mono', monospace; font-size: 13px;
+            border: 1px solid #ddd; border-bottom: 2px solid #ccc;
+            background: #ffffcc; padding: 6px 8px; width: 100%;
+            outline: none; text-transform: uppercase; color: var(--ink);
+            transition: background 0.15s, border-color 0.15s;
+        }
+        .paper-input:focus {
+            background: #ffccff; border-bottom-color: #d500f9; font-weight: 600;
+        }
+        .paper-input:hover { background: #e6fffa; border-color: var(--green); }
+
+        /* Toolbar row inside sheet (search + add) */
+        .sheet-toolbar {
+            display: flex; justify-content: space-between; align-items: center;
+            gap: 12px; margin-bottom: 20px;
+        }
+        .search-box {
+            flex: 1; max-width: 400px; padding: 10px 14px;
+            border: 1px solid #dadce0; border-radius: 4px;
+            font-family: 'IBM Plex Mono', monospace; font-size: 13px;
+        }
+
+        /* --- Lists (grid of cards) --- */
+        .card-grid {
+            display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 14px;
+        }
+        .card {
+            background: white; border: 1px solid #dadce0; border-radius: 6px;
+            padding: 14px; cursor: pointer; position: relative;
+            transition: all 0.15s; border-left: 4px solid var(--gray);
+        }
+        .card:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.12); transform: translateY(-2px); }
+        .card.role-service { border-left-color: var(--accent); }
+        .card.role-install { border-left-color: #9c27b0; }
+        .card.role-sales   { border-left-color: var(--yellow); }
+        .card.role-office  { border-left-color: var(--green); }
+        .card-name { font-weight: 700; font-size: 14px; font-family: 'Inter', sans-serif; }
+        .card-meta { font-size: 11px; color: var(--gray); text-transform: uppercase; letter-spacing: 0.05em; margin-top: 2px; }
+        .card-detail { font-size: 12px; color: #333; margin-top: 8px; line-height: 1.4; }
+        .card-detail span { display: block; }
+
+        /* --- Table (inventory + zips) --- */
+        .tbl {
+            width: 100%; border-collapse: collapse; font-size: 12px;
+            font-family: 'IBM Plex Mono', monospace;
+        }
+        .tbl th {
+            background: #f8f9fa; border-bottom: 2px solid var(--line);
+            padding: 8px; text-align: left; font-weight: 700;
+            text-transform: uppercase; letter-spacing: 0.05em;
+            font-family: 'Inter', sans-serif; font-size: 11px;
+        }
+        .tbl td {
+            border-bottom: 1px solid #eee; padding: 8px;
+        }
+        .tbl tr:hover td { background: #fffbea; }
+        .tbl tr.taxable td { background: #f0faf0; }
+        .tbl .act-col { width: 80px; text-align: center; }
+
+        /* --- Group headers (staff) --- */
+        .group-header {
+            font-family: 'Inter', sans-serif; font-weight: 700;
+            font-size: 13px; text-transform: uppercase; letter-spacing: 0.1em;
+            margin: 24px 0 10px; padding-bottom: 4px;
+            border-bottom: 1px solid; display: flex; align-items: center; gap: 6px;
+        }
+        .group-header.role-service { color: var(--accent); }
+        .group-header.role-install { color: #9c27b0; }
+        .group-header.role-sales   { color: #b06000; }
+        .group-header.role-office  { color: var(--green); }
+        .group-count { background: rgba(0,0,0,0.1); padding: 2px 8px; border-radius: 10px; font-size: 11px; }
+
+        /* --- Modal --- */
+        .modal-backdrop {
+            position: fixed; inset: 0; background: rgba(0,0,0,0.7);
+            display: none; align-items: center; justify-content: center;
+            z-index: 2000; padding: 20px;
+        }
+        .modal-backdrop.open { display: flex; }
+        .modal {
+            background: white; color: var(--ink);
+            border-radius: 8px; padding: 30px; width: 100%; max-width: 560px;
+            max-height: 90vh; overflow-y: auto;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+            animation: modal-pop 0.2s ease-out;
+        }
+        @keyframes modal-pop {
+            from { opacity: 0; transform: scale(0.95); }
+            to   { opacity: 1; transform: scale(1); }
+        }
+        .modal h3 {
+            margin: 0 0 20px 0; font-family: 'Inter', sans-serif;
+            font-weight: 900; font-size: 20px; letter-spacing: -0.3px;
+            border-bottom: 2px solid var(--line); padding-bottom: 10px;
+        }
+        .field { margin-bottom: 14px; }
+        .field label {
+            display: block; font-family: 'Inter', sans-serif;
+            font-size: 11px; font-weight: 700; text-transform: uppercase;
+            letter-spacing: 0.05em; color: var(--gray); margin-bottom: 4px;
+        }
+        .field .paper-input { width: 100%; }
+        .field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+        .modal-actions {
+            display: flex; justify-content: space-between; gap: 10px;
+            margin-top: 24px; padding-top: 20px; border-top: 1px solid #eee;
+        }
+
+        /* --- Empty state --- */
+        .empty {
+            text-align: center; padding: 60px 20px; color: var(--gray);
+            font-family: 'Inter', sans-serif;
+        }
+        .empty .emoji { font-size: 48px; margin-bottom: 12px; }
+
+        /* --- Hidden --- */
+        .hidden { display: none !important; }
+
+        /* --- Loader --- */
+        .loader {
+            display: inline-block; width: 16px; height: 16px;
+            border: 2px solid rgba(0,0,0,0.1); border-top-color: var(--accent);
+            border-radius: 50%; animation: spin 0.8s linear infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        @media (max-width: 700px) {
+            .tabs { flex-wrap: wrap; }
+            .tab { flex: 1; min-width: 140px; }
+            .field-row { grid-template-columns: 1fr; }
+            .sheet { padding: 20px; }
+        }
+    </style>
+</head>
+<body>
+
+<!-- Toolbar -->
+<div class="toolbar">
+    <div class="toolbar-left">
+        <div class="toolbar-logo">HAMBURG DOOR</div>
+        <div class="toolbar-title">🛡️ Admin Console</div>
+    </div>
+    <div style="display: flex; gap: 10px; align-items: center;">
+        <div class="dropdown">
+            <button class="btn btn-gray">🛡️ ADMIN ▼</button>
+            <div class="dropdown-content">
+                <a href="/views/forms/dashboard.html">👤 Dashboard (Docs)</a>
+                <a href="/views/office/dispatch.html">🗓️ Dispatcher (Board)</a>
+                <a href="/views/mobile/index.html">🛠️ Field Tech (Mobile)</a>
+                <a href="/views/office/admin.html">🛡️ Admin Console</a>
+            </div>
+        </div>
+        <button class="btn btn-red" onclick="handleLogout()">LOGOUT</button>
+    </div>
+</div>
+
+<div class="page-wrap">
+
+    <div class="page-header">
+        <div>
+            <div class="page-title">🛡️ Admin Console</div>
+            <div class="page-subtitle">System Management · Staff · Inventory · Service Areas</div>
+        </div>
+    </div>
+
+    <!-- Tab bar -->
+    <div class="tabs">
+        <button class="tab active" data-tab="staff">👥 Staff</button>
+        <button class="tab" data-tab="inventory">📦 Inventory</button>
+        <button class="tab" data-tab="zips">🗺️ Service Areas</button>
+        <button class="tab" data-tab="settings">⚙️ Settings</button>
+    </div>
+
+    <!-- Tab content -->
+    <div class="sheet">
+
+        <!-- STAFF TAB -->
+        <div id="tab-staff" class="tab-panel">
+            <h2>Staff Directory</h2>
+            <div class="sheet-toolbar">
+                <input type="text" class="search-box" id="staff-search" placeholder="🔍 Search by name...">
+                <button class="btn btn-green" onclick="openEmployeeModal()">+ ADD EMPLOYEE</button>
+            </div>
+            <div id="staff-list">
+                <div class="empty"><div class="loader"></div> Loading staff…</div>
+            </div>
+        </div>
+
+        <!-- INVENTORY TAB -->
+        <div id="tab-inventory" class="tab-panel hidden">
+            <h2>Parts & Labor Catalog</h2>
+            <div class="sheet-toolbar">
+                <input type="text" class="search-box" id="inv-search" placeholder="🔍 Search by category or name...">
+                <div>
+                    <button class="btn btn-blue" onclick="openInventoryModal()">+ ADD ITEM</button>
+                    <button class="btn btn-gray btn-sm" onclick="seedInventory()" title="Load starter data">SEED</button>
+                </div>
+            </div>
+            <div style="overflow-x: auto;">
+                <table class="tbl">
+                    <thead>
+                    <tr>
+                        <th>Category</th>
+                        <th>Item</th>
+                        <th>Price</th>
+                        <th style="text-align:center;">Tax?</th>
+                        <th>GL #</th>
+                        <th class="act-col">—</th>
+                    </tr>
+                    </thead>
+                    <tbody id="inv-list">
+                    <tr><td colspan="6" class="empty"><div class="loader"></div> Loading inventory…</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- ZIPS TAB -->
+        <div id="tab-zips" class="tab-panel hidden">
+            <h2>Service Area Zips</h2>
+            <div class="sheet-toolbar">
+                <input type="text" class="search-box" id="zip-search" placeholder="🔍 Search by zip or city...">
+                <button class="btn btn-blue" onclick="openZipModal()">+ ADD ZIP</button>
+            </div>
+            <div style="overflow-x: auto;">
+                <table class="tbl">
+                    <thead>
+                    <tr>
+                        <th>Zip</th>
+                        <th>City</th>
+                        <th>County</th>
+                        <th>Turnaround</th>
+                        <th>Trip Charge</th>
+                        <th class="act-col">—</th>
+                    </tr>
+                    </thead>
+                    <tbody id="zip-list">
+                    <tr><td colspan="6" class="empty">No zips loaded yet.</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- SETTINGS TAB -->
+        <div id="tab-settings" class="tab-panel hidden">
+            <h2>Company Settings</h2>
+            <p style="font-family:'Inter',sans-serif; color: var(--gray); font-size: 13px; margin-bottom: 20px;">
+                These values are used on invoices, quotes, and work orders. Saved to Firestore at
+                <code style="background:#f1f3f4;padding:2px 6px;border-radius:3px;">settings/company</code>.
+            </p>
+            <div id="settings-form">
+                <div class="field">
+                    <label>Company Name</label>
+                    <input type="text" class="paper-input" id="set-name" placeholder="HAMBURG OVERHEAD DOOR">
+                </div>
+                <div class="field-row">
+                    <div class="field">
+                        <label>Address Line 1</label>
+                        <input type="text" class="paper-input" id="set-addr1">
+                    </div>
+                    <div class="field">
+                        <label>Address Line 2 (City, State Zip)</label>
+                        <input type="text" class="paper-input" id="set-addr2">
+                    </div>
+                </div>
+                <div class="field-row">
+                    <div class="field">
+                        <label>Phone</label>
+                        <input type="text" class="paper-input" id="set-phone">
+                    </div>
+                    <div class="field">
+                        <label>Email</label>
+                        <input type="text" class="paper-input" id="set-email">
+                    </div>
+                </div>
+                <div class="field-row">
+                    <div class="field">
+                        <label>Tax Rate (e.g. 0.0875 for 8.75%)</label>
+                        <input type="text" class="paper-input" id="set-tax">
+                    </div>
+                    <div class="field">
+                        <label>&nbsp;</label>
+                        <button class="btn btn-blue" onclick="saveSettings()" style="width:100%;">💾 SAVE SETTINGS</button>
+                    </div>
+                </div>
+                <div id="set-status" style="font-family:'Inter',sans-serif; color: var(--green); font-size: 13px; font-weight: 600;"></div>
+            </div>
+        </div>
+
+    </div>
+
+</div>
+
+<!-- ========================================================== -->
+<!-- Employee modal                                             -->
+<!-- ========================================================== -->
+<div class="modal-backdrop" id="emp-modal">
+    <div class="modal">
+        <h3 id="emp-modal-title">👤 Add Employee</h3>
+        <div class="field">
+            <label>Full Name</label>
+            <input type="text" class="paper-input" id="emp-name" placeholder="JANE DOE">
+        </div>
+        <div class="field">
+            <label>Role</label>
+            <select class="paper-input" id="emp-role" style="text-transform: uppercase; cursor: pointer;">
+                <option value="service">Service Technician</option>
+                <option value="install">Installation Crew</option>
+                <option value="sales">Sales Rep</option>
+                <option value="office">Office Staff</option>
+            </select>
+        </div>
+        <div class="field-row">
+            <div class="field">
+                <label>Email</label>
+                <input type="email" class="paper-input" id="emp-email">
+            </div>
+            <div class="field">
+                <label>Phone</label>
+                <input type="text" class="paper-input" id="emp-phone">
+            </div>
+        </div>
+        <div class="modal-actions">
+            <button class="btn btn-red" id="emp-delete-btn" onclick="deleteEmployee()" style="display:none;">🗑️ DELETE</button>
+            <div style="margin-left:auto; display:flex; gap:10px;">
+                <button class="btn btn-gray" onclick="closeModal('emp-modal')">CANCEL</button>
+                <button class="btn btn-green" onclick="saveEmployee()">💾 SAVE</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ========================================================== -->
+<!-- Inventory modal                                            -->
+<!-- ========================================================== -->
+<div class="modal-backdrop" id="inv-modal">
+    <div class="modal">
+        <h3 id="inv-modal-title">📦 Add Item</h3>
+        <div class="field">
+            <label>Category</label>
+            <input type="text" class="paper-input" id="inv-category" placeholder="COMMERCIAL OPERATOR PARTS">
+        </div>
+        <div class="field">
+            <label>Item Name</label>
+            <input type="text" class="paper-input" id="inv-name">
+        </div>
+        <div class="field-row">
+            <div class="field">
+                <label>Price (can be text: "$36 / $74")</label>
+                <input type="text" class="paper-input" id="inv-price">
+            </div>
+            <div class="field">
+                <label>GL Account</label>
+                <input type="text" class="paper-input" id="inv-gl" placeholder="4001">
+            </div>
+        </div>
+        <div class="field">
+            <label>
+                <input type="checkbox" id="inv-taxable" style="width:auto; vertical-align:middle;">
+                Taxable by default
+            </label>
+        </div>
+        <div class="modal-actions">
+            <button class="btn btn-red" id="inv-delete-btn" onclick="deleteInventory()" style="display:none;">🗑️ DELETE</button>
+            <div style="margin-left:auto; display:flex; gap:10px;">
+                <button class="btn btn-gray" onclick="closeModal('inv-modal')">CANCEL</button>
+                <button class="btn btn-green" onclick="saveInventory()">💾 SAVE</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ========================================================== -->
+<!-- Zip modal                                                  -->
+<!-- ========================================================== -->
+<div class="modal-backdrop" id="zip-modal">
+    <div class="modal">
+        <h3 id="zip-modal-title">🗺️ Add Zip</h3>
+        <div class="field-row">
+            <div class="field">
+                <label>Zip Code</label>
+                <input type="text" class="paper-input" id="zip-code" placeholder="14075">
+            </div>
+            <div class="field">
+                <label>City</label>
+                <input type="text" class="paper-input" id="zip-city">
+            </div>
+        </div>
+        <div class="field-row">
+            <div class="field">
+                <label>County</label>
+                <input type="text" class="paper-input" id="zip-county">
+            </div>
+            <div class="field">
+                <label>Trip Charge</label>
+                <input type="text" class="paper-input" id="zip-charge" placeholder="$140">
+            </div>
+        </div>
+        <div class="field">
+            <label>Turnaround (e.g. "same day/next day")</label>
+            <input type="text" class="paper-input" id="zip-turn">
+        </div>
+        <div class="modal-actions">
+            <button class="btn btn-red" id="zip-delete-btn" onclick="deleteZip()" style="display:none;">🗑️ DELETE</button>
+            <div style="margin-left:auto; display:flex; gap:10px;">
+                <button class="btn btn-gray" onclick="closeModal('zip-modal')">CANCEL</button>
+                <button class="btn btn-green" onclick="saveZip()">💾 SAVE</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script type="module">
+    import { db, auth } from '/js/firebase-config.js';
+    import { DB } from '/js/db.js';
+    import {
+        collection, query, orderBy, onSnapshot
+    } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+    import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+
+    // ----- AUTH -----
+    onAuthStateChanged(auth, (user) => {
+        if (!user) window.location.href = '/index.html';
+    });
+    window.handleLogout = () => signOut(auth).then(() => window.location.href = '/index.html');
+
+    // ----- TAB SWITCHING -----
+    const TABS = ['staff', 'inventory', 'zips', 'settings'];
+    document.querySelectorAll('.tab').forEach(btn => {
+        btn.onclick = () => {
+            const id = btn.dataset.tab;
+            document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.tab === id));
+            TABS.forEach(t => document.getElementById('tab-' + t).classList.toggle('hidden', t !== id));
+            // Load data if switching in
+            if (id === 'zips') subscribeZips();
+            if (id === 'settings') loadSettings();
+        };
+    });
+
+    // ============================================================
+    // STAFF
+    // ============================================================
+    let allEmployees = [];
+    let editingEmpId = null;
+
+    const ROLE_LABELS = {
+        service: { label: 'Service Technicians', color: 'role-service' },
+        install: { label: 'Installation Crew',   color: 'role-install' },
+        sales:   { label: 'Sales Reps',          color: 'role-sales'   },
+        office:  { label: 'Office Staff',        color: 'role-office'  }
+    };
+
+    function subscribeEmployees() {
+        onSnapshot(collection(db, 'employees'), (snap) => {
+            allEmployees = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+            allEmployees.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+            renderStaff();
+        }, (err) => {
+            console.error('staff listener:', err);
+            document.getElementById('staff-list').innerHTML =
+                `<div class="empty"><div class="emoji">⚠️</div><b>Error loading staff.</b><br>${err.message}</div>`;
+        });
+    }
+
+    function renderStaff() {
+        const q = (document.getElementById('staff-search').value || '').toUpperCase();
+        const filtered = q
+            ? allEmployees.filter(e => (e.name || '').toUpperCase().includes(q) ||
+                                       (e.email || '').toUpperCase().includes(q))
+            : allEmployees;
+
+        if (filtered.length === 0) {
+            document.getElementById('staff-list').innerHTML =
+                `<div class="empty"><div class="emoji">👥</div>No staff yet. Click <b>+ ADD EMPLOYEE</b>.</div>`;
+            return;
+        }
+
+        let html = '';
+        for (const role of Object.keys(ROLE_LABELS)) {
+            const group = filtered.filter(e => e.role === role);
+            if (group.length === 0) continue;
+            html += `
+                <div class="group-header ${ROLE_LABELS[role].color}">
+                    ${ROLE_LABELS[role].label}
+                    <span class="group-count">${group.length}</span>
+                </div>
+                <div class="card-grid">
+                    ${group.map(e => `
+                        <div class="card ${ROLE_LABELS[role].color}" onclick="openEmployeeModal('${e.id}')">
+                            <div class="card-name">${escapeHtml(e.name || '')}</div>
+                            <div class="card-meta">${e.role}</div>
+                            <div class="card-detail">
+                                ${e.email ? `<span>📧 ${escapeHtml(e.email)}</span>` : ''}
+                                ${e.phone ? `<span>📞 ${escapeHtml(e.phone)}</span>` : ''}
+                            </div>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+        }
+        document.getElementById('staff-list').innerHTML = html;
+    }
+
+    document.getElementById('staff-search').oninput = renderStaff;
+
+    window.openEmployeeModal = function (id = null) {
+        editingEmpId = id;
+        const emp = id ? allEmployees.find(e => e.id === id) : { name:'', role:'service', email:'', phone:'' };
+        if (!emp) return;
+        document.getElementById('emp-modal-title').textContent = id ? '✏️ Edit Employee' : '👤 Add Employee';
+        document.getElementById('emp-name').value  = emp.name  || '';
+        document.getElementById('emp-role').value  = emp.role  || 'service';
+        document.getElementById('emp-email').value = emp.email || '';
+        document.getElementById('emp-phone').value = emp.phone || '';
+        document.getElementById('emp-delete-btn').style.display = id ? 'inline-block' : 'none';
+        document.getElementById('emp-modal').classList.add('open');
+    };
+
+    window.saveEmployee = async function () {
+        const payload = {
+            name:  document.getElementById('emp-name').value.trim(),
+            role:  document.getElementById('emp-role').value,
+            email: document.getElementById('emp-email').value.trim(),
+            phone: document.getElementById('emp-phone').value.trim()
+        };
+        if (!payload.name) return alert('Name is required.');
+        try {
+            await DB.saveDoc('employees', payload, editingEmpId);
+            closeModal('emp-modal');
+        } catch (e) {
+            alert('Save failed: ' + e.message);
+        }
+    };
+
+    window.deleteEmployee = async function () {
+        if (!editingEmpId) return;
+        if (!confirm('Delete this employee? They will disappear from the dispatch board tech list.')) return;
+        try {
+            await DB.deleteDoc('employees', editingEmpId);
+            closeModal('emp-modal');
+        } catch (e) {
+            alert('Delete failed: ' + e.message);
+        }
+    };
+
+    // ============================================================
+    // INVENTORY
+    // ============================================================
+    let allItems = [];
+    let editingItemId = null;
+
+    function subscribeInventory() {
+        onSnapshot(collection(db, 'inventory_items'), (snap) => {
+            allItems = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+            allItems.sort((a, b) =>
+                (a.category || '').localeCompare(b.category || '') ||
+                (a.name || '').localeCompare(b.name || ''));
+            renderInventory();
+        }, (err) => {
+            console.error('inventory listener:', err);
+            document.getElementById('inv-list').innerHTML =
+                `<tr><td colspan="6" class="empty"><b>⚠️ ${err.message}</b></td></tr>`;
+        });
+    }
+
+    function renderInventory() {
+        const q = (document.getElementById('inv-search').value || '').toUpperCase();
+        const filtered = q
+            ? allItems.filter(i => (i.category || '').toUpperCase().includes(q) ||
+                                   (i.name || '').toUpperCase().includes(q))
+            : allItems;
+        if (filtered.length === 0) {
+            document.getElementById('inv-list').innerHTML =
+                `<tr><td colspan="6" class="empty">
+                    <div class="emoji">📦</div>No inventory yet. Click <b>+ ADD ITEM</b> or <b>SEED</b>.
+                </td></tr>`;
+            return;
+        }
+        document.getElementById('inv-list').innerHTML = filtered.map(i => `
+            <tr class="${i.isTaxable ? 'taxable' : ''}" onclick="openInventoryModal('${i.id}')" style="cursor:pointer;">
+                <td style="font-weight:600;">${escapeHtml(i.category || '')}</td>
+                <td>${escapeHtml(i.name || '')}</td>
+                <td style="text-align:right; font-weight:600;">${escapeHtml(i.price || '')}</td>
+                <td style="text-align:center;">${i.isTaxable ? '✓' : ''}</td>
+                <td style="color:#5f6368;">${escapeHtml(i.glAccount || '')}</td>
+                <td class="act-col"><span style="opacity:0.5;">✏️</span></td>
+            </tr>
+        `).join('');
+    }
+
+    document.getElementById('inv-search').oninput = renderInventory;
+
+    window.openInventoryModal = function (id = null) {
+        editingItemId = id;
+        const it = id ? allItems.find(x => x.id === id) : { category:'', name:'', price:'', glAccount:'', isTaxable:false };
+        if (!it) return;
+        document.getElementById('inv-modal-title').textContent = id ? '✏️ Edit Item' : '📦 Add Item';
+        document.getElementById('inv-category').value = it.category  || '';
+        document.getElementById('inv-name').value     = it.name      || '';
+        document.getElementById('inv-price').value    = it.price     || '';
+        document.getElementById('inv-gl').value       = it.glAccount || '';
+        document.getElementById('inv-taxable').checked = !!it.isTaxable;
+        document.getElementById('inv-delete-btn').style.display = id ? 'inline-block' : 'none';
+        document.getElementById('inv-modal').classList.add('open');
+    };
+
+    window.saveInventory = async function () {
+        const payload = {
+            category:  document.getElementById('inv-category').value.trim().toUpperCase(),
+            name:      document.getElementById('inv-name').value.trim().toUpperCase(),
+            price:     document.getElementById('inv-price').value.trim(),
+            glAccount: document.getElementById('inv-gl').value.trim(),
+            isTaxable: document.getElementById('inv-taxable').checked
+        };
+        if (!payload.name || !payload.category) return alert('Name and Category are required.');
+        try {
+            await DB.saveDoc('inventory_items', payload, editingItemId);
+            closeModal('inv-modal');
+        } catch (e) {
+            alert('Save failed: ' + e.message);
+        }
+    };
+
+    window.deleteInventory = async function () {
+        if (!editingItemId) return;
+        if (!confirm('Delete this inventory item?')) return;
+        try {
+            await DB.deleteDoc('inventory_items', editingItemId);
+            closeModal('inv-modal');
+        } catch (e) {
+            alert('Delete failed: ' + e.message);
+        }
+    };
+
+    window.seedInventory = async function () {
+        if (!confirm('Seed inventory with starter data (3 sample items)?')) return;
+        const seeds = [
+            { category: 'COMMERCIAL OPERATOR PARTS', name: 'CAPACITATOR 1/2HP 30B532', price: '$36 / $74', isTaxable: true,  glAccount: '4001' },
+            { category: 'COMMERCIAL OPERATOR PARTS', name: 'REMOTES & KEYPADS',         price: '$68 / $68', isTaxable: true,  glAccount: '4001' },
+            { category: 'LABOR RATE',                name: 'RESIDENTIAL LABOR',         price: '$140 / $105', isTaxable: false, glAccount: '4100' }
+        ];
+        try {
+            for (const s of seeds) await DB.saveDoc('inventory_items', s);
+            alert('Seeded ' + seeds.length + ' items.');
+        } catch (e) {
+            alert('Seed failed: ' + e.message);
+        }
+    };
+
+    // ============================================================
+    // ZIP CODES (lazy-subscribed on first tab entry)
+    // ============================================================
+    let allZips = [];
+    let editingZipId = null;
+    let zipsSubscribed = false;
+
+    function subscribeZips() {
+        if (zipsSubscribed) return;
+        zipsSubscribed = true;
+        onSnapshot(query(collection(db, 'service_area_zips'), orderBy('zip')), (snap) => {
+            allZips = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+            renderZips();
+        }, (err) => {
+            console.error('zips listener:', err);
+            document.getElementById('zip-list').innerHTML =
+                `<tr><td colspan="6" class="empty"><b>⚠️ ${err.message}</b></td></tr>`;
+        });
+    }
+
+    function renderZips() {
+        const q = (document.getElementById('zip-search').value || '').toUpperCase();
+        const filtered = q
+            ? allZips.filter(z => (z.zip || '').includes(q) || (z.city || '').toUpperCase().includes(q))
+            : allZips;
+        if (filtered.length === 0) {
+            document.getElementById('zip-list').innerHTML =
+                `<tr><td colspan="6" class="empty"><div class="emoji">🗺️</div>No zips yet. Click <b>+ ADD ZIP</b>.</td></tr>`;
+            return;
+        }
+        document.getElementById('zip-list').innerHTML = filtered.map(z => `
+            <tr onclick="openZipModal('${z.id}')" style="cursor:pointer;">
+                <td style="font-weight:700; font-family:'IBM Plex Mono',monospace;">${escapeHtml(z.zip || '')}</td>
+                <td>${escapeHtml(z.city || '')}</td>
+                <td>${escapeHtml(z.county || '')}</td>
+                <td>${escapeHtml(z.turnaround || '')}</td>
+                <td style="font-weight:600;">${escapeHtml(z.charge || '')}</td>
+                <td class="act-col"><span style="opacity:0.5;">✏️</span></td>
+            </tr>
+        `).join('');
+    }
+
+    document.getElementById('zip-search').oninput = renderZips;
+
+    window.openZipModal = function (id = null) {
+        editingZipId = id;
+        const z = id ? allZips.find(x => x.id === id) : { zip:'', city:'', county:'', turnaround:'', charge:'' };
+        if (!z) return;
+        document.getElementById('zip-modal-title').textContent = id ? '✏️ Edit Zip' : '🗺️ Add Zip';
+        document.getElementById('zip-code').value   = z.zip || '';
+        document.getElementById('zip-city').value   = z.city || '';
+        document.getElementById('zip-county').value = z.county || '';
+        document.getElementById('zip-turn').value   = z.turnaround || '';
+        document.getElementById('zip-charge').value = z.charge || '';
+        document.getElementById('zip-delete-btn').style.display = id ? 'inline-block' : 'none';
+        document.getElementById('zip-modal').classList.add('open');
+    };
+
+    window.saveZip = async function () {
+        const zip = document.getElementById('zip-code').value.trim();
+        if (!zip) return alert('Zip code is required.');
+        const payload = {
+            zip,
+            city:       document.getElementById('zip-city').value.trim(),
+            county:     document.getElementById('zip-county').value.trim(),
+            turnaround: document.getElementById('zip-turn').value.trim(),
+            charge:     document.getElementById('zip-charge').value.trim()
+        };
+        try {
+            // Use zip code as the doc ID so duplicates merge.
+            await DB.saveDoc('service_area_zips', payload, editingZipId || zip);
+            closeModal('zip-modal');
+        } catch (e) {
+            alert('Save failed: ' + e.message);
+        }
+    };
+
+    window.deleteZip = async function () {
+        if (!editingZipId) return;
+        if (!confirm('Delete this service-area zip?')) return;
+        try {
+            await DB.deleteDoc('service_area_zips', editingZipId);
+            closeModal('zip-modal');
+        } catch (e) {
+            alert('Delete failed: ' + e.message);
+        }
+    };
+
+    // ============================================================
+    // SETTINGS (lazy)
+    // ============================================================
+    async function loadSettings() {
+        try {
+            const s = await DB.getDoc('settings', 'company');
+            if (!s) return;
+            document.getElementById('set-name').value  = s.name  || '';
+            document.getElementById('set-addr1').value = s.addr1 || '';
+            document.getElementById('set-addr2').value = s.addr2 || '';
+            document.getElementById('set-phone').value = s.phone || '';
+            document.getElementById('set-email').value = s.email || '';
+            document.getElementById('set-tax').value   = (s.taxRate !== undefined ? s.taxRate : 0.0875);
+        } catch (e) {
+            console.warn('load settings:', e);
+        }
+    }
+
+    window.saveSettings = async function () {
+        const taxStr = document.getElementById('set-tax').value.trim();
+        const taxRate = parseFloat(taxStr);
+        if (isNaN(taxRate) || taxRate < 0 || taxRate > 1) return alert('Tax rate must be a decimal (e.g. 0.0875).');
+        const payload = {
+            name:  document.getElementById('set-name').value.trim(),
+            addr1: document.getElementById('set-addr1').value.trim(),
+            addr2: document.getElementById('set-addr2').value.trim(),
+            phone: document.getElementById('set-phone').value.trim(),
+            email: document.getElementById('set-email').value.trim(),
+            taxRate
+        };
+        try {
+            await DB.saveDoc('settings', payload, 'company');
+            const el = document.getElementById('set-status');
+            el.textContent = '✅ Saved at ' + new Date().toLocaleTimeString();
+            setTimeout(() => el.textContent = '', 3000);
+        } catch (e) {
+            alert('Save failed: ' + e.message);
+        }
+    };
+
+    // ============================================================
+    // SHARED HELPERS
+    // ============================================================
+    window.closeModal = function (id) {
+        document.getElementById(id).classList.remove('open');
+    };
+
+    function escapeHtml(s) {
+        return String(s)
+            .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;').replace(/'/g, '&#039;');
+    }
+    window.escapeHtml = escapeHtml; // needed in inline templates
+
+    // Close modal on backdrop click
+    document.querySelectorAll('.modal-backdrop').forEach(m => {
+        m.addEventListener('click', (e) => {
+            if (e.target === m) m.classList.remove('open');
+        });
+    });
+    // Close on Escape
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+            document.querySelectorAll('.modal-backdrop.open').forEach(m => m.classList.remove('open'));
+        }
+    });
+
+    // ----- BOOT -----
+    subscribeEmployees();
+    subscribeInventory();
+</script>
+</body>
+</html>

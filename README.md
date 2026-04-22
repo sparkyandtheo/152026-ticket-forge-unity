@@ -20,6 +20,7 @@ same Firestore collections.
 | **Admin — Docs Dashboard** | `/dashboard` | Office staff (default) |
 | **Dispatcher — Board** | `/dispatch` | Whoever schedules techs |
 | **Field Tech — Mobile** | `/mobile` | Service/install techs on phones |
+| **🛡️ Admin Console** | `/admin` | Office — staff directory, inventory, service zips, company settings |
 | **🎞️ Interactive Demo** | `/demo` | Anyone (no login needed) — 90-second walkthrough |
 
 All three pages share the same top-right dropdown to switch roles. A staff
