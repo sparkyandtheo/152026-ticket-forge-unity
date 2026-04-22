@@ -81,6 +81,91 @@ export const DB = {
     },
 
     // ============================================================
+    // Customer master — browse, detail, and full history
+    // ============================================================
+
+    // Pull every ticket-bearing doc for a given customer (identified by
+    // normalized phone). Returns results keyed by collection, with
+    // chronological merge available on demand.
+    async getCustomerHistory(identity) {
+        const COLLECTIONS = [
+            'phone_messages', 'sales_leads', 'quotes',
+            'work_orders', 'service_tickets', 'invoices'
+        ];
+        const normPhone = (identity.phone || '').replace(/\D+/g, '');
+        const normName  = (identity.name || '').toUpperCase().trim();
+        const result = {};
+        let grandTotal = 0;
+        let revenueTotal = 0;
+        let openBalance = 0;
+        let firstContactMs = null, lastContactMs = null;
+
+        for (const col of COLLECTIONS) {
+            const all = await DB.getAll(col);
+            const matched = all.filter(d => {
+                const dp = (d.phone || '').replace(/\D+/g, '');
+                const dn = (d.customerName || '').toUpperCase().trim();
+                return (normPhone && dp === normPhone) ||
+                       (normName && dn === normName);
+            });
+            result[col] = matched;
+            grandTotal += matched.length;
+
+            // Revenue estimate from invoice grandTotals
+            if (col === 'invoices') {
+                for (const inv of matched) {
+                    const cleaned = String(inv.grandTotal || '').replace(/[\$,\s]/g, '');
+                    const n = parseFloat(cleaned);
+                    if (!isNaN(n)) revenueTotal += n;
+                    if (inv.status !== 'Paid' && !isNaN(n)) openBalance += n;
+                }
+            }
+
+            for (const d of matched) {
+                const ts = d.lastUpdated?.toMillis?.() ||
+                           d.createdAt?.toMillis?.() ||
+                           (typeof d.lastUpdated === 'string' ? Date.parse(d.lastUpdated) : 0);
+                if (!ts) continue;
+                if (firstContactMs === null || ts < firstContactMs) firstContactMs = ts;
+                if (lastContactMs === null || ts > lastContactMs)   lastContactMs  = ts;
+            }
+        }
+        return {
+            byCollection: result,
+            totals: {
+                docs: grandTotal,
+                revenue: revenueTotal,
+                openBalance,
+                firstContactMs,
+                lastContactMs
+            }
+        };
+    },
+
+    // Merged timeline of every doc for a customer, newest first.
+    async getCustomerTimeline(identity) {
+        const { byCollection } = await DB.getCustomerHistory(identity);
+        const timeline = [];
+        for (const [col, docs] of Object.entries(byCollection)) {
+            for (const d of docs) {
+                const ts = d.lastUpdated?.toMillis?.() ||
+                           d.createdAt?.toMillis?.() ||
+                           (typeof d.lastUpdated === 'string' ? Date.parse(d.lastUpdated) : 0);
+                timeline.push({ ...d, _collection: col, _ms: ts || 0 });
+            }
+        }
+        timeline.sort((a, b) => b._ms - a._ms);
+        return timeline;
+    },
+
+    // Sequential customer id generator (CUST-#### pattern). Uses the
+    // same counter machinery as tickets — atomic, monotonic.
+    async getNewCustomerId() {
+        const n = await DB.getNewId('customer', 1000);
+        return 'CUST-' + n;
+    },
+
+    // ============================================================
     // Duplicate detection
     //
     // Returns any docs in `collectionName` saved within the last

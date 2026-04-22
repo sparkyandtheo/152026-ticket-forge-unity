@@ -1,0 +1,437 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Customers — Hamburg Door</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&family=IBM+Plex+Mono:wght@500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/assets/css/brand.css">
+    <style>
+        :root {
+            --primary: #0047BB;
+            --brand:   #EF3340;
+            --dark:    #231F20;
+            --border:  #dadce0;
+            --bg:      #f8f9fa;
+            --muted:   #5f6368;
+        }
+        * { box-sizing: border-box; }
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--bg); color: var(--dark); margin: 0;
+            display: flex; flex-direction: column; min-height: 100vh;
+        }
+
+        /* Top toolbar */
+        .toolbar {
+            background: var(--dark); color: white;
+            padding: 16px 40px; display: flex;
+            justify-content: space-between; align-items: center;
+            border-bottom: 4px solid var(--brand);
+            flex-shrink: 0;
+        }
+        .brand-title { display: flex; align-items: center; gap: 12px; font-weight: 900; letter-spacing: -0.3px; }
+        .brand-title img { width: 34px; height: 34px; border-radius: 7px; }
+        .brand-title .accent { color: var(--brand); }
+        .btn { padding: 8px 14px; border: none; border-radius: 6px; font-family: inherit; font-weight: 700; font-size: 12px; cursor: pointer; text-transform: uppercase; letter-spacing: 0.05em; }
+        .btn-primary { background: var(--primary); color: white; }
+        .btn-primary:hover { filter: brightness(1.1); }
+        .btn-ghost { background: transparent; color: white; border: 1px solid #5f6368; }
+        .btn-ghost:hover { border-color: white; }
+        .btn-green { background: #1e8e3e; color: white; }
+        .btn-red { background: #d93025; color: white; }
+        .btn-gray { background: #5f6368; color: white; }
+
+        .dropdown { position: relative; display: inline-block; }
+        .dropdown-content {
+            display: none; position: absolute; right: 0; top: 100%;
+            background: white; color: var(--dark); min-width: 200px;
+            border: 1px solid var(--border); border-radius: 6px;
+            box-shadow: 0 8px 16px rgba(0,0,0,.2); z-index: 100;
+            overflow: hidden;
+        }
+        .dropdown-content a {
+            display: block; padding: 12px 16px; color: var(--dark);
+            text-decoration: none; font-size: 13px;
+            border-bottom: 1px solid #f1f3f4;
+        }
+        .dropdown-content a:hover { background: #e8f0fe; color: var(--primary); }
+        .dropdown:hover .dropdown-content { display: block; }
+
+        /* Page frame */
+        .page-wrap { max-width: 1400px; margin: 0 auto; padding: 24px; width: 100%; flex: 1; }
+        .page-header { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 24px; gap: 20px; flex-wrap: wrap; }
+        .page-title { font-size: 28px; font-weight: 900; letter-spacing: -0.5px; display: flex; align-items: center; gap: 12px; }
+        .page-sub { font-size: 13px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; margin-top: 4px; }
+
+        /* Stats row */
+        .stats-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 14px; margin-bottom: 24px; }
+        .stat-card {
+            background: white; border: 1px solid var(--border);
+            border-radius: 8px; padding: 18px 20px;
+        }
+        .stat-label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); font-weight: 700; }
+        .stat-value { font-size: 28px; font-weight: 900; margin-top: 4px; letter-spacing: -0.5px; color: var(--dark); }
+        .stat-sub { font-size: 11px; color: var(--muted); margin-top: 2px; }
+
+        /* Controls */
+        .controls {
+            display: flex; gap: 10px; margin-bottom: 14px; align-items: center; flex-wrap: wrap;
+        }
+        .search-box {
+            flex: 1; min-width: 280px;
+            padding: 10px 14px; border: 1px solid var(--border); border-radius: 6px;
+            font-family: 'IBM Plex Mono', monospace; font-size: 13px;
+        }
+        .search-box:focus { outline: 2px solid var(--primary); outline-offset: -1px; }
+        .filter-chip {
+            padding: 8px 14px; border-radius: 20px;
+            border: 1px solid var(--border); background: white;
+            font-family: inherit; font-size: 12px; font-weight: 600;
+            cursor: pointer; transition: all 0.15s;
+        }
+        .filter-chip:hover { border-color: var(--primary); color: var(--primary); }
+        .filter-chip.active { background: var(--primary); color: white; border-color: var(--primary); }
+
+        /* Customer table */
+        .cust-table {
+            width: 100%; background: white; border: 1px solid var(--border);
+            border-radius: 8px; overflow: hidden; border-collapse: collapse;
+        }
+        .cust-table th {
+            background: #f1f3f4; font-size: 11px; font-weight: 700;
+            text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted);
+            padding: 12px 14px; text-align: left;
+            border-bottom: 2px solid var(--border);
+            cursor: pointer; user-select: none;
+        }
+        .cust-table th:hover { background: #e8f0fe; color: var(--primary); }
+        .cust-table th.sorted::after {
+            content: ' \25BC'; opacity: 0.6; font-size: 10px;
+        }
+        .cust-table th.sorted-asc::after { content: ' \25B2'; }
+        .cust-table td {
+            padding: 14px; font-size: 13px;
+            border-bottom: 1px solid #f1f3f4;
+            vertical-align: middle;
+        }
+        .cust-table tr { cursor: pointer; transition: background 0.1s; }
+        .cust-table tr:hover td { background: #fff9c4; }
+
+        .cust-name { font-weight: 700; font-size: 14px; }
+        .cust-type-badge {
+            display: inline-block; padding: 2px 8px; border-radius: 10px;
+            font-size: 10px; font-weight: 700; text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+        .cust-type-residential { background: #e8f0fe; color: var(--primary); }
+        .cust-type-franchise   { background: #fff3cd; color: #b06000; }
+        .cust-meta { font-size: 11px; color: var(--muted); font-family: 'IBM Plex Mono', monospace; }
+
+        .empty-state { text-align: center; padding: 60px 20px; color: var(--muted); }
+        .empty-state .emoji { font-size: 48px; margin-bottom: 12px; }
+
+        .loader {
+            width: 22px; height: 22px;
+            border: 3px solid rgba(0,0,0,0.1); border-top-color: var(--primary);
+            border-radius: 50%; animation: spin 0.8s linear infinite;
+            display: inline-block;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        @media (max-width: 700px) {
+            .toolbar { padding: 12px 16px; }
+            .page-wrap { padding: 16px; }
+            .cust-table th:nth-child(4),
+            .cust-table td:nth-child(4),
+            .cust-table th:nth-child(5),
+            .cust-table td:nth-child(5) { display: none; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="toolbar">
+    <div class="brand-title">
+        <img src="/assets/img/icon-192.png" alt="">
+        <span>HAMBURG <span class="accent">OVERHEAD</span> DOOR</span>
+        <span style="opacity:.6; font-weight:300; margin-left:6px;">CUSTOMERS</span>
+    </div>
+    <div style="display:flex; gap:10px; align-items:center;" id="cust-toolbar-right">
+        <div class="dropdown">
+            <button class="btn btn-ghost">🧭 NAVIGATE ▼</button>
+            <div class="dropdown-content">
+                <a href="/views/forms/dashboard.html">👤 Dashboard (Docs)</a>
+                <a href="/views/office/dispatch.html">🗓️ Dispatcher (Board)</a>
+                <a href="/views/mobile/index.html">🛠️ Field Tech (Mobile)</a>
+                <a href="/views/office/admin.html">🛡️ Admin Console</a>
+                <a href="/views/customers/index.html">👥 Customers</a>
+            </div>
+        </div>
+        <button class="btn btn-red" onclick="handleLogout()">LOGOUT</button>
+    </div>
+</div>
+
+<div class="page-wrap">
+    <div class="page-header">
+        <div>
+            <div class="page-title">👥 Customers</div>
+            <div class="page-sub" id="page-sub"><span class="loader"></span> Loading…</div>
+        </div>
+        <div>
+            <button class="btn btn-primary" onclick="openNewCustomer()">+ NEW CUSTOMER</button>
+        </div>
+    </div>
+
+    <div class="stats-row" id="stats-row">
+        <div class="stat-card"><div class="stat-label">Total</div><div class="stat-value" id="stat-total">—</div><div class="stat-sub">customers</div></div>
+        <div class="stat-card"><div class="stat-label">Residential</div><div class="stat-value" id="stat-residential">—</div><div class="stat-sub" id="stat-res-sub">single-site</div></div>
+        <div class="stat-card"><div class="stat-label">Franchise</div><div class="stat-value" id="stat-franchise">—</div><div class="stat-sub" id="stat-fran-sub">multi-site</div></div>
+        <div class="stat-card"><div class="stat-label">Active (90d)</div><div class="stat-value" id="stat-active">—</div><div class="stat-sub">touched recently</div></div>
+    </div>
+
+    <div class="controls">
+        <input type="text" class="search-box" id="search" placeholder="🔍 Search name, phone, address, account #…" autocomplete="off">
+        <button class="filter-chip active" data-filter="all">All</button>
+        <button class="filter-chip" data-filter="residential">🏠 Residential</button>
+        <button class="filter-chip" data-filter="franchise">🏢 Franchise</button>
+        <button class="filter-chip" data-filter="dormant">💤 Dormant (6m+)</button>
+    </div>
+
+    <div id="list-container">
+        <div class="empty-state"><div class="loader"></div><div style="margin-top:12px;">Loading customer list…</div></div>
+    </div>
+</div>
+
+<script type="module">
+    import { db, auth } from '/js/firebase-config.js';
+    import { DB } from '/js/db.js';
+    import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+
+    onAuthStateChanged(auth, (user) => {
+        if (!user) window.location.href = '/index.html';
+    });
+    window.handleLogout = () => signOut(auth).then(() => window.location.href = '/index.html');
+
+    import('/js/notification-bell.js').then(m => {
+        m.mountNotificationBell(document.getElementById('cust-toolbar-right'));
+    }).catch(e => console.warn('[bell]', e));
+
+    // ---------- State ----------
+    let allCustomers = [];
+    let currentFilter = 'all';
+    let sortKey = 'name';
+    let sortDir = 'asc';
+
+    function normalize(s) {
+        return (s || '').toString().toUpperCase().trim();
+    }
+    function normPhone(s) {
+        return (s || '').replace(/\D+/g, '');
+    }
+
+    // ---------- Enrich each customer with activity timestamps ----------
+    // We sample each ticket collection for last-activity per-phone. For
+    // a <2000-customer shop this is cheap and happens once on page load.
+    async function enrichCustomers(customers) {
+        // Build a map: phoneDigits -> latestMs
+        const lastTouch = new Map();
+        const cols = ['phone_messages','sales_leads','quotes','work_orders','service_tickets','invoices'];
+        for (const col of cols) {
+            const docs = await DB.getAll(col);
+            for (const d of docs) {
+                const p = normPhone(d.phone);
+                if (!p) continue;
+                const ts = d.lastUpdated?.toMillis?.() ||
+                           d.createdAt?.toMillis?.() ||
+                           (typeof d.lastUpdated === 'string' ? Date.parse(d.lastUpdated) : 0);
+                if (!ts) continue;
+                const prev = lastTouch.get(p) || 0;
+                if (ts > prev) lastTouch.set(p, ts);
+            }
+        }
+
+        return customers.map(c => {
+            const phoneDigits = normPhone(c.primaryPhone || c.phone);
+            const lastMs = lastTouch.get(phoneDigits) || 0;
+            const sites = Array.isArray(c.jobSites) ? c.jobSites : [];
+            return {
+                ...c,
+                _lastMs: lastMs,
+                _type: sites.length >= 2 ? 'franchise' : 'residential',
+                _siteCount: sites.length
+            };
+        });
+    }
+
+    // ---------- Render ----------
+    function renderStats() {
+        const total = allCustomers.length;
+        const residential = allCustomers.filter(c => c._type === 'residential').length;
+        const franchise = allCustomers.filter(c => c._type === 'franchise').length;
+        const activeCutoff = Date.now() - 90 * 24 * 60 * 60 * 1000;
+        const active = allCustomers.filter(c => c._lastMs >= activeCutoff).length;
+        document.getElementById('stat-total').textContent = total;
+        document.getElementById('stat-residential').textContent = residential;
+        document.getElementById('stat-franchise').textContent = franchise;
+        document.getElementById('stat-active').textContent = active;
+        document.getElementById('page-sub').textContent =
+            `${total} customer${total !== 1 ? 's' : ''} on file`;
+    }
+
+    function applyFilters() {
+        const q = normalize(document.getElementById('search').value);
+        const dormantCutoff = Date.now() - 180 * 24 * 60 * 60 * 1000;
+
+        let rows = allCustomers;
+        if (currentFilter === 'residential') rows = rows.filter(c => c._type === 'residential');
+        if (currentFilter === 'franchise')   rows = rows.filter(c => c._type === 'franchise');
+        if (currentFilter === 'dormant')     rows = rows.filter(c => !c._lastMs || c._lastMs < dormantCutoff);
+
+        if (q) {
+            rows = rows.filter(c => {
+                const hay = [
+                    c.name, c.primaryPhone, c.phone,
+                    c.billingAddress1, c.billingAddress2, c.address1, c.address2,
+                    c.accountId, c.id
+                ].join(' ').toUpperCase();
+                if (hay.includes(q)) return true;
+                // Also search job-site addresses
+                if (Array.isArray(c.jobSites)) {
+                    for (const s of c.jobSites) {
+                        const sh = [s.address1, s.address2, s.label].join(' ').toUpperCase();
+                        if (sh.includes(q)) return true;
+                    }
+                }
+                return false;
+            });
+        }
+
+        rows.sort((a, b) => {
+            let av = '', bv = '';
+            if (sortKey === 'name')  { av = normalize(a.name); bv = normalize(b.name); }
+            if (sortKey === 'phone') { av = normPhone(a.primaryPhone || a.phone); bv = normPhone(b.primaryPhone || b.phone); }
+            if (sortKey === 'sites') { av = a._siteCount; bv = b._siteCount; }
+            if (sortKey === 'last')  { av = a._lastMs || 0; bv = b._lastMs || 0; }
+            if (av < bv) return sortDir === 'asc' ? -1 : 1;
+            if (av > bv) return sortDir === 'asc' ? 1 : -1;
+            return 0;
+        });
+
+        renderRows(rows);
+    }
+
+    function renderRows(rows) {
+        const container = document.getElementById('list-container');
+        if (rows.length === 0) {
+            container.innerHTML = `
+                <div class="empty-state">
+                    <div class="emoji">👻</div>
+                    <div><b>No customers match that filter.</b></div>
+                    <div style="font-size:13px; margin-top:8px;">Try clearing the search or filter.</div>
+                </div>
+            `;
+            return;
+        }
+
+        const formatDate = (ms) => {
+            if (!ms) return '—';
+            const diffDays = Math.floor((Date.now() - ms) / (24 * 60 * 60 * 1000));
+            if (diffDays === 0) return 'today';
+            if (diffDays === 1) return 'yesterday';
+            if (diffDays < 30)  return `${diffDays}d ago`;
+            if (diffDays < 365) return `${Math.floor(diffDays/30)}mo ago`;
+            return `${Math.floor(diffDays/365)}y ago`;
+        };
+
+        container.innerHTML = `
+            <table class="cust-table">
+                <thead>
+                    <tr>
+                        <th data-sort="name" class="${sortKey==='name'?`sorted sorted-${sortDir}`:''}">Name</th>
+                        <th>Type</th>
+                        <th data-sort="phone" class="${sortKey==='phone'?`sorted sorted-${sortDir}`:''}">Phone</th>
+                        <th>Billing</th>
+                        <th data-sort="sites" class="${sortKey==='sites'?`sorted sorted-${sortDir}`:''}">Sites</th>
+                        <th data-sort="last" class="${sortKey==='last'?`sorted sorted-${sortDir}`:''}">Last Activity</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${rows.map(c => {
+                        const bill = [c.billingAddress1 || c.address1 || '', c.billingAddress2 || c.address2 || '']
+                            .filter(Boolean).join(', ');
+                        return `
+                            <tr data-id="${escapeAttr(c.id)}">
+                                <td>
+                                    <div class="cust-name">${escapeHtml(c.name || '(UNNAMED)')}</div>
+                                    <div class="cust-meta">${escapeHtml(c.accountId || c.id)}</div>
+                                </td>
+                                <td>
+                                    ${c._type === 'franchise'
+                                        ? '<span class="cust-type-badge cust-type-franchise">🏢 Franchise</span>'
+                                        : '<span class="cust-type-badge cust-type-residential">🏠 Residential</span>'}
+                                </td>
+                                <td class="cust-meta">${escapeHtml(c.primaryPhone || c.phone || '—')}</td>
+                                <td>${escapeHtml(bill || '—')}</td>
+                                <td style="text-align:center;">${c._siteCount}</td>
+                                <td class="cust-meta">${formatDate(c._lastMs)}</td>
+                            </tr>
+                        `;
+                    }).join('')}
+                </tbody>
+            </table>
+        `;
+
+        container.querySelectorAll('tr[data-id]').forEach(row => {
+            row.onclick = () => {
+                window.location.href = '/views/customers/detail.html?id=' + encodeURIComponent(row.dataset.id);
+            };
+        });
+        container.querySelectorAll('th[data-sort]').forEach(th => {
+            th.onclick = () => {
+                const key = th.dataset.sort;
+                if (sortKey === key) sortDir = sortDir === 'asc' ? 'desc' : 'asc';
+                else { sortKey = key; sortDir = 'asc'; }
+                applyFilters();
+            };
+        });
+    }
+
+    function escapeHtml(s) {
+        return String(s == null ? '' : s)
+            .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;').replace(/'/g, '&#039;');
+    }
+    function escapeAttr(s) { return escapeHtml(s); }
+
+    // ---------- Events ----------
+    document.getElementById('search').addEventListener('input', applyFilters);
+    document.querySelectorAll('.filter-chip').forEach(chip => {
+        chip.onclick = () => {
+            document.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
+            chip.classList.add('active');
+            currentFilter = chip.dataset.filter;
+            applyFilters();
+        };
+    });
+
+    window.openNewCustomer = () => {
+        window.location.href = '/views/customers/detail.html?new=1';
+    };
+
+    // ---------- Boot ----------
+    (async () => {
+        try {
+            const customers = await DB.getAll('customers');
+            allCustomers = await enrichCustomers(customers);
+            renderStats();
+            applyFilters();
+        } catch (e) {
+            console.error(e);
+            document.getElementById('list-container').innerHTML =
+                `<div class="empty-state"><div class="emoji">⚠️</div><div><b>Error loading customers.</b></div><div style="font-size:12px; margin-top:6px;">${escapeHtml(e.message)}</div></div>`;
+        }
+    })();
+</script>
+</body>
+</html>

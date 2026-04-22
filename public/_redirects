@@ -8,3 +8,5 @@
 /mobile     /views/mobile/index.html      200
 /demo       /demo/index.html               200
 /admin      /views/office/admin.html       200
+/customers  /views/customers/index.html    200
+/customer   /views/customers/detail.html   200

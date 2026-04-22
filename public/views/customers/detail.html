@@ -1,0 +1,762 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Customer — Hamburg Door</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&family=IBM+Plex+Mono:wght@500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/assets/css/brand.css">
+    <style>
+        :root {
+            --primary: #0047BB;
+            --brand:   #EF3340;
+            --dark:    #231F20;
+            --border:  #dadce0;
+            --bg:      #f8f9fa;
+            --muted:   #5f6368;
+            --green:   #1e8e3e;
+            --yellow:  #f9ab00;
+        }
+        * { box-sizing: border-box; }
+        body {
+            font-family: 'Inter', -apple-system, sans-serif;
+            background: var(--bg); color: var(--dark); margin: 0;
+        }
+
+        /* Toolbar (same as directory) */
+        .toolbar {
+            background: var(--dark); color: white;
+            padding: 16px 40px; display: flex;
+            justify-content: space-between; align-items: center;
+            border-bottom: 4px solid var(--brand);
+        }
+        .brand-title { display: flex; align-items: center; gap: 12px; font-weight: 900; letter-spacing: -0.3px; }
+        .brand-title img { width: 34px; height: 34px; border-radius: 7px; }
+        .brand-title .accent { color: var(--brand); }
+        .btn { padding: 8px 14px; border: none; border-radius: 6px; font-family: inherit; font-weight: 700; font-size: 12px; cursor: pointer; text-transform: uppercase; letter-spacing: 0.05em; }
+        .btn-primary { background: var(--primary); color: white; }
+        .btn-primary:hover { filter: brightness(1.1); }
+        .btn-ghost { background: transparent; color: white; border: 1px solid #5f6368; }
+        .btn-ghost:hover { border-color: white; }
+        .btn-green { background: #1e8e3e; color: white; }
+        .btn-red { background: #d93025; color: white; }
+        .btn-gray { background: #5f6368; color: white; }
+        .btn-sm { padding: 5px 10px; font-size: 10px; }
+
+        .dropdown { position: relative; display: inline-block; }
+        .dropdown-content {
+            display: none; position: absolute; right: 0; top: 100%;
+            background: white; color: var(--dark); min-width: 220px;
+            border: 1px solid var(--border); border-radius: 6px;
+            box-shadow: 0 8px 16px rgba(0,0,0,.2); z-index: 100;
+            overflow: hidden;
+        }
+        .dropdown-content a {
+            display: block; padding: 12px 16px; color: var(--dark);
+            text-decoration: none; font-size: 13px; cursor: pointer;
+            border-bottom: 1px solid #f1f3f4;
+        }
+        .dropdown-content a:hover { background: #e8f0fe; color: var(--primary); }
+        .dropdown:hover .dropdown-content { display: block; }
+
+        /* Page body */
+        .page-wrap { max-width: 1200px; margin: 0 auto; padding: 24px; }
+
+        .back-link {
+            display: inline-flex; align-items: center; gap: 6px;
+            color: var(--muted); text-decoration: none; font-size: 13px;
+            font-weight: 600; margin-bottom: 14px;
+        }
+        .back-link:hover { color: var(--primary); }
+
+        /* Customer header card */
+        .cust-head {
+            background: white; border: 1px solid var(--border);
+            border-radius: 10px; padding: 22px 24px; margin-bottom: 20px;
+            display: flex; gap: 20px; justify-content: space-between;
+            flex-wrap: wrap;
+        }
+        .cust-head-left { flex: 1; min-width: 260px; }
+        .cust-head-name {
+            font-size: 26px; font-weight: 900; letter-spacing: -0.5px;
+            display: flex; gap: 10px; align-items: baseline; flex-wrap: wrap;
+        }
+        .cust-head-id {
+            font-family: 'IBM Plex Mono', monospace; font-size: 13px;
+            color: var(--muted); font-weight: 400;
+        }
+        .cust-type-badge {
+            display: inline-block; padding: 3px 10px; border-radius: 12px;
+            font-size: 10px; font-weight: 700; text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+        .cust-type-residential { background: #e8f0fe; color: var(--primary); }
+        .cust-type-franchise   { background: #fff3cd; color: #b06000; }
+        .cust-head-meta { font-size: 13px; color: var(--muted); margin-top: 8px; line-height: 1.5; }
+        .cust-head-meta b { color: var(--dark); font-weight: 600; }
+
+        .stats {
+            display: flex; gap: 18px; flex-wrap: wrap;
+            font-size: 12px; margin-top: 12px;
+        }
+        .stat { background: #f1f3f4; padding: 8px 14px; border-radius: 6px; }
+        .stat-num { font-weight: 900; font-size: 18px; color: var(--dark); }
+
+        .cust-head-right {
+            display: flex; flex-direction: column; gap: 8px;
+            min-width: 220px;
+        }
+
+        /* Tabs */
+        .tabs {
+            display: flex; gap: 2px; margin-bottom: 0;
+            border-bottom: 2px solid var(--border);
+        }
+        .tab {
+            background: transparent; border: none;
+            padding: 14px 24px; cursor: pointer;
+            font-family: inherit; font-weight: 700; font-size: 13px;
+            text-transform: uppercase; letter-spacing: 0.05em;
+            color: var(--muted); border-bottom: 3px solid transparent;
+            margin-bottom: -2px; transition: all 0.15s;
+        }
+        .tab:hover { color: var(--primary); }
+        .tab.active { color: var(--primary); border-bottom-color: var(--primary); }
+
+        .tab-content {
+            background: white; border: 1px solid var(--border);
+            border-top: none; border-radius: 0 0 10px 10px;
+            padding: 24px;
+            min-height: 300px;
+        }
+
+        /* Overview — edit grid */
+        .field-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 14px 20px; }
+        .field { display: flex; flex-direction: column; }
+        .field label {
+            font-size: 10px; font-weight: 700; text-transform: uppercase;
+            letter-spacing: 0.05em; color: var(--muted); margin-bottom: 4px;
+        }
+        .field input, .field textarea {
+            background: #ffffcc; border: 1px solid #ddd; border-bottom: 2px solid #ccc;
+            padding: 8px 10px; font-family: 'IBM Plex Mono', monospace;
+            font-size: 13px; color: var(--dark); text-transform: uppercase;
+            border-radius: 4px;
+        }
+        .field input:focus, .field textarea:focus {
+            outline: none; background: #ffccff; border-bottom-color: #d500f9;
+        }
+        .field textarea { min-height: 80px; text-transform: none; }
+
+        .section-title {
+            font-size: 14px; font-weight: 900; text-transform: uppercase;
+            letter-spacing: 0.05em; border-bottom: 3px solid var(--brand);
+            padding-bottom: 6px; margin: 28px 0 14px; color: var(--dark);
+        }
+
+        /* Sites */
+        .site-row {
+            background: #f8f9fa; border: 1px solid var(--border);
+            border-left: 4px solid var(--yellow);
+            border-radius: 6px; padding: 12px 14px; margin-bottom: 8px;
+            display: flex; align-items: center; gap: 12px;
+        }
+        .site-row input {
+            flex: 1; background: white; border: 1px solid var(--border);
+            padding: 6px 10px; border-radius: 4px; font-family: 'IBM Plex Mono', monospace; font-size: 12px;
+        }
+
+        /* Timeline */
+        .timeline { position: relative; padding-left: 24px; }
+        .timeline::before {
+            content: ''; position: absolute; left: 6px; top: 0; bottom: 0;
+            width: 2px; background: var(--border);
+        }
+        .tl-item {
+            position: relative; padding: 8px 12px; margin-bottom: 10px;
+            background: white; border: 1px solid var(--border);
+            border-radius: 6px; cursor: pointer; transition: all 0.1s;
+        }
+        .tl-item:hover { background: #fff9c4; transform: translateX(2px); }
+        .tl-item::before {
+            content: ''; position: absolute; left: -22px; top: 16px;
+            width: 10px; height: 10px; border-radius: 50%;
+            background: white; border: 3px solid var(--primary);
+        }
+        .tl-head { display: flex; gap: 10px; align-items: baseline; }
+        .tl-id { font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: var(--primary); font-weight: 700; }
+        .tl-type {
+            font-size: 10px; font-weight: 700; text-transform: uppercase;
+            letter-spacing: 0.05em; color: var(--muted);
+        }
+        .tl-date { font-size: 11px; color: var(--muted); margin-left: auto; }
+        .tl-body { font-size: 13px; margin-top: 2px; }
+        .tl-meta { font-size: 11px; color: var(--muted); margin-top: 4px; }
+
+        /* Status badges (shared with sidebar) */
+        .cs-status {
+            padding: 2px 8px; border-radius: 10px;
+            font-size: 9px; font-weight: 700; text-transform: uppercase;
+            letter-spacing: 0.05em; margin-left: 6px;
+        }
+        .cs-status-open       { background: #fef7e0; color: #b06000; }
+        .cs-status-scheduled  { background: #e3f2fd; color: #1a73e8; }
+        .cs-status-complete   { background: #e6f4ea; color: #1e8e3e; }
+        .cs-status-converted  { background: #f3e8ff; color: #9c27b0; }
+        .cs-status-closed     { background: #fce8e6; color: #a82319; }
+        .cs-status-attention  { background: #fff3cd; color: #b06000; border: 1px solid var(--yellow); }
+        .cs-status-draft      { background: #f1f3f4; color: var(--muted); }
+
+        /* Documents tab */
+        .doc-stacks { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; }
+        .doc-stack {
+            background: white; border: 1px solid var(--border);
+            border-radius: 8px; padding: 16px;
+        }
+        .stack-title {
+            font-size: 11px; font-weight: 800; color: var(--primary);
+            text-transform: uppercase; letter-spacing: 0.08em;
+            border-bottom: 2px solid var(--primary); padding-bottom: 6px;
+            margin-bottom: 10px;
+            display: flex; justify-content: space-between; align-items: baseline;
+        }
+        .doc-item {
+            display: flex; justify-content: space-between; align-items: baseline;
+            padding: 8px 6px; border-bottom: 1px solid #f1f3f4; cursor: pointer;
+            transition: background 0.1s;
+        }
+        .doc-item:hover { background: #fff9c4; }
+        .doc-item .n { font-family: 'IBM Plex Mono', monospace; font-size: 12px; }
+        .doc-item .d { font-size: 11px; color: var(--muted); }
+
+        /* Notes tab */
+        .note {
+            background: #f8f9fa; border-left: 4px solid var(--primary);
+            padding: 12px 14px; margin-bottom: 10px; border-radius: 4px;
+        }
+        .note-meta { font-size: 11px; color: var(--muted); margin-bottom: 4px; }
+        .note-body { font-size: 13px; line-height: 1.4; white-space: pre-wrap; }
+
+        .save-bar {
+            position: sticky; bottom: 0; background: white;
+            border-top: 2px solid var(--brand); padding: 14px 24px;
+            margin: 24px -24px -24px; text-align: right;
+            display: flex; gap: 10px; justify-content: flex-end; align-items: center;
+            z-index: 10;
+        }
+        .save-status { color: var(--green); font-size: 12px; font-weight: 700; }
+
+        .hidden { display: none !important; }
+
+        .empty { padding: 40px 20px; text-align: center; color: var(--muted); font-size: 14px; }
+
+        @media (max-width: 700px) {
+            .toolbar { padding: 12px 16px; }
+            .page-wrap { padding: 16px; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="toolbar">
+    <div class="brand-title">
+        <img src="/assets/img/icon-192.png" alt="">
+        <span>HAMBURG <span class="accent">OVERHEAD</span> DOOR</span>
+        <span style="opacity:.6; font-weight:300; margin-left:6px;">CUSTOMER</span>
+    </div>
+    <div style="display:flex; gap:10px; align-items:center;" id="cust-toolbar-right">
+        <div class="dropdown">
+            <button class="btn btn-ghost">🧭 NAVIGATE ▼</button>
+            <div class="dropdown-content">
+                <a href="/views/forms/dashboard.html">👤 Dashboard (Docs)</a>
+                <a href="/views/office/dispatch.html">🗓️ Dispatcher (Board)</a>
+                <a href="/views/mobile/index.html">🛠️ Field Tech (Mobile)</a>
+                <a href="/views/office/admin.html">🛡️ Admin Console</a>
+                <a href="/views/customers/index.html">👥 Customers</a>
+            </div>
+        </div>
+        <button class="btn btn-red" onclick="handleLogout()">LOGOUT</button>
+    </div>
+</div>
+
+<div class="page-wrap">
+    <a class="back-link" href="/views/customers/index.html">← All customers</a>
+
+    <div class="cust-head">
+        <div class="cust-head-left">
+            <div class="cust-head-name">
+                <span id="head-name">Loading…</span>
+                <span class="cust-head-id" id="head-id"></span>
+                <span id="head-type-badge"></span>
+            </div>
+            <div class="cust-head-meta" id="head-meta"></div>
+            <div class="stats" id="head-stats"></div>
+        </div>
+        <div class="cust-head-right">
+            <div class="dropdown">
+                <button class="btn btn-primary" style="width:100%; text-align:left;">+ NEW TICKET FOR THIS CUSTOMER ▼</button>
+                <div class="dropdown-content" style="right: 0; left: 0;">
+                    <a data-new="phone_message">📥 Phone Message</a>
+                    <a data-new="sales_call">💼 Sales Lead</a>
+                    <a data-new="quote">📝 Quote</a>
+                    <a data-new="work_order">🛠️ Work Order</a>
+                    <a data-new="service">🖥️ Service Ticket</a>
+                    <a data-new="invoice">💰 Invoice</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="tabs">
+        <button class="tab active" data-tab="overview">Overview</button>
+        <button class="tab" data-tab="timeline">Timeline</button>
+        <button class="tab" data-tab="documents">Documents</button>
+        <button class="tab" data-tab="sites" id="tab-sites">Sites</button>
+        <button class="tab" data-tab="notes">Notes</button>
+    </div>
+
+    <div class="tab-content">
+        <!-- OVERVIEW -->
+        <div id="tab-overview" class="tab-panel">
+            <div class="section-title">Identity</div>
+            <div class="field-grid">
+                <div class="field"><label>Customer Name</label><input id="f-name" placeholder="JANE DOE or FRANCHISE INC"></div>
+                <div class="field"><label>Account # (optional)</label><input id="f-acct" placeholder="CUST-1001 or manual"></div>
+                <div class="field"><label>Primary Phone</label><input id="f-phone" placeholder="716-555-0101"></div>
+                <div class="field"><label>Email (optional)</label><input id="f-email" placeholder="JANE@EXAMPLE.COM"></div>
+            </div>
+
+            <div class="section-title">Billing Address</div>
+            <div class="field-grid">
+                <div class="field"><label>Address Line 1</label><input id="f-bill-addr1" placeholder="1 DOOR STREET"></div>
+                <div class="field"><label>City, State, Zip</label><input id="f-bill-addr2" placeholder="HAMBURG, NY 14075"></div>
+            </div>
+        </div>
+
+        <!-- TIMELINE -->
+        <div id="tab-timeline" class="tab-panel hidden">
+            <div class="section-title">Full History</div>
+            <div id="timeline-container"><div class="empty">Loading…</div></div>
+        </div>
+
+        <!-- DOCUMENTS -->
+        <div id="tab-documents" class="tab-panel hidden">
+            <div class="section-title">Documents</div>
+            <div class="doc-stacks" id="doc-stacks"></div>
+        </div>
+
+        <!-- SITES -->
+        <div id="tab-sites-panel" class="tab-panel hidden">
+            <div class="section-title">Job Sites</div>
+            <p style="color: var(--muted); font-size: 13px; margin-top: -4px;">
+                Sites captured from past tickets or added manually. Clicking a site on a form autofills the job-site address.
+            </p>
+            <div id="sites-list"></div>
+            <button class="btn btn-green btn-sm" onclick="addBlankSite()" style="margin-top:10px;">+ ADD SITE</button>
+        </div>
+
+        <!-- NOTES -->
+        <div id="tab-notes" class="tab-panel hidden">
+            <div class="section-title">Internal Notes</div>
+            <p style="color: var(--muted); font-size: 13px; margin-top: -4px;">
+                Notes about this customer. Not visible on tickets — just context for staff.
+            </p>
+            <div id="notes-list"></div>
+            <div style="margin-top: 16px; padding: 14px; background: #f8f9fa; border-radius: 6px;">
+                <label style="font-size: 10px; font-weight: 700; color: var(--muted); text-transform: uppercase;">Add note</label>
+                <textarea id="new-note" style="width: 100%; min-height: 70px; margin-top: 4px; padding: 10px; border: 1px solid var(--border); border-radius: 4px; font-family: inherit; font-size: 13px;"></textarea>
+                <button class="btn btn-green btn-sm" onclick="addNote()" style="margin-top: 8px;">+ ADD NOTE</button>
+            </div>
+        </div>
+
+        <!-- SAVE BAR (shown on editable tabs) -->
+        <div class="save-bar" id="save-bar">
+            <div class="save-status" id="save-status"></div>
+            <button class="btn btn-red btn-sm" id="delete-btn" onclick="deleteCustomer()" style="display:none;">🗑️ DELETE</button>
+            <button class="btn btn-primary" onclick="saveCustomer()">💾 SAVE CHANGES</button>
+        </div>
+    </div>
+</div>
+
+<script type="module">
+    import { db, auth } from '/js/firebase-config.js';
+    import { DB } from '/js/db.js';
+    import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+
+    onAuthStateChanged(auth, (user) => {
+        if (!user) window.location.href = '/index.html';
+    });
+    window.handleLogout = () => signOut(auth).then(() => window.location.href = '/index.html');
+    import('/js/notification-bell.js').then(m => {
+        m.mountNotificationBell(document.getElementById('cust-toolbar-right'));
+    }).catch(e => console.warn('[bell]', e));
+
+    // ----- State -----
+    const params = new URLSearchParams(window.location.search);
+    const isNew = params.get('new') === '1';
+    let customerId = params.get('id') || null;
+    let customer = null;
+    let historyData = null;
+
+    function escapeHtml(s) {
+        return String(s == null ? '' : s)
+            .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;').replace(/'/g, '&#039;');
+    }
+    function normPhone(s) { return (s || '').replace(/\D+/g, ''); }
+
+    // ----- Tabs -----
+    const TAB_PANELS = {
+        overview: 'tab-overview',
+        timeline: 'tab-timeline',
+        documents: 'tab-documents',
+        sites: 'tab-sites-panel',
+        notes: 'tab-notes'
+    };
+    document.querySelectorAll('.tab').forEach(btn => {
+        btn.onclick = () => {
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            btn.classList.add('active');
+            for (const [k, id] of Object.entries(TAB_PANELS)) {
+                document.getElementById(id).classList.toggle('hidden', k !== btn.dataset.tab);
+            }
+            // Load lazy tabs on first activation
+            if (btn.dataset.tab === 'timeline' && !historyData) { loadHistory().then(renderTimeline); }
+            if (btn.dataset.tab === 'documents' && !historyData) { loadHistory().then(renderDocs); }
+        };
+    });
+
+    // ----- Data load -----
+    async function loadCustomer() {
+        if (isNew) {
+            // New customer — generate a fresh CUST-#### id
+            customerId = await DB.getNewCustomerId();
+            customer = {
+                id: customerId, name: '', primaryPhone: '',
+                billingAddress1: '', billingAddress2: '',
+                accountId: customerId,
+                jobSites: [], notes: []
+            };
+            document.getElementById('head-name').textContent = 'New Customer';
+            document.getElementById('head-id').textContent = `(${customerId})`;
+            document.getElementById('head-meta').textContent = 'Fill in details and click SAVE.';
+            fillOverviewFields();
+            renderSites();
+            renderNotes();
+            return;
+        }
+        if (!customerId) {
+            document.getElementById('head-name').textContent = 'Not found';
+            document.getElementById('head-meta').textContent = 'No customer id provided.';
+            return;
+        }
+        customer = await DB.getDoc('customers', customerId);
+        if (!customer) {
+            document.getElementById('head-name').textContent = 'Not found';
+            document.getElementById('head-meta').textContent = `No customer with id "${customerId}".`;
+            return;
+        }
+        document.getElementById('delete-btn').style.display = '';
+        renderHeader();
+        fillOverviewFields();
+        renderSites();
+        renderNotes();
+        // Eagerly load history for the stat counters and lazy tabs.
+        loadHistory();
+    }
+
+    function renderHeader() {
+        const sites = customer.jobSites || [];
+        const isFranchise = sites.length >= 2;
+        document.getElementById('head-name').textContent = customer.name || '(UNNAMED)';
+        document.getElementById('head-id').textContent = `(${customer.accountId || customer.id})`;
+        document.getElementById('head-type-badge').innerHTML = isFranchise
+            ? '<span class="cust-type-badge cust-type-franchise">🏢 Franchise</span>'
+            : '<span class="cust-type-badge cust-type-residential">🏠 Residential</span>';
+        const bill = [customer.billingAddress1 || customer.address1 || '', customer.billingAddress2 || customer.address2 || ''].filter(Boolean).join(', ');
+        document.getElementById('head-meta').innerHTML =
+            `<b>📞</b> ${escapeHtml(customer.primaryPhone || customer.phone || '—')}` +
+            `&nbsp; &nbsp; <b>📍</b> ${escapeHtml(bill || '—')}`;
+
+        document.getElementById('tab-sites').style.display = ''; // always show, franchise or not
+    }
+
+    async function loadHistory() {
+        if (historyData) return historyData;
+        try {
+            historyData = await DB.getCustomerHistory({
+                phone: customer.primaryPhone || customer.phone,
+                name:  customer.name
+            });
+            renderStats();
+            return historyData;
+        } catch (e) {
+            console.warn('[customer] history load failed:', e);
+            historyData = { byCollection: {}, totals: { docs: 0, revenue: 0, openBalance: 0 } };
+            return historyData;
+        }
+    }
+
+    function renderStats() {
+        const t = historyData.totals;
+        const lastDays = t.lastContactMs ? Math.floor((Date.now() - t.lastContactMs) / (24*60*60*1000)) : null;
+        const firstLabel = t.firstContactMs ? new Date(t.firstContactMs).toLocaleDateString() : '—';
+        document.getElementById('head-stats').innerHTML = `
+            <div class="stat"><div class="stat-num">${t.docs}</div>documents</div>
+            <div class="stat"><div class="stat-num">$${t.revenue.toFixed(0)}</div>invoiced</div>
+            <div class="stat"><div class="stat-num">$${t.openBalance.toFixed(0)}</div>open balance</div>
+            <div class="stat"><div class="stat-num">${lastDays !== null ? lastDays + 'd' : '—'}</div>since last</div>
+            <div class="stat"><div class="stat-num">${firstLabel}</div>since</div>
+        `;
+    }
+
+    // ----- Overview tab -----
+    function fillOverviewFields() {
+        document.getElementById('f-name').value       = customer.name || '';
+        document.getElementById('f-acct').value       = customer.accountId || customer.id || '';
+        document.getElementById('f-phone').value      = customer.primaryPhone || customer.phone || '';
+        document.getElementById('f-email').value      = customer.email || '';
+        document.getElementById('f-bill-addr1').value = customer.billingAddress1 || customer.address1 || '';
+        document.getElementById('f-bill-addr2').value = customer.billingAddress2 || customer.address2 || '';
+    }
+
+    window.saveCustomer = async function () {
+        const payload = {
+            name:             document.getElementById('f-name').value.toUpperCase().trim(),
+            accountId:        document.getElementById('f-acct').value.trim(),
+            primaryPhone:     document.getElementById('f-phone').value.trim(),
+            email:            document.getElementById('f-email').value.trim(),
+            billingAddress1:  document.getElementById('f-bill-addr1').value.toUpperCase().trim(),
+            billingAddress2:  document.getElementById('f-bill-addr2').value.toUpperCase().trim(),
+            jobSites:         scrapeSites(),
+            notes:            Array.isArray(customer.notes) ? customer.notes : []
+        };
+        if (!payload.name) { alert('Customer name is required.'); return; }
+        try {
+            await DB.saveDoc('customers', payload, customerId);
+            document.getElementById('save-status').textContent = '✅ Saved';
+            setTimeout(() => document.getElementById('save-status').textContent = '', 2500);
+            customer = { id: customerId, ...payload };
+            renderHeader();
+            if (isNew) {
+                // Strip ?new=1 from the URL so reloads don't duplicate
+                window.history.replaceState({}, '', '/views/customers/detail.html?id=' + encodeURIComponent(customerId));
+            }
+        } catch (e) {
+            alert('Save failed: ' + e.message);
+        }
+    };
+
+    window.deleteCustomer = async function () {
+        if (!customerId) return;
+        if (!confirm(`Delete customer "${customer.name}"?\n\nThis will NOT delete their existing tickets, but the customer record will be gone from the rolodex.`)) return;
+        try {
+            await DB.deleteDoc('customers', customerId);
+            window.location.href = '/views/customers/index.html';
+        } catch (e) {
+            alert('Delete failed: ' + e.message);
+        }
+    };
+
+    // ----- Sites tab -----
+    function renderSites() {
+        const sites = Array.isArray(customer.jobSites) ? customer.jobSites : [];
+        const container = document.getElementById('sites-list');
+        if (sites.length === 0) {
+            container.innerHTML = `<div class="empty">No job sites yet. Add one below, or one will be captured automatically next time this customer is used on a ticket.</div>`;
+            return;
+        }
+        container.innerHTML = sites.map((s, i) => `
+            <div class="site-row">
+                <input value="${escapeHtml(s.address1 || '')}" placeholder="Address line 1" data-idx="${i}" data-k="address1">
+                <input value="${escapeHtml(s.address2 || '')}" placeholder="City, State Zip" data-idx="${i}" data-k="address2">
+                <input value="${escapeHtml(s.label || '')}" placeholder="Label (optional)" data-idx="${i}" data-k="label" style="max-width: 180px;">
+                <button class="btn btn-red btn-sm" data-del="${i}">🗑️</button>
+            </div>
+        `).join('');
+        container.querySelectorAll('[data-del]').forEach(btn => {
+            btn.onclick = () => {
+                const i = parseInt(btn.dataset.del, 10);
+                customer.jobSites.splice(i, 1);
+                renderSites();
+            };
+        });
+    }
+    function scrapeSites() {
+        const rows = document.querySelectorAll('#sites-list .site-row');
+        const sites = [];
+        rows.forEach(row => {
+            const inputs = row.querySelectorAll('input');
+            const site = {};
+            inputs.forEach(inp => { site[inp.dataset.k] = inp.value.trim(); });
+            if (site.address1 || site.address2 || site.label) sites.push(site);
+        });
+        customer.jobSites = sites;
+        return sites;
+    }
+    window.addBlankSite = function () {
+        if (!Array.isArray(customer.jobSites)) customer.jobSites = [];
+        customer.jobSites.push({ address1: '', address2: '', label: '' });
+        renderSites();
+    };
+
+    // ----- Notes tab -----
+    function renderNotes() {
+        const notes = Array.isArray(customer.notes) ? customer.notes : [];
+        const container = document.getElementById('notes-list');
+        if (notes.length === 0) {
+            container.innerHTML = `<div class="empty">No notes yet.</div>`;
+            return;
+        }
+        container.innerHTML = notes
+            .slice().reverse() // newest first
+            .map(n => `
+                <div class="note">
+                    <div class="note-meta">${escapeHtml(n.author || '—')} · ${escapeHtml(n.date || '')}</div>
+                    <div class="note-body">${escapeHtml(n.body || '')}</div>
+                </div>
+            `).join('');
+    }
+    window.addNote = async function () {
+        const body = document.getElementById('new-note').value.trim();
+        if (!body) return;
+        if (!Array.isArray(customer.notes)) customer.notes = [];
+        const me = auth.currentUser?.email || 'anonymous';
+        customer.notes.push({
+            author: me,
+            date: new Date().toLocaleString(),
+            body
+        });
+        document.getElementById('new-note').value = '';
+        renderNotes();
+        // Persist immediately
+        try {
+            await DB.saveDoc('customers', { notes: customer.notes }, customerId);
+            document.getElementById('save-status').textContent = '✅ Note saved';
+            setTimeout(() => document.getElementById('save-status').textContent = '', 2000);
+        } catch (e) {
+            alert('Save failed: ' + e.message);
+        }
+    };
+
+    // ----- Timeline tab -----
+    function renderTimeline() {
+        const container = document.getElementById('timeline-container');
+        const typeLabel = {
+            phone_messages: '📥 Phone Message',
+            sales_leads:    '💼 Sales Lead',
+            quotes:         '📝 Quote',
+            work_orders:    '🛠️ Work Order',
+            service_tickets:'🖥️ Service Ticket',
+            invoices:       '💰 Invoice'
+        };
+        const pagePath = {
+            phone_messages: '/views/forms/phone_message.html',
+            sales_leads:    '/views/forms/sales_call.html',
+            quotes:         '/views/forms/quote.html',
+            work_orders:    '/views/forms/work_order.html',
+            service_tickets:'/views/forms/service.html',
+            invoices:       '/views/forms/invoice.html'
+        };
+
+        DB.getCustomerTimeline({
+            phone: customer.primaryPhone || customer.phone,
+            name:  customer.name
+        }).then(timeline => {
+            if (timeline.length === 0) {
+                container.innerHTML = '<div class="empty">No history yet.</div>';
+                return;
+            }
+            container.innerHTML = `<div class="timeline">${timeline.map(d => {
+                const date = d._ms ? new Date(d._ms).toLocaleDateString() : '';
+                const statusBadge = d.status ? `<span class="cs-status cs-status-${(d.status||'').toLowerCase()}">${escapeHtml(d.status)}</span>` : '';
+                const desc = (d.description || d.notes || d.proposalText || '').slice(0, 160);
+                return `
+                    <div class="tl-item" data-col="${d._collection}" data-id="${escapeHtml(d.id)}">
+                        <div class="tl-head">
+                            <span class="tl-id">#${escapeHtml(d.ticketNumber || d.id)}</span>
+                            <span class="tl-type">${typeLabel[d._collection] || d._collection}</span>
+                            ${statusBadge}
+                            <span class="tl-date">${date}</span>
+                        </div>
+                        ${desc ? `<div class="tl-body">${escapeHtml(desc)}</div>` : ''}
+                    </div>
+                `;
+            }).join('')}</div>`;
+            container.querySelectorAll('.tl-item').forEach(item => {
+                item.onclick = () => {
+                    window.location.href = pagePath[item.dataset.col] + '?id=' + encodeURIComponent(item.dataset.id);
+                };
+            });
+        });
+    }
+
+    // ----- Documents tab -----
+    function renderDocs() {
+        const container = document.getElementById('doc-stacks');
+        const labels = {
+            phone_messages:  { title: 'Phone Messages', page: '/views/forms/phone_message.html' },
+            sales_leads:     { title: 'Sales Leads',    page: '/views/forms/sales_call.html' },
+            quotes:          { title: 'Quotes',         page: '/views/forms/quote.html' },
+            work_orders:     { title: 'Work Orders',    page: '/views/forms/work_order.html' },
+            service_tickets: { title: 'Service Tickets',page: '/views/forms/service.html' },
+            invoices:        { title: 'Invoices',       page: '/views/forms/invoice.html' }
+        };
+
+        const by = historyData?.byCollection || {};
+        container.innerHTML = Object.entries(labels).map(([col, meta]) => {
+            const docs = (by[col] || []).slice().sort((a, b) =>
+                (b.lastUpdated?.toMillis?.() || 0) - (a.lastUpdated?.toMillis?.() || 0));
+            return `
+                <div class="doc-stack">
+                    <div class="stack-title">
+                        <span>${meta.title}</span>
+                        <span>${docs.length}</span>
+                    </div>
+                    ${docs.length === 0
+                        ? '<div class="empty" style="padding:20px 0; font-size:12px;">None</div>'
+                        : docs.slice(0, 10).map(d => `
+                            <div class="doc-item" data-href="${meta.page}?id=${encodeURIComponent(d.id)}">
+                                <span class="n">#${escapeHtml(d.ticketNumber || d.id)} · ${escapeHtml(d.status || '')}</span>
+                                <span class="d">${d.lastUpdated?.toDate ? d.lastUpdated.toDate().toLocaleDateString() : ''}</span>
+                            </div>
+                        `).join('')
+                    }
+                    ${docs.length > 10 ? `<div class="empty" style="padding:8px 0; font-size:11px;">+ ${docs.length - 10} more…</div>` : ''}
+                </div>
+            `;
+        }).join('');
+        container.querySelectorAll('.doc-item').forEach(item => {
+            item.onclick = () => { window.location.href = item.dataset.href; };
+        });
+    }
+
+    // ----- "New ticket for this customer" shortcut -----
+    // Open the target form with ?seed=<customerId>. The form itself
+    // would need to read &apos;seed&apos; and prefill \u2014 for now the shortcut
+    // just navigates to a blank form. (Future enhancement.)
+    const NEW_PAGES = {
+        phone_message: '/views/forms/phone_message.html',
+        sales_call:    '/views/forms/sales_call.html',
+        quote:         '/views/forms/quote.html',
+        work_order:    '/views/forms/work_order.html',
+        service:       '/views/forms/service.html',
+        invoice:       '/views/forms/invoice.html'
+    };
+    document.querySelectorAll('[data-new]').forEach(a => {
+        a.onclick = (e) => {
+            e.preventDefault();
+            const kind = a.dataset.new;
+            const page = NEW_PAGES[kind];
+            if (!page) return;
+            // Stash the customer id so forms can pick it up
+            sessionStorage.setItem('hd-seed-customer', customerId);
+            window.location.href = page;
+        };
+    });
+
+    // Boot
+    loadCustomer();
+</script>
+</body>
+</html>

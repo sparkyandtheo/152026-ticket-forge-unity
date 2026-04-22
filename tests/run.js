@@ -586,6 +586,58 @@ await test('ignores records older than window', async () => {
   assertEqual(hits.length, 0, '10-min-old record excluded from 5-min window');
 });
 
+section('Customer master: history aggregation + CUST-#### IDs');
+
+await test('getCustomerHistory aggregates docs across collections by phone', async () => {
+  await DB.saveDoc('phone_messages',  { customerName: JANET.name, phone: JANET.phone, status: 'Open' }, '800001');
+  await DB.saveDoc('quotes',          { customerName: JANET.name, phone: JANET.phone, status: 'Open' }, '300001');
+  await DB.saveDoc('work_orders',     { customerName: JANET.name, phone: JANET.phone, status: 'Complete' }, '500001');
+  await DB.saveDoc('invoices',        { customerName: JANET.name, phone: JANET.phone, grandTotal: '$1500.00', status: 'Closed' }, '600001');
+  // Unrelated customer shouldn\'t leak in
+  await DB.saveDoc('phone_messages',  { customerName: 'BOB', phone: '716-999-0000' }, '800002');
+
+  const hist = await DB.getCustomerHistory({ phone: JANET.phone });
+  assertEqual(hist.byCollection.phone_messages.length, 1, 'one phone message');
+  assertEqual(hist.byCollection.quotes.length, 1, 'one quote');
+  assertEqual(hist.byCollection.work_orders.length, 1, 'one work order');
+  assertEqual(hist.byCollection.invoices.length, 1, 'one invoice');
+  assertEqual(hist.totals.docs, 4, 'total docs');
+  assertEqual(hist.totals.revenue, 1500, 'revenue from paid invoice');
+});
+
+await test('getCustomerTimeline merges + orders newest-first', async () => {
+  // Use saveDoc so lastUpdated stamps are increasing.
+  await DB.saveDoc('phone_messages', { customerName: JANET.name, phone: JANET.phone }, '800010');
+  await new Promise(r => setTimeout(r, 5));
+  await DB.saveDoc('quotes',         { customerName: JANET.name, phone: JANET.phone }, '300010');
+  await new Promise(r => setTimeout(r, 5));
+  await DB.saveDoc('invoices',       { customerName: JANET.name, phone: JANET.phone }, '600010');
+
+  const tl = await DB.getCustomerTimeline({ phone: JANET.phone });
+  if (tl.length < 3) throw new Error('expected 3+ entries, got ' + tl.length);
+  // Most recent should be the invoice (saved last)
+  assertEqual(tl[0]._collection, 'invoices', 'newest is invoice');
+});
+
+await test('getNewCustomerId returns CUST-#### format', async () => {
+  const id1 = await DB.getNewCustomerId();
+  const id2 = await DB.getNewCustomerId();
+  if (!/^CUST-\d{4,}$/.test(id1)) throw new Error('id1 wrong format: ' + id1);
+  if (!/^CUST-\d{4,}$/.test(id2)) throw new Error('id2 wrong format: ' + id2);
+  // monotonic
+  const n1 = parseInt(id1.split('-')[1], 10);
+  const n2 = parseInt(id2.split('-')[1], 10);
+  if (n2 <= n1) throw new Error('not monotonic: ' + id1 + ' -> ' + id2);
+});
+
+await test('history ignores unrelated customers even with same name fragment', async () => {
+  await DB.saveDoc('phone_messages', { customerName: JANET.name, phone: JANET.phone }, 'p-janet');
+  await DB.saveDoc('phone_messages', { customerName: 'JANET SMITH', phone: '716-222-3333' }, 'p-smith');
+  const hist = await DB.getCustomerHistory({ phone: JANET.phone });
+  assertEqual(hist.byCollection.phone_messages.length, 1, 'only Janet Hamburg matched');
+  assertEqual(hist.byCollection.phone_messages[0].phone, JANET.phone, 'right customer');
+});
+
 section('Customer rolodex: phone is the key');
 
 await test('rolodex save then lookup by phone returns same customer', async () => {
