@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <!-- Background: Hamburg Door dark (matches theme_color) -->
+  <rect width="512" height="512" rx="96" fill="#202124"/>
+
+  <!-- Garage door frame -->
+  <rect x="96" y="128" width="320" height="288" rx="8"
+        fill="none" stroke="#f9ab00" stroke-width="12"/>
+
+  <!-- Door panels (four horizontal slats) -->
+  <line x1="96" y1="200" x2="416" y2="200" stroke="#f9ab00" stroke-width="6"/>
+  <line x1="96" y1="272" x2="416" y2="272" stroke="#f9ab00" stroke-width="6"/>
+  <line x1="96" y1="344" x2="416" y2="344" stroke="#f9ab00" stroke-width="6"/>
+
+  <!-- HD monogram -->
+  <text x="256" y="262" text-anchor="middle" dominant-baseline="middle"
+        fill="white" font-family="Inter, Arial, sans-serif"
+        font-weight="900" font-size="88" letter-spacing="-4">HD</text>
+</svg>

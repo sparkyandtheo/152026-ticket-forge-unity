@@ -271,6 +271,13 @@
             </div>
         </div>
 
+        <div class="doc-stack" data-type="sales">
+            <div class="stack-title">Sales Leads</div>
+            <div class="doc-list">
+                <div style="padding:10px; color:#999; font-size:11px;">Loading...</div>
+            </div>
+        </div>
+
         <div class="doc-stack" data-type="quote">
             <div class="stack-title">Quotes & Proposals</div>
             <div class="doc-list">
@@ -452,6 +459,7 @@
 
         // --- 3. INITIALIZE FEEDS ---
         loadLiveDocs('phone_messages', 'intake', '/views/forms/phone_message.html');
+        loadLiveDocs('sales_leads', 'sales', '/views/forms/sales_call.html');
         loadLiveDocs('quotes', 'quote', '/views/forms/quote.html');
         loadLiveDocs('work_orders', 'work-order', '/views/forms/work_order.html');
         loadLiveDocs('service_tickets', 'service', '/views/forms/service.html');

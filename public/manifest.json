@@ -1,7 +1,25 @@
 {
   "short_name": "Hamburg Door",
   "name": "Hamburg Overhead Door Field App",
-  "icons": [],
+  "icons": [
+    {
+      "src": "/assets/img/icon-192.png",
+      "type": "image/png",
+      "sizes": "192x192",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/assets/img/icon-512.png",
+      "type": "image/png",
+      "sizes": "512x512",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/assets/img/icon.svg",
+      "type": "image/svg+xml",
+      "sizes": "any"
+    }
+  ],
   "start_url": "/index.html",
   "background_color": "#202124",
   "display": "standalone",
