@@ -31,7 +31,7 @@
 
   // ---------- Configuration ----------
 
-  const SCENES_COUNT = 8;
+  const SCENES_COUNT = 10;
   const JANET = {
     name: 'JANET HAMBURG',
     phone: '716-555-0101',
@@ -390,6 +390,9 @@
 
   // ---------- Scenes ----------
 
+
+  // ---------- Scenes ----------
+
   const Scenes = {
 
     async intro() {
@@ -400,35 +403,36 @@
           <div style="font-size:16px; color:#5f6368; max-width:500px; line-height:1.5;">
             Ticket Forge Unity — one staff portal for phone calls, quotes, jobs, dispatch, field tech, and invoicing. All connected. All real-time.
           </div>
-          <div style="margin-top:40px; display:flex; gap:30px; font-size:12px; color:#5f6368; text-transform:uppercase; letter-spacing:.1em;">
-            <div>📞 Intake</div><div>→</div><div>📝 Quote</div><div>→</div>
-            <div>🛠️ Work Order</div><div>→</div><div>🗓️ Dispatch</div><div>→</div>
-            <div>📱 Mobile</div><div>→</div><div>💰 Invoice</div>
+          <div style="margin-top:32px; padding: 18px 24px; background: #fff3cd; border-left: 5px solid #f9ab00; border-radius: 8px; max-width: 520px; text-align: left; color: #5f4a00;">
+            <div style="font-weight: 900; font-size: 13px; text-transform: uppercase; letter-spacing: .1em; margin-bottom: 4px;">⚡ Today's theme</div>
+            <div style="font-size: 14px;"><b>Type once. Flow forward.</b> Zero double-entry. Every field a customer provides is captured exactly once — and then every downstream document inherits it automatically.</div>
           </div>
         </div>
       `);
       setNarrator(1,
-        '🎬 The whole show in 90 seconds',
+        '🎬 Welcome — 90 seconds, end to end',
         `Meet <b>Ticket Forge Unity</b>. Before: paper forms, whiteboard
          scheduling, phone tag between office and tech. After: every piece
-         of a job — from the first ring of the phone to the final invoice —
-         lives in one system.<br><br>Watch Janet Hamburg's story play out.`
+         of a job lives in one connected system.<br><br>
+         Watch Janet Hamburg's story — and see the "<b>one-and-done</b>"
+         workflow in action.`
       );
-      await sleep(6000);
+      await sleep(6500);
     },
 
+    // ===== SCENE 2: PHONE MESSAGE with LIVE AUTOCOMPLETE =====
     async phoneMessage() {
       setApp(`
         <div class="hw-form-header">
-          <div class="hw-form-title">📥 PHONE MESSAGE #<span id="hw-msg-id">800001</span></div>
+          <div class="hw-form-title">📥 PHONE MESSAGE #800001</div>
           <div><span class="hw-pill open">OPEN</span></div>
         </div>
 
         <div class="hw-card">
           <div class="hw-row"><div class="hw-label">Date</div><div class="hw-input" id="hw-date">${today()}</div></div>
-          <div class="hw-row"><div class="hw-label">Phone</div><div class="hw-input" id="hw-phone"></div></div>
+          <div class="hw-row"><div class="hw-label">Phone</div><div style="position:relative;"><div class="hw-input" id="hw-phone"></div><div id="hw-auto" style="display:none; position:absolute; top:100%; left:0; right:0; background:white; border:1px solid #1a73e8; border-radius:6px; box-shadow:0 4px 14px rgba(26,115,232,.25); z-index:10; margin-top:2px; overflow:hidden;"></div></div></div>
           <div class="hw-row"><div class="hw-label">Name</div><div class="hw-input" id="hw-name"></div></div>
-          <div class="hw-row"><div class="hw-label">Address</div><div class="hw-input" id="hw-addr1"></div></div>
+          <div class="hw-row"><div class="hw-label">Bill Addr</div><div class="hw-input" id="hw-addr1"></div></div>
           <div class="hw-row"><div class="hw-label"></div><div class="hw-input" id="hw-addr2"></div></div>
           <div class="hw-row"><div class="hw-label">Account #</div><div class="hw-input" id="hw-acct"></div></div>
         </div>
@@ -437,53 +441,96 @@
           <div class="hw-label" style="margin-bottom:8px;">Intake Notes</div>
           <div class="hw-input" id="hw-notes" style="min-height:80px; white-space:pre-wrap;"></div>
         </div>
-
-        <div style="display:flex; gap:10px; margin-top:20px;">
-          <button class="hw-btn hw-yellow" id="hw-save">💾 SAVE</button>
-          <button class="hw-btn hw-green" id="hw-conv-service">→ SERVICE</button>
-          <button class="hw-btn hw-green" id="hw-conv-sales">→ SALES</button>
-          <button class="hw-btn hw-green" id="hw-conv-quote">→ QUOTE</button>
-        </div>
       `);
 
       setNarrator(2,
         '📞 Janet calls in',
-        `The phone rings. Office staff clicks <b>CREATE NEW → Phone Message</b>.
-         Every caller becomes a structured record, not a sticky note.<br><br>
-         Watch her info fill in — phone, name, address. Once saved to the
-         Rolodex, future calls from this number auto-fill.`
-      );
-
-      await sleep(1500);
-      await typeInto('#hw-phone', JANET.phone, 50, 120);
-      await typeInto('#hw-name', JANET.name, 40, 90);
-      await typeInto('#hw-addr1', JANET.address1, 40, 80);
-      await typeInto('#hw-addr2', JANET.address2, 40, 80);
-      await typeInto('#hw-acct', JANET.accountId, 50, 100);
-      await typeInto('#hw-notes', 'Garage door stuck halfway open.\nCable appears broken.\nWants service ASAP.', 20, 50);
-
-      setNarrator(2,
-        '📞 Save + convert',
-        `<b>SAVE</b> persists the message. <b>→ SERVICE</b> promotes it to
-         a real service ticket — the customer's info is carried forward
-         automatically. No re-typing.`
+        `Phone rings. Office clicks <b>CREATE NEW → Phone Message</b>.
+         Every caller becomes a structured record — no sticky notes.`
       );
       await sleep(2000);
-      await flashButton('#hw-save');
-      await sleep(500);
-      await flashButton('#hw-conv-service');
-      await sleep(800);
+
+      // Type a partial phone → trigger autocomplete dropdown
+      setNarrator(2,
+        '🔍 Autocomplete kicks in',
+        `Office starts typing the phone. After 3 characters, the rolodex
+         instantly matches existing customers. <b>Janet has called before.</b>`
+      );
+      await typeInto('#hw-phone', '716-55', 90, 160);
+
+      // Show autocomplete dropdown
+      const auto = $app('#hw-auto');
+      auto.style.display = 'block';
+      auto.innerHTML = `
+        <div style="padding: 10px 14px; border-bottom: 1px solid #eee; cursor: pointer; background: #f1f8ff;">
+          <div style="font-size: 10px; font-weight: 700; color: #5f6368; text-transform: uppercase; letter-spacing: .05em;">📞 Phone</div>
+          <div><b>JANET HAMBURG</b></div>
+          <div style="font-size: 11px; color: #666;">716-555-0101</div>
+        </div>
+        <div style="padding: 10px 14px; cursor: pointer; opacity: 0.6;">
+          <div style="font-size: 10px; font-weight: 700; color: #5f6368; text-transform: uppercase; letter-spacing: .05em;">📞 Phone</div>
+          <div><b>DAN HAMBURG</b></div>
+          <div style="font-size: 11px; color: #666;">716-555-9922</div>
+        </div>
+      `;
+      await sleep(2200);
+
+      setNarrator(2,
+        '👆 Click match → auto-fill',
+        `One click and <b>every customer field fills at once</b>: phone,
+         name, billing address, account #. Zero re-typing.`
+      );
+      await sleep(1800);
+
+      // Fill all fields with shimmer
+      auto.style.display = 'none';
+      $app('#hw-phone').textContent = JANET.phone;    $app('#hw-phone').classList.add('hw-changed');
+      await sleep(200);
+      $app('#hw-name').textContent  = JANET.name;     $app('#hw-name').classList.add('hw-changed');
+      await sleep(200);
+      $app('#hw-addr1').textContent = JANET.address1; $app('#hw-addr1').classList.add('hw-changed');
+      await sleep(150);
+      $app('#hw-addr2').textContent = JANET.address2; $app('#hw-addr2').classList.add('hw-changed');
+      await sleep(150);
+      $app('#hw-acct').textContent  = JANET.accountId; $app('#hw-acct').classList.add('hw-changed');
+      await sleep(400);
+
+      await typeInto('#hw-notes', 'Garage door stuck halfway open.\nCable appears broken.\nWants service ASAP.', 25, 55);
+      await sleep(1200);
     },
 
-    async serviceTicket() {
+    // ===== SCENE 3: FORWARD → SERVICE, SAVE → DASHBOARD =====
+    async forwardToService() {
+      setNarrator(3,
+        '🚀 Click → SERVICE — watch it forward',
+        `Instead of clicking SAVE (which would drop us back to the dashboard),
+         the office clicks <b>→ SERVICE</b>. The phone message is marked
+         <b>Converted</b>, a new service ticket is spawned, and every field
+         carries forward automatically.`
+      );
+      await sleep(3000);
+
+      // Transition effect: fade current app out
+      const app = document.getElementById('hw-app');
+      app.style.transition = 'opacity 0.4s';
+      app.style.opacity = '0.2';
+      await sleep(500);
+
+      // Render service ticket with breadcrumb
       setApp(`
-        <div class="hw-form-header">
-          <div class="hw-form-title">🛠️ SERVICE TICKET #<span>700001</span></div>
-          <div><span class="hw-pill open">OPEN</span> <span style="margin-left:8px;" id="hw-status-pill"></span></div>
+        <div style="margin-bottom: 14px; text-align: center;">
+          <span style="display: inline-block; background: #fff3cd; color: #7a5a00; padding: 6px 14px; border-radius: 20px; font-family: Inter, sans-serif; font-size: 11px; font-weight: 600; border: 1px solid #f9ab00; cursor: pointer; animation: hw-pop .5s ease-out;">
+            ← Forwarded from 📥 Phone Message #800001
+          </span>
         </div>
 
-        <div class="hw-card" style="background:#fff9c4; border-color:#f9ab00;">
-          <div style="font-size:12px; color:#b06000; font-weight:600;">✨ AUTO-FILLED FROM PHONE MESSAGE #800001</div>
+        <div class="hw-form-header">
+          <div class="hw-form-title">🛠️ SERVICE TICKET #700001</div>
+          <div><span class="hw-pill scheduled">OPEN</span></div>
+        </div>
+
+        <div class="hw-card" style="background:#e8f0fe; border-color:#1a73e8;">
+          <div style="font-size:12px; color:#1a73e8; font-weight:700; text-transform:uppercase;">✨ Every field inherited from the phone message</div>
         </div>
 
         <div class="hw-card">
@@ -496,38 +543,35 @@
 
         <div class="hw-card">
           <div class="hw-label" style="margin-bottom:8px;">Scope of Work</div>
-          <div class="hw-input" id="hw-scope" style="min-height:80px; white-space:pre-wrap;"></div>
+          <div class="hw-input hw-changed" style="min-height:60px; white-space:pre-wrap;">Garage door stuck halfway open.
+Cable appears broken.
+Wants service ASAP.</div>
         </div>
 
         <div style="display:flex; gap:10px; margin-top:20px;">
           <button class="hw-btn hw-yellow">💾 SAVE</button>
           <button class="hw-btn hw-green" id="hw-dispatch-btn">🚚 SEND TO DISPATCH</button>
-          <button class="hw-btn hw-gray">🖨️ PRINT</button>
         </div>
       `);
+      app.style.opacity = '1';
+      await sleep(1800);
 
       setNarrator(3,
-        '🛠️ Service ticket — auto-populated',
-        `Watch — the new ticket opens with Janet's full info already filled
-         in. Customer identity carried across. Office just needs to add
-         who's handling it and any scope details.`
+        '🎯 Zero re-entry',
+        `Look at the top: <b>"← Forwarded from Phone Message #800001"</b>.
+         Click that any time to jump back to the source. Full audit trail,
+         zero typing.<br><br>
+         Office adds the tech name and clicks SEND TO DISPATCH.`
       );
+      await sleep(3200);
 
-      await sleep(2500);
-      await typeInto('#hw-rep', 'Mario', 80, 120);
-      await typeInto('#hw-scope', 'Replace broken spring cable.\nInspect drum and tracks.\nTest 5 cycles before leaving.', 20, 50);
-
-      setNarrator(3,
-        '🚚 Send to Dispatch',
-        `Clicking <b>SEND TO DISPATCH</b> flips the status and drops this
-         ticket into the dispatcher's parking lot on the board.`
-      );
-      await sleep(2000);
+      await typeInto('#hw-rep', 'Mario', 80, 130);
+      await sleep(500);
       await flashButton('#hw-dispatch-btn');
-      $app('#hw-status-pill').innerHTML = '<span class="hw-pill scheduled">READY FOR DISPATCH</span>';
-      await sleep(1500);
+      await sleep(1000);
     },
 
+    // ===== SCENE 4: DISPATCH (unchanged animation) =====
     async dispatch() {
       setApp(`
         <div class="hw-form-header">
@@ -574,15 +618,13 @@
       `);
 
       setNarrator(4,
-        '🗓️ The dispatch board',
-        `Janet's ticket lands in <b>UNSCHEDULED</b> on the left. The
-         dispatcher sees the whole day: techs down the left, time slots
-         across the top.<br><br>
-         Watch them drag Janet's ticket onto Mario's 9:00 slot.`
+        '🗓️ Drag to dispatch',
+        `Dispatcher sees Janet's ticket in <b>UNSCHEDULED</b>. One drag →
+         Mario's 9:00. Firestore updates instantly. Mario's phone gets
+         the new job within 2 seconds.`
       );
-      await sleep(3500);
+      await sleep(3000);
 
-      // Animate drag: move the card from parking to the 9:00 Mario cell
       const card = $app('#hw-card');
       const target = $app('#hw-target');
       const cardRect = card.getBoundingClientRect();
@@ -596,23 +638,16 @@
 
       await sleep(1800);
 
-      // Drop: move card into target cell (DOM)
       card.style.transition = '';
       card.style.transform = '';
       card.classList.remove('hw-dragging');
       card.style.borderLeftColor = '#1a73e8';
       target.appendChild(card);
       $app('.hw-parking-title').textContent = 'Unscheduled (0)';
-
-      setNarrator(4,
-        '✅ Scheduled',
-        `Mario's 9:00 is locked in. Firestore updated in real-time — the
-         card now carries status "Scheduled", assignedTech "Mario", slot "9:00".
-         Mario's phone will see the new job within seconds.`
-      );
-      await sleep(3000);
+      await sleep(1500);
     },
 
+    // ===== SCENE 5: MOBILE TECH COMPLETES JOB =====
     async mobile() {
       setApp(`
         <div style="display:flex; gap:30px; align-items:flex-start;">
@@ -632,23 +667,20 @@
           <div style="flex:1; padding: 20px 0;">
             <div style="font-size:12px; color:#5f6368; text-transform:uppercase; letter-spacing:.1em; margin-bottom:14px;">📱 Mario's Phone</div>
             <div style="font-size:14px; color:#202124; line-height:1.6;">
-              <p>Mario signs in on his phone. The app is a <b>PWA</b> — installs like a native app, works offline, pulls today's jobs from Firestore.</p>
-              <p>Within 1-2 seconds of dispatch scheduling him, the job appears on his list.</p>
+              <p>Mario's in the van. Pulls up the Hamburg Door app on his phone. <b>It's a PWA</b> — installs like a native app, works offline.</p>
+              <p>Within 1-2 seconds, his scheduled job appears.</p>
             </div>
           </div>
         </div>
       `);
 
       setNarrator(5,
-        '📱 Mario\'s phone',
-        `Mario's in the van. He opens the Hamburg Door app. Today's jobs
-         sync automatically — no refresh, no "pull to reload." Real-time
-         Firestore listeners.`
+        '📱 Mario in the field',
+        `No phone call to the office. No "where am I going?" Just the
+         job, synced in real-time.`
       );
+      await sleep(2000);
 
-      await sleep(2500);
-
-      // Show the job appearing
       $app('#hw-phone-list').innerHTML = `
         <div class="hw-phone-card" style="animation: hw-pop .5s ease-out;">
           <div class="hw-time">⏰ 9:00</div>
@@ -656,16 +688,9 @@
           <div class="hw-cust">${JANET.name}</div>
         </div>
       `;
-
       await sleep(1500);
-      setNarrator(5,
-        '📱 Tap the job → open it',
-        `He taps the card. Job detail opens: address, customer, scope of
-         work, one-tap navigation, one-tap phone call. When done, he
-         types notes, signs, hits COMPLETE.`
-      );
-      await sleep(2500);
 
+      // Open job detail + complete
       $app('#hw-phone-list').innerHTML = `
         <div style="background:#303134; border-radius:12px; padding:16px;">
           <div style="font-size:12px; color:#f9ab00; margin-bottom:6px; text-transform:uppercase; font-weight:700;">Job Details</div>
@@ -677,7 +702,7 @@
           </div>
           <div style="margin-top:14px; font-size:11px; color:#f9ab00; text-transform:uppercase;">Scope</div>
           <div style="background:#202124; padding:10px; border-radius:6px; margin-top:4px; font-size:12px; color:#e8eaed;">
-            Replace broken spring cable. Inspect drum + tracks. Test 5 cycles.
+            Replace broken cable. Test 5 cycles.
           </div>
           <div style="margin-top:14px; font-size:11px; color:#f9ab00; text-transform:uppercase;">Tech Notes</div>
           <div class="hw-input" id="hw-mobile-notes" style="background:#202124; color:white; border-color:#5f6368; min-height:60px; margin-top:4px;"></div>
@@ -685,13 +710,18 @@
         </div>
       `;
 
-      await sleep(1000);
-      await typeInto('#hw-mobile-notes', 'Replaced cable w/ 1/8" galv. Tested 5 cycles. Door operating smoothly.', 30, 80);
-      await sleep(1000);
-      await flashButton($app('.hw-complete-btn'));
-      await sleep(1000);
+      setNarrator(5,
+        '✅ Tap complete, everyone syncs',
+        `Mario types notes, taps <b>COMPLETE</b>. Status flips to Complete
+         everywhere instantly. Office knows. No phone tag.`
+      );
+      await sleep(2500);
 
-      // Show completion confirmation
+      await typeInto('#hw-mobile-notes', 'Replaced cable. Tested 5 cycles. Door smooth.', 30, 70);
+      await sleep(800);
+      await flashButton($app('.hw-complete-btn'));
+      await sleep(800);
+
       $app('#hw-phone-list').innerHTML = `
         <div style="text-align:center; padding:60px 0;">
           <div style="font-size:60px; margin-bottom:14px;">✅</div>
@@ -699,74 +729,172 @@
           <div style="color:#9aa0a6; font-size:12px; margin-top:8px;">Synced to office</div>
         </div>
       `;
-      setNarrator(5,
-        '✅ Synced to office',
-        `Status flips to <b>Complete</b>. Office sees the status change
-         instantly. No phone call. No "I think he's done?" No lost
-         paperwork in the truck.`
-      );
-      await sleep(3000);
+      await sleep(2000);
     },
 
-    async newInstallPipeline() {
+    // ===== SCENE 6: FRANCHISE / MULTI-SITE CUSTOMER SCENARIO =====
+    async franchiseLookup() {
       setApp(`
-        <div style="text-align:center; padding: 20px 0;">
-          <div style="font-weight:900; font-size:22px; color:#202124; margin-bottom:8px;">🔄 The other path: new installs</div>
-          <div style="color:#5f6368; font-size:14px;">What if Janet wanted a new door instead of a repair?</div>
+        <div class="hw-form-header">
+          <div class="hw-form-title">📥 PHONE MESSAGE #800002</div>
+          <div><span class="hw-pill open">OPEN</span></div>
         </div>
 
-        <div style="display:grid; grid-template-columns: repeat(4, 1fr); gap:14px; margin-top:30px;">
-          <div class="hw-card" style="text-align:center; padding:16px 10px;">
-            <div style="font-size:32px; margin-bottom:8px;">📥</div>
-            <div style="font-weight:700; font-size:13px;">Phone Message</div>
-            <div style="font-size:11px; color:#5f6368; margin-top:4px;">#800001</div>
-            <div style="margin-top:8px;"><span class="hw-pill complete">Converted</span></div>
-          </div>
-          <div class="hw-card" style="text-align:center; padding:16px 10px;">
-            <div style="font-size:32px; margin-bottom:8px;">📝</div>
-            <div style="font-weight:700; font-size:13px;">Quote</div>
-            <div style="font-size:11px; color:#5f6368; margin-top:4px;">#300001</div>
-            <div style="margin-top:8px;"><span class="hw-pill complete">Converted</span></div>
-          </div>
-          <div class="hw-card" style="text-align:center; padding:16px 10px;">
-            <div style="font-size:32px; margin-bottom:8px;">🛠️</div>
-            <div style="font-weight:700; font-size:13px;">Work Order</div>
-            <div style="font-size:11px; color:#5f6368; margin-top:4px;">#500001</div>
-            <div style="margin-top:8px;"><span class="hw-pill complete">Complete</span></div>
-          </div>
-          <div class="hw-card" style="text-align:center; padding:16px 10px;">
-            <div style="font-size:32px; margin-bottom:8px;">💰</div>
-            <div style="font-weight:700; font-size:13px;">Invoice</div>
-            <div style="font-size:11px; color:#5f6368; margin-top:4px;">#600001</div>
-            <div style="margin-top:8px;"><span class="hw-pill closed">Closed</span></div>
-          </div>
+        <div class="hw-card">
+          <div class="hw-row"><div class="hw-label">Phone</div><div class="hw-input" id="hw-phone2">716-555-0500</div></div>
+          <div class="hw-row"><div class="hw-label">Name</div><div class="hw-input hw-changed">HAMBURG FRANCHISE HOLDINGS</div></div>
+          <div class="hw-row"><div class="hw-label">Bill Addr</div><div class="hw-input hw-changed">5000 CORPORATE WAY</div></div>
+          <div class="hw-row"><div class="hw-label"></div><div class="hw-input hw-changed">BUFFALO, NY 14203</div></div>
+          <div class="hw-row"><div class="hw-label">Job Site</div><div style="position:relative;"><div class="hw-input" id="hw-site1"></div><div id="hw-auto2" style="display:none; position:absolute; top:100%; left:0; right:0; background:white; border:1px solid #1a73e8; border-radius:6px; box-shadow:0 4px 14px rgba(26,115,232,.25); z-index:10; margin-top:2px;"></div></div></div>
+          <div class="hw-row"><div class="hw-label"></div><div class="hw-input" id="hw-site2"></div></div>
         </div>
+      `);
 
-        <div class="hw-card" style="margin-top:30px; background:#e8f0fe; border-color:#1a73e8;">
-          <div style="font-weight:700; color:#1a73e8; margin-bottom:8px;">📦 Carried across every step:</div>
-          <div style="font-size:13px; color:#202124; line-height:1.8;">
-            Customer identity · Phone · Billing address · Job site · Account # · Line items · Scope notes
-          </div>
+      setNarrator(6,
+        '🏢 Now — a franchise customer',
+        `New call. <b>Hamburg Franchise Holdings</b> has multiple locations.
+         HQ pays the bills from Buffalo, but each franchise is a different
+         job site.<br><br>
+         Office types the job-site address...`
+      );
+      await sleep(3500);
+
+      await typeInto('#hw-site1', '123 MAIN', 60, 100);
+
+      // Show multi-result dropdown: phone match AND existing job sites
+      const auto = $app('#hw-auto2');
+      auto.style.display = 'block';
+      auto.innerHTML = `
+        <div style="padding: 10px 14px; border-bottom: 1px solid #eee; cursor: pointer; background: #f1f8ff;">
+          <div style="font-size: 10px; font-weight: 700; color: #5f6368; text-transform: uppercase; letter-spacing: .05em;">📍 Job Site</div>
+          <div><b>HAMBURG FRANCHISE HOLDINGS</b> <span style="font-size:10px; color:#888;">(+2 other sites)</span></div>
+          <div style="font-size: 11px; color: #666;">123 MAIN ST, HAMBURG NY 14075</div>
         </div>
+        <div style="padding: 10px 14px; cursor: pointer;">
+          <div style="font-size: 10px; font-weight: 700; color: #5f6368; text-transform: uppercase; letter-spacing: .05em;">📍 Job Site</div>
+          <div><b>MAIN STREET ARCADE</b></div>
+          <div style="font-size: 11px; color: #666;">123 MAIN ST SUITE B, HAMBURG NY 14075</div>
+        </div>
+      `;
+      await sleep(2500);
 
-        <div style="margin-top:20px; padding:14px; background:#fff3cd; border-left:4px solid #f9ab00; border-radius:4px;">
-          <div style="font-size:12px; color:#7a5a00; font-weight:700; text-transform:uppercase;">⚡ In practice</div>
-          <div style="font-size:13px; color:#202124; margin-top:4px;">
-            Janet's info is typed once, at the phone message. Every downstream
-            document inherits it. Zero re-keying. Zero drift.
+      setNarrator(6,
+        '🎯 Matched against ALL customers\' sites',
+        `Look — the rolodex matched <b>123 Main</b> across every
+         customer's billing AND job-site addresses. Two hits: the
+         franchise HQ and an arcade at the same building.<br><br>
+         Office clicks the Franchise match...`
+      );
+      await sleep(3500);
+
+      auto.style.display = 'none';
+    },
+
+    // ===== SCENE 7: DISAMBIGUATION MODAL =====
+    async disambiguationModal() {
+      // Darken background, show modal overlay
+      setApp(`
+        <div style="position: relative; height: 100%;">
+          <div style="filter: blur(3px); opacity: 0.3; pointer-events: none;">
+            <div class="hw-form-header">
+              <div class="hw-form-title">📥 PHONE MESSAGE #800002</div>
+              <div><span class="hw-pill open">OPEN</span></div>
+            </div>
+            <div class="hw-card">
+              <div class="hw-row"><div class="hw-label">Name</div><div class="hw-input">HAMBURG FRANCHISE HOLDINGS</div></div>
+              <div class="hw-row"><div class="hw-label">Job Site</div><div class="hw-input">123 MAIN</div></div>
+            </div>
+          </div>
+
+          <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; color: #202124; border-radius: 12px; padding: 28px; width: 100%; max-width: 480px; box-shadow: 0 20px 60px rgba(0,0,0,0.4); animation: hw-pop 0.3s ease-out;">
+            <h3 style="margin: 0 0 14px 0; font-weight: 900; font-size: 20px; letter-spacing: -0.3px; border-bottom: 2px solid #000; padding-bottom: 10px; font-family: 'Inter', sans-serif;">🤔 Is this a job site for HAMBURG FRANCHISE HOLDINGS?</h3>
+
+            <div style="margin: 12px 0;">
+              <div style="font-size: 10px; font-weight: 700; text-transform: uppercase; color: #5f6368; letter-spacing: .08em;">You typed</div>
+              <div style="font-family: 'IBM Plex Mono', monospace;">123 MAIN</div>
+            </div>
+            <div style="margin: 12px 0;">
+              <div style="font-size: 10px; font-weight: 700; text-transform: uppercase; color: #5f6368; letter-spacing: .08em;">Matched customer</div>
+              <div style="font-family: 'IBM Plex Mono', monospace;"><b>HAMBURG FRANCHISE HOLDINGS</b></div>
+            </div>
+            <div style="margin: 12px 0;">
+              <div style="font-size: 10px; font-weight: 700; text-transform: uppercase; color: #5f6368; letter-spacing: .08em;">Billed to</div>
+              <div style="font-family: 'IBM Plex Mono', monospace;">5000 CORPORATE WAY, BUFFALO NY 14203</div>
+            </div>
+
+            <div style="background: #fff3cd; border-left: 4px solid #f9ab00; padding: 10px 14px; border-radius: 4px; font-size: 13px; margin: 14px 0; color: #7a5a00;">
+              <b>3</b> existing job sites on file. Adding this will create one more.
+            </div>
+
+            <div style="display: flex; gap: 10px; margin-top: 22px; flex-wrap: wrap;">
+              <button id="hw-modal-add" class="hw-btn hw-green" style="flex: 1; min-width: 140px;">✅ ADD AS JOB SITE</button>
+              <button class="hw-btn hw-blue" style="flex: 1; min-width: 140px;">📋 FILL, DON'T ADD</button>
+              <button class="hw-btn hw-gray" style="flex: 1; min-width: 100px;">CANCEL</button>
+            </div>
           </div>
         </div>
       `);
-      setNarrator(6,
-        '🔄 The full paper trail',
-        `Same customer, different path. Phone → Quote → Work Order → Invoice.
-         Each step carries the customer forward automatically. Each step
-         gets its own sequential number (800K series for messages, 300K for
-         quotes, 500K for work orders, 600K for invoices).`
+
+      setNarrator(7,
+        '🤔 Smart disambiguation',
+        `A modal pops. <b>"Is this a job site for HAMBURG FRANCHISE HOLDINGS?"</b><br><br>
+         Three choices:<br>
+         ✅ <b>ADD AS JOB SITE</b> — save it to the customer + fill the form<br>
+         📋 <b>FILL, DON'T ADD</b> — just fill, don't pollute the rolodex<br>
+         ❌ <b>CANCEL</b> — never mind
+        `
       );
-      await sleep(6000);
+      await sleep(4500);
+
+      await flashButton('#hw-modal-add');
+      await sleep(1200);
     },
 
+    // ===== SCENE 8: AUTO-FILL RESULT =====
+    async franchiseFilled() {
+      setApp(`
+        <div style="margin-bottom: 14px; text-align: center;">
+          <span style="display: inline-block; background: #e6f4ea; color: #1e8e3e; padding: 6px 14px; border-radius: 20px; font-family: Inter, sans-serif; font-size: 11px; font-weight: 600; border: 1px solid #1e8e3e;">
+            ✅ Customer + new job site saved to rolodex
+          </span>
+        </div>
+
+        <div class="hw-form-header">
+          <div class="hw-form-title">📥 PHONE MESSAGE #800002</div>
+          <div><span class="hw-pill open">OPEN</span></div>
+        </div>
+
+        <div class="hw-card">
+          <div class="hw-row"><div class="hw-label">Phone</div><div class="hw-input hw-changed">716-555-0500</div></div>
+          <div class="hw-row"><div class="hw-label">Name</div><div class="hw-input hw-changed">HAMBURG FRANCHISE HOLDINGS</div></div>
+          <div class="hw-row"><div class="hw-label">Bill Addr</div><div class="hw-input hw-changed">5000 CORPORATE WAY</div></div>
+          <div class="hw-row"><div class="hw-label"></div><div class="hw-input hw-changed">BUFFALO, NY 14203</div></div>
+          <div class="hw-row"><div class="hw-label">Job Site</div><div class="hw-input hw-changed">123 MAIN ST</div></div>
+          <div class="hw-row"><div class="hw-label"></div><div class="hw-input hw-changed">HAMBURG, NY 14075</div></div>
+        </div>
+
+        <div class="hw-card" style="background: #e8f0fe; border-color: #1a73e8;">
+          <div style="font-size: 12px; color: #1a73e8; font-weight: 700; text-transform: uppercase; margin-bottom: 8px;">📍 Hamburg Franchise Holdings — now has 4 job sites on file</div>
+          <div style="font-family: 'IBM Plex Mono', monospace; font-size: 12px; line-height: 1.8;">
+            • 123 MAIN ST, HAMBURG NY 14075 <span style="color: #1e8e3e; font-weight: 700;">(just added)</span><br>
+            • 456 OAK AVE, ORCHARD PARK NY 14127<br>
+            • 789 ELM DR, WEST SENECA NY 14224<br>
+            • 5000 CORPORATE WAY, BUFFALO NY 14203 <span style="color: #666;">(billing)</span>
+          </div>
+        </div>
+      `);
+
+      setNarrator(8,
+        '🎯 One action, two writes',
+        `The form is pre-filled — AND the customer record is updated
+         with the new job site. <b>Next time anyone types "123 Main" at
+         ANY point in ANY form</b>, it'll match instantly.<br><br>
+         That's the rolodex learning as you work.`
+      );
+      await sleep(5000);
+    },
+
+    // ===== SCENE 9: DASHBOARD — THE PAPER TRAIL =====
     async dashboard() {
       setApp(`
         <div class="hw-form-header">
@@ -780,95 +908,108 @@
         <div class="hw-dashboard">
           <div class="hw-stack" data-type="intake">
             <div class="hw-stack-title">Intake / Phone Msgs</div>
-            <div class="hw-doc"><span><span class="hw-doc-id">#800001</span> ${JANET.name}</span><span class="hw-doc-date">${today()}</span></div>
+            <div class="hw-doc" style="opacity:0.5;"><span><span class="hw-doc-id">#800001</span> ${JANET.name}</span><span class="hw-doc-date">converted</span></div>
+            <div class="hw-doc"><span><span class="hw-doc-id">#800002</span> HAMBURG FRANCHISE</span><span class="hw-doc-date">${today()}</span></div>
           </div>
           <div class="hw-stack" data-type="quote">
             <div class="hw-stack-title">Quotes & Proposals</div>
             <div class="hw-doc"><span><span class="hw-doc-id">#300001</span> ${JANET.name}</span><span class="hw-doc-date">${today()}</span></div>
           </div>
-          <div class="hw-stack" data-type="work">
-            <div class="hw-stack-title">Work Orders</div>
-            <div class="hw-doc"><span><span class="hw-doc-id">#500001</span> ${JANET.name}</span><span class="hw-doc-date">${today()}</span></div>
-          </div>
           <div class="hw-stack" data-type="service">
             <div class="hw-stack-title">Service Tickets</div>
             <div class="hw-doc"><span><span class="hw-doc-id">#700001</span> ${JANET.name}</span><span class="hw-doc-date">${today()}</span></div>
           </div>
+          <div class="hw-stack" data-type="work">
+            <div class="hw-stack-title">Work Orders</div>
+            <div class="hw-doc" style="color:#999;">No active</div>
+          </div>
           <div class="hw-stack" data-type="invoice">
             <div class="hw-stack-title">Invoices</div>
-            <div class="hw-doc"><span><span class="hw-doc-id">#600001</span> ${JANET.name}</span><span class="hw-doc-date">${today()}</span></div>
+            <div class="hw-doc" style="color:#999;">No active</div>
           </div>
         </div>
       `);
-      setNarrator(7,
-        '🔍 Every doc, one search',
-        `The dashboard stacks every kind of document. Search by name,
-         phone, address, account #, rep name, signature, line-item text —
-         whatever the office remembers. One bar. Every field.`
+
+      setNarrator(9,
+        '🔍 Every doc, one search bar',
+        `One place to see everything. Converted docs fade out of the
+         active view but stay searchable forever.`
       );
-      await sleep(3000);
+      await sleep(2500);
 
-      // Demo a search
-      await typeInto('#hw-search', 'hamburg', 70, 120);
-      await sleep(500);
+      await typeInto('#hw-search', 'hamburg', 60, 110);
+      await sleep(600);
 
-      // "flash" all stacks to show matches
       document.querySelectorAll('#hw-app .hw-stack').forEach(s => s.classList.add('hw-flash'));
-      await sleep(2000);
+      await sleep(1800);
       document.querySelectorAll('#hw-app .hw-stack').forEach(s => s.classList.remove('hw-flash'));
 
-      setNarrator(7,
-        '🔍 Single search, 5 results',
-        `One typed word — "hamburg" — finds Janet's trail across every
-         stack. Every document she's connected to, all at once. No tab
-         juggling, no Ctrl-F in Excel, no "did we file that under her
-         name or his?"`
+      setNarrator(9,
+        '🎯 Type "hamburg" → both customers surface',
+        `Janet Hamburg's service trail AND Hamburg Franchise's intake
+         both light up. One search, every field, across every document
+         type: description, line items, signatures, rep name, account #,
+         even typed tech notes.`
       );
-      await sleep(3500);
+      await sleep(4000);
     },
 
+    // ===== SCENE 10: OUTRO =====
     async outro() {
       setApp(`
         <div style="display:flex; flex-direction:column; align-items:center; justify-content:center; height:100%; text-align:center; padding:40px 20px;">
           <div style="font-size:72px; margin-bottom:24px;">⚡</div>
-          <div style="font-size:28px; font-weight:900; letter-spacing:-1px; color:#202124; margin-bottom:16px;">That's the whole thing.</div>
+          <div style="font-size:28px; font-weight:900; letter-spacing:-1px; color:#202124; margin-bottom:16px;">Type once. Flow forward.</div>
           <div style="font-size:16px; color:#5f6368; max-width:560px; line-height:1.6; margin-bottom:30px;">
             One system. Phone to paper to phone again. No lost tickets.
-            No re-keying. No "where's that quote Janet wanted?"
+            No re-keying. The rolodex learns as you work.
           </div>
-          <div style="display:flex; gap:16px; margin-bottom:30px;">
-            <div style="background:#e8f0fe; color:#1a73e8; padding:16px 20px; border-radius:10px; text-align:center;">
-              <div style="font-size:24px; font-weight:900;">3</div>
+          <div style="display:flex; gap:16px; margin-bottom:30px; flex-wrap: wrap; justify-content: center;">
+            <div style="background:#e8f0fe; color:#1a73e8; padding:16px 20px; border-radius:10px; text-align:center; min-width: 100px;">
+              <div style="font-size:24px; font-weight:900;">4</div>
               <div style="font-size:11px; text-transform:uppercase;">Views</div>
             </div>
-            <div style="background:#e6f4ea; color:#1e8e3e; padding:16px 20px; border-radius:10px; text-align:center;">
+            <div style="background:#e6f4ea; color:#1e8e3e; padding:16px 20px; border-radius:10px; text-align:center; min-width: 100px;">
               <div style="font-size:24px; font-weight:900;">7</div>
               <div style="font-size:11px; text-transform:uppercase;">Forms</div>
             </div>
-            <div style="background:#fef7e0; color:#b06000; padding:16px 20px; border-radius:10px; text-align:center;">
+            <div style="background:#fef7e0; color:#b06000; padding:16px 20px; border-radius:10px; text-align:center; min-width: 100px;">
+              <div style="font-size:24px; font-weight:900;">0</div>
+              <div style="font-size:11px; text-transform:uppercase;">Double-Entry</div>
+            </div>
+            <div style="background:#fce8e6; color:#a82319; padding:16px 20px; border-radius:10px; text-align:center; min-width: 100px;">
               <div style="font-size:24px; font-weight:900;">∞</div>
               <div style="font-size:11px; text-transform:uppercase;">Sync</div>
             </div>
           </div>
           <div style="font-size:12px; color:#9aa0a6;">
-            Close this overlay to explore the real app.
+            Close this overlay (Esc or ✕) to explore the real thing.
           </div>
         </div>
       `);
-      setNarrator(8,
+      setNarrator(10,
         '✅ Demo complete',
-        `Three views — Admin, Dispatch, Mobile. Seven forms — Phone,
-         Sales, Quote, Work Order, Service, Invoice, Dashboard. One
-         Firestore. Real-time sync.<br><br>
-         <b>Close this overlay (Esc or ✕) to explore the real thing.</b>`
+        `Four views — Admin, Dispatch, Mobile, Admin Console. Seven forms
+         — Phone, Sales, Quote, Work Order, Service, Invoice, Dashboard.
+         One Firestore. Real-time sync. <b>Zero double entry.</b><br><br>
+         <b>Close this overlay (Esc or ✕) to explore the real app.</b>`
       );
-      await sleep(999999); // wait for user to close
+      await sleep(999999);
     }
   };
 
-  // ---------- Main loop ----------
-
-  const SCENE_LIST = ['intro', 'phoneMessage', 'serviceTicket', 'dispatch', 'mobile', 'newInstallPipeline', 'dashboard', 'outro'];
+  const SCENE_LIST = [
+    'intro',
+    'phoneMessage',
+    'forwardToService',
+    'dispatch',
+    'mobile',
+    'franchiseLookup',
+    'disambiguationModal',
+    'franchiseFilled',
+    'dashboard',
+    'outro'
+  ];
 
   const Demo = {
     async play(opts = {}) {
