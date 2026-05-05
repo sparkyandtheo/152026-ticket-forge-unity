@@ -187,10 +187,13 @@ Requires being signed in; writes tagged DEMO docs to Firestore. Source:
 
 ## 📝 Known TODOs
 
-- Real icons for PWA (`public/assets/img/icons/icon-192.png` + `-512.png`), then add back to `manifest.json`
-- Implement `functions/lead-time.js` (lead-time lookup for parts)
-- Implement `functions/transcribe.js` (voice-note → text for tech notes)
-- Firestore security rules review (collections listed above)
-- Tighten CSP — remove `unsafe-inline` / `unsafe-eval` after moving inline scripts into modules
+Tracked as GitHub Issues:
 
-See `AUDIT_2026-04-22.md` for a full deferred-items list.
+| # | Issue | Status |
+|---|-------|--------|
+| #24 | `functions/lead-time.js` — lead-time lookup | 📋 Open |
+| #25 | `functions/transcribe.js` — audio transcription | 📋 Open |
+| #26 | Tighten CSP — remove `unsafe-inline` / `unsafe-eval` | 📋 Open |
+| #27 | Branch protection rules on `main` | 📋 Open |
+
+See full list at [Issues](https://github.com/sparkyandtheo/152026-ticket-forge-unity/issues).
